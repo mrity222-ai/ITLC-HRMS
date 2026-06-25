@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', system-ui, -apple-system, sans-serif;
+  
+  --color-indigo-950: #eef2f6;
+  
+  --animate-float-slow: float 8s ease-in-out infinite;
+  --animate-float-medium: float 6s ease-in-out infinite;
+  --animate-float-fast: float 4s ease-in-out infinite;
+  
+  --animate-pulse-subtle: pulse-subtle 4s ease-in-out infinite;
+  --animate-spin-slow: spin 20s linear infinite;
+
+  --animate-blob-1: float-blob-1 18s ease-in-out infinite;
+  --animate-blob-2: float-blob-2 22s ease-in-out infinite;
+  --animate-blob-3: float-blob-3 20s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-12px) rotate(1deg);
+    }
+  }
+
+  @keyframes pulse-subtle {
+    0%, 100% {
+      opacity: 0.15;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.3;
+      transform: scale(1.08);
+    }
+  }
+
+  @keyframes float-blob-1 {
+    0%, 100% {
+      transform: translate(0px, 0px) scale(1) rotate(0deg);
+    }
+    33% {
+      transform: translate(45px, -65px) scale(1.15) rotate(120deg);
+    }
+    66% {
+      transform: translate(-30px, 30px) scale(0.85) rotate(240deg);
+    }
+  }
+
+  @keyframes float-blob-2 {
+    0%, 100% {
+      transform: translate(0px, 0px) scale(1) rotate(0deg);
+    }
+    33% {
+      transform: translate(-55px, 45px) scale(0.85) rotate(-120deg);
+    }
+    66% {
+      transform: translate(35px, -35px) scale(1.1) rotate(-240deg);
+    }
+  }
+
+  @keyframes float-blob-3 {
+    0%, 100% {
+      transform: translate(0px, 0px) scale(1) rotate(0deg);
+    }
+    33% {
+      transform: translate(35px, 55px) scale(1.08) rotate(180deg);
+    }
+    66% {
+      transform: translate(-50px, -50px) scale(0.9) rotate(-180deg);
+    }
+  }
+}
+
+/* Custom base styles */
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background-color: #fafbfc;
+  color: #0f172a;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism custom styling utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 10px 40px -10px rgba(79, 70, 229, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.01),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 
+    0 20px 50px -12px rgba(79, 70, 229, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.01),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.text-gradient-purple {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #2563eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-blue {
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #4f46e5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Grid background visual overlay */
+.bg-grid-pattern {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(99, 102, 241, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.02) 1px, transparent 1px);
+}
+
+/* Hide scrollbar defaults */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom styling for inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.premium-input {
+  background-color: #ffffff;
+  border: 1px solid rgba(79, 70, 229, 0.16);
+  color: #0f172a;
+  outline: none;
+  box-shadow: 0 1.5px 3px rgba(79, 70, 229, 0.02);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-input:hover {
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+.premium-input:focus {
+  border-color: #4f46e5;
+  box-shadow: 
+    0 0 0 4px rgba(99, 102, 241, 0.1),
+    0 1.5px 3px rgba(79, 70, 229, 0.02);
+}
+
+.text-fluid-title {
+  font-size: clamp(1.125rem, 3.5vw, 1.5rem);
+}
+
+.text-fluid-heading {
+  font-size: clamp(1.5rem, 4.5vw, 2.125rem);
+}
+
+.text-fluid-body {
+  font-size: clamp(0.75rem, 2.2vw, 0.875rem);
+}
+
