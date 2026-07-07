@@ -1,8 +1,110 @@
+import { useState, useEffect } from 'react';
 import LoginForm from './components/LoginForm';
+import EmployeeApp from './components/employee/EmployeeApp';
+import AdminApp from './components/admin/AdminApp';
+import ManagerApp from './components/manager/ManagerApp';
+import { App as SuperownerApp } from './components/superowner/SuperownerApp';
+import { DashboardProvider } from './components/superowner/context/DashboardContext';
+import { api } from './services/api';
 
 export default function App() {
+  const [view, setView] = useState<'login' | 'superowner-login' | 'employee' | 'admin' | 'superowner' | 'manager'>('login');
+  const [loggedInEmail, setLoggedInEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadProfile = async () => {
+    try {
+      const token = localStorage.getItem('hrms_jwt_token');
+      if (token) {
+        const profile = await api.getProfile();
+        setLoggedInEmail(profile.email);
+        if (profile.role === 'Super Owner') {
+          setView('superowner');
+        } else if (profile.role === 'Company Admin' || profile.role === 'HR') {
+          setView('admin');
+        } else if (profile.role === 'Manager') {
+          setView('manager');
+        } else {
+          setView('employee');
+        }
+      } else {
+        const path = window.location.pathname;
+        const search = window.location.search;
+        if (path === '/superowner' || search.includes('superowner')) {
+          setView('superowner-login');
+        } else {
+          setView('login');
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load profile:", e);
+      localStorage.removeItem('hrms_jwt_token');
+      setView('login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const handleSuccessLogin = () => {
+    loadProfile();
+  };
+
+  const handleLogout = async () => {
+    await api.logout();
+    setLoggedInEmail('');
+    setView('login');
+    loadProfile();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#fafbfc] gap-4 font-sans">
+        <div className="h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <span className="text-xs text-slate-500 font-bold tracking-wider uppercase">Loading HRMS Workspace...</span>
+      </div>
+    );
+  }
+
+  if (view === 'employee') {
+    return (
+      <div className="dashboard-theme flex-grow min-h-screen flex flex-col">
+        <EmployeeApp loggedInEmail={loggedInEmail} onLogout={handleLogout} />
+      </div>
+    );
+  }
+
+  if (view === 'admin') {
+    return (
+      <div className="dashboard-theme flex-grow min-h-screen flex flex-col">
+        <AdminApp onLogout={handleLogout} />
+      </div>
+    );
+  }
+
+  if (view === 'manager') {
+    return (
+      <div className="dashboard-theme flex-grow min-h-screen flex flex-col">
+        <ManagerApp onLogout={handleLogout} />
+      </div>
+    );
+  }
+
+  if (view === 'superowner') {
+    return (
+      <DashboardProvider>
+        <div className="dashboard-theme flex-grow min-h-screen flex flex-col">
+          <SuperownerApp onLogout={handleLogout} />
+        </div>
+      </DashboardProvider>
+    );
+  }
+
   return (
-    <main className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-8 bg-[#fafbfc] text-slate-800 relative font-sans py-8 lg:py-12 overflow-y-auto">
+    <main className="h-screen w-full flex items-center justify-center p-2 sm:p-4 md:p-6 bg-[#fafbfc] text-slate-800 relative font-sans overflow-hidden">
       {/* Bounded background visual elements container to prevent unwanted scroll extensions */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         {/* Subtle global grid pattern overlay */}
@@ -20,7 +122,10 @@ export default function App() {
 
       {/* Main card centered on screen */}
       <div className="w-full max-w-[480px] sm:max-w-[540px] md:max-w-3xl lg:max-w-[960px] h-auto relative z-10 flex items-center justify-center mx-auto">
-        <LoginForm />
+        <LoginForm 
+          onSuccessLogin={handleSuccessLogin} 
+          isSuperownerMode={view === 'superowner-login'} 
+        />
       </div>
     </main>
   );

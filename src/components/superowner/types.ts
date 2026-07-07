@@ -1,0 +1,107 @@
+export interface Company {
+  id: string;
+  name: string;
+  logo: string;
+  ownerName: string;
+  email: string;
+  phone: string;
+  employeesCount: number;
+  subscriptionPlanId: string;
+  storageUsed: number; // in GB
+  status: 'active' | 'suspended' | 'trial' | 'expired';
+  createdDate: string;
+  modulesEnabled: Record<string, boolean>;
+  password?: string;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  billingCycle: 'monthly' | 'yearly';
+  trialDays: number;
+  employeeLimit: number;
+  storageLimit: number; // in GB
+  aiCreditsLimit: number;
+  features: {
+    payroll: boolean;
+    attendance: boolean;
+    recruitment: boolean;
+    faceRecognition: boolean;
+    gpsAttendance: boolean;
+    apiAccess: boolean;
+    whiteLabel: boolean;
+  };
+}
+
+export interface Payment {
+  id: string;
+  companyId: string;
+  companyName: string;
+  amount: number;
+  gateway: 'stripe' | 'razorpay' | 'paypal' | 'credit_card' | 'upi' | 'bank_transfer';
+  status: 'successful' | 'pending' | 'failed';
+  timestamp: string;
+  invoiceNumber: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Super Owner' | 'Company Admin' | 'HR' | 'Manager' | 'Employee';
+  status: 'active' | 'suspended';
+  companyName: string;
+  createdDate: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  discountType: 'percentage' | 'flat';
+  value: number; // percentage or flat amount
+  expiryDate: string;
+  usageLimit: number;
+  usageCount: number;
+  status: 'active' | 'inactive';
+}
+
+export interface TicketMessage {
+  id: string;
+  senderName: string;
+  senderRole: string;
+  content: string;
+  timestamp: string;
+  isAgent: boolean;
+}
+
+export interface SupportTicket {
+  id: string;
+  subject: string;
+  companyName: string;
+  requesterName: string;
+  requesterEmail: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'pending' | 'resolved';
+  createdDate: string;
+  messages: TicketMessage[];
+}
+
+export interface ActivityLog {
+  id: string;
+  action: string;
+  details: string;
+  timestamp: string;
+  category: 'company' | 'subscription' | 'payment' | 'user' | 'feature' | 'security' | 'settings';
+  actorName: string;
+}
+
+// Dummy runtime exports for Declaration Merging to satisfy Vite dev server imports
+export const Company = {};
+export const SubscriptionPlan = {};
+export const Payment = {};
+export const User = {};
+export const Coupon = {};
+export const TicketMessage = {};
+export const SupportTicket = {};
+export const ActivityLog = {};

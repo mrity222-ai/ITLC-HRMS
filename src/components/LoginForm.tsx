@@ -6,6 +6,7 @@ import {
   Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, Sparkles, 
   Building2, Phone, Check, Globe, MapPin 
 } from 'lucide-react';
+import { api } from '../services/api';
 
 const slides = [
   { id: 2, title: "HRMS Employee Hub", image: "/dashboards/hrms_employee.png" },
@@ -29,11 +30,14 @@ const FloatingInput = ({
   required?: boolean;
 }) => {
   const [focused, setFocused] = useState(false);
+  const active = focused || !!value;
   return (
     <div className="relative w-full">
-      <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 transition-colors duration-200 ${focused || value ? 'text-indigo-650' : 'text-slate-400'}`}>
-        <Icon className="w-4 h-4" />
-      </span>
+      {!active && (
+        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
+          <Icon className="w-4 h-4" />
+        </span>
+      )}
       <input
         id={id}
         type={type}
@@ -42,15 +46,16 @@ const FloatingInput = ({
         onChange={onChange}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className="w-full pl-10 pr-4 py-2.5 premium-input rounded-xl text-slate-900 text-xs peer placeholder-transparent focus:ring-4 focus:ring-indigo-500/10"
+        className="w-full pr-4 py-2.5 premium-input rounded-xl text-slate-900 text-xs peer placeholder-transparent focus:ring-4 focus:ring-indigo-500/10"
+        style={{ paddingLeft: active ? '12px' : '40px' }}
         placeholder={label}
       />
       <label
         htmlFor={id}
-        className={`absolute left-10 transition-all duration-200 pointer-events-none text-slate-400 text-xs select-none
-          ${focused || value 
+        className={`absolute transition-all duration-200 pointer-events-none text-slate-400 text-xs select-none
+          ${active 
             ? '-top-2 left-3 bg-white px-1.5 text-[9px] font-bold text-indigo-650 rounded shadow-sm border border-indigo-100' 
-            : 'top-3 text-xs'
+            : 'top-3 left-10 text-xs'
           }`}
       >
         {label} {required && '*'}
@@ -72,11 +77,14 @@ const FloatingPasswordInput = ({
   required?: boolean;
 }) => {
   const [focused, setFocused] = useState(false);
+  const active = focused || !!value;
   return (
     <div className="relative w-full">
-      <span className={`absolute inset-y-0 left-0 flex items-center pl-3.5 transition-colors duration-200 ${focused || value ? 'text-indigo-650' : 'text-slate-400'}`}>
-        <Lock className="w-4 h-4" />
-      </span>
+      {!active && (
+        <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
+          <Lock className="w-4 h-4" />
+        </span>
+      )}
       <input
         id={id}
         type={showPassword ? 'text' : 'password'}
@@ -85,15 +93,16 @@ const FloatingPasswordInput = ({
         onChange={onChange}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className="w-full pl-10 pr-10 py-2.5 premium-input rounded-xl text-slate-900 text-xs peer placeholder-transparent focus:ring-4 focus:ring-indigo-500/10"
+        className="w-full pr-10 py-2.5 premium-input rounded-xl text-slate-900 text-xs peer placeholder-transparent focus:ring-4 focus:ring-indigo-500/10"
+        style={{ paddingLeft: active ? '12px' : '40px' }}
         placeholder={label}
       />
       <label
         htmlFor={id}
-        className={`absolute left-10 transition-all duration-200 pointer-events-none text-slate-400 text-xs select-none
-          ${focused || value 
+        className={`absolute transition-all duration-200 pointer-events-none text-slate-400 text-xs select-none
+          ${active 
             ? '-top-2 left-3 bg-white px-1.5 text-[9px] font-bold text-indigo-650 rounded shadow-sm border border-indigo-100' 
-            : 'top-3 text-xs'
+            : 'top-3 left-10 text-xs'
           }`}
       >
         {label} {required && '*'}
@@ -109,8 +118,39 @@ const FloatingPasswordInput = ({
   );
 };
 
-export default function LoginForm() {
+export default function LoginForm({
+  onSuccessLogin,
+  isSuperownerMode = false
+}: {
+  onSuccessLogin?: (email: string, pass: string) => void;
+  isSuperownerMode?: boolean;
+}) {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [setupRequired, setSetupRequired] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1024px)');
+    setIsMobile(media.matches);
+    const listener = (e) => setIsMobile(e.matches);
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
+  }, []);
+
+  useEffect(() => {
+    const checkSetup = async () => {
+      try {
+        const check = await api.checkSuperOwner();
+        if (check.setupRequired) {
+          setSetupRequired(true);
+          setIsSignUp(true);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    checkSetup();
+  }, []);
   
   // Login States
   const [loginEmail, setLoginEmail] = useState('');
@@ -132,6 +172,16 @@ export default function LoginForm() {
   const [cityName, setCityName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [signUpStep, setSignUpStep] = useState(1);
+
+  // Focus States for Sign Up Inputs
+  const [focusCompanyName, setFocusCompanyName] = useState(false);
+  const [focusCompanyEmail, setFocusCompanyEmail] = useState(false);
+  const [focusCompanyPhone, setFocusCompanyPhone] = useState(false);
+  const [focusCompanyWebsite, setFocusCompanyWebsite] = useState(false);
+  const [focusAddress, setFocusAddress] = useState(false);
+  const [focusPassword, setFocusPassword] = useState(false);
+  const [focusConfirmPassword, setFocusConfirmPassword] = useState(false);
 
   // Status States
   const [isLoading, setIsLoading] = useState(false);
@@ -203,6 +253,20 @@ export default function LoginForm() {
     setCityName('');
     setPassword('');
     setConfirmPassword('');
+    setSignUpStep(1);
+  };
+
+  const handleNextStep = () => {
+    if (!companyName || !companyEmail || !companyPhone) {
+      setError('Please fill in all required (*) fields.');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(companyEmail)) {
+      setError('Please enter a valid company email address.');
+      return;
+    }
+    setError('');
+    setSignUpStep(2);
   };
 
   const handleToggleMode = (signUpMode: boolean) => {
@@ -212,7 +276,7 @@ export default function LoginForm() {
   };
 
   // Submit Login
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -226,28 +290,74 @@ export default function LoginForm() {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const result = await api.login({
+        email: loginEmail,
+        password: loginPassword
+      });
       setSuccess(true);
       setSuccessMsg('Welcome back! Successfully signed in. Redirecting to workspace...');
-    }, 1800);
+      setTimeout(() => {
+        setIsLoading(false);
+        if (onSuccessLogin) {
+          onSuccessLogin(loginEmail, loginPassword);
+        }
+      }, 800);
+    } catch (err: any) {
+      setIsLoading(false);
+      setError(err.message || 'Login failed. Please check your credentials.');
+    }
   };
 
   // Submit Registration
-  const handleSignUpSubmit = (e: React.FormEvent) => {
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
+    if (setupRequired) {
+      if (!companyName || !companyEmail || !companyPhone || !password || !confirmPassword) {
+        setError('Please fill in all required fields.');
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const result = await api.registerSuperOwner({
+          name: companyName,
+          email: companyEmail,
+          phone: companyPhone,
+          password: password
+        });
+        localStorage.setItem('hrms_jwt_token', result.token);
+        setSuccess(true);
+        setSuccessMsg('Super Owner account registered successfully! Redirecting...');
+        setTimeout(() => {
+          setIsLoading(false);
+          if (onSuccessLogin) {
+            onSuccessLogin(companyEmail, password);
+          }
+        }, 1500);
+      } catch (err: any) {
+        setIsLoading(false);
+        setError(err.message || 'Registration failed.');
+      }
+      return;
+    }
+
     if (!companyName || !companyEmail || !companyPhone || !country || !stateName || !cityName || !password || !confirmPassword) {
-      setError('Please fill in all required (*) fields.');
+      setError('Please fill in all fields.');
       return;
     }
     if (!/\S+@\S+\.\S+/.test(companyEmail)) {
       setError('Please enter a valid company email address.');
-      return;
-    }
-    if (companySize === 'Custom' && !customEmployeesCount) {
-      setError('Please enter your custom employee count.');
       return;
     }
     if (password.length < 6) {
@@ -260,11 +370,28 @@ export default function LoginForm() {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await api.registerCompany({
+        companyName,
+        companyEmail,
+        companyPhone,
+        password,
+        country,
+        stateName,
+        cityName,
+        ownerName: companyName + ' Owner'
+      });
       setSuccess(true);
-      setSuccessMsg(`Welcome! Your registration for ${companyName} has been successfully completed.`);
-    }, 1800);
+      setSuccessMsg(`Welcome! Your registration for ${companyName} has been successfully completed. You can now log in!`);
+      setTimeout(() => {
+        setIsLoading(false);
+        setIsSignUp(false);
+        setSuccess(false);
+      }, 2500);
+    } catch (err: any) {
+      setIsLoading(false);
+      setError(err.message || 'Registration failed.');
+    }
   };
 
   const handleSSOClick = (provider: 'google' | 'apple') => {
@@ -284,7 +411,7 @@ export default function LoginForm() {
 
   return (
     <div 
-      className="w-full max-w-[480px] lg:max-w-[960px] min-h-[580px] sm:min-h-[640px] lg:min-h-[720px] rounded-3xl glass-panel relative overflow-hidden flex flex-col group border-indigo-100 shadow-[0_20px_50px_-12px_rgba(79,70,229,0.06)] hover:shadow-[0_24px_60px_-10px_rgba(79,70,229,0.09)] transition-all duration-500"
+      className="w-full max-w-[480px] lg:max-w-[960px] h-auto lg:h-[580px] min-h-[520px] py-8 lg:py-0 rounded-3xl glass-panel relative overflow-hidden flex flex-col group border-indigo-100 shadow-[0_20px_50px_-12px_rgba(79,70,229,0.06)] hover:shadow-[0_24px_60px_-10px_rgba(79,70,229,0.09)] transition-all duration-500"
       style={{ perspective: "1500px", transformStyle: "preserve-3d" }}
     >
       <div className="absolute -top-24 -left-20 w-52 h-52 bg-gradient-to-tr from-indigo-500/10 to-violet-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -309,10 +436,10 @@ export default function LoginForm() {
           <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
         </motion.div>
       ) : (
-        <div className="flex-grow relative z-10 h-full min-h-[580px] sm:min-h-[640px] lg:min-h-[720px]">
+        <div className="flex-grow relative z-10 h-full">
           
           <motion.div
-            className="absolute inset-y-0 left-0 w-full lg:w-1/2 p-5 sm:p-8 lg:p-10 flex flex-col justify-center space-y-3.5 overflow-y-auto no-scrollbar"
+            className="absolute inset-y-0 left-0 w-full lg:w-1/2 p-4 sm:p-6 lg:p-8 flex flex-col justify-center space-y-2.5 overflow-y-auto no-scrollbar"
             animate={{
               opacity: isSignUp ? 0 : 1,
               x: isSignUp ? "-30px" : "0px",
@@ -320,15 +447,22 @@ export default function LoginForm() {
               pointerEvents: isSignUp ? "none" : "auto"
             }}
             transition={springTransition}
+            style={{ display: isMobile ? (isSignUp ? 'none' : 'flex') : 'flex' }}
           >
             <div>
-              <div className="absolute top-5 left-5 sm:top-8 sm:left-8 lg:top-10 lg:left-10 inline-flex items-center justify-center p-2.5 bg-gradient-to-tr from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl text-indigo-650 shadow-sm">
+              <div className="inline-flex items-center justify-center p-2.5 bg-gradient-to-tr from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl text-indigo-650 shadow-sm mb-3">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <h2 className="text-xl sm:text-2xl font-bold font-display text-slate-900 tracking-tight">
-                Welcome <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">back</span>
+                {isSuperownerMode ? (
+                  <>Superowner <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">Login</span></>
+                ) : (
+                  <>Welcome <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">back</span></>
+                )}
               </h2>
-              <p className="text-slate-400 text-xs mt-0.5">Enter your credentials to access your workspaces.</p>
+              <p className="text-slate-400 text-xs mt-0.5">
+                {isSuperownerMode ? "Enter credentials for Superowner Dashboard access." : "Enter your credentials to access your workspaces."}
+              </p>
             </div>
 
             {error && !isSignUp && (
@@ -435,7 +569,7 @@ export default function LoginForm() {
           </motion.div>
 
           <motion.div
-            className="absolute inset-y-0 left-0 lg:left-auto lg:right-0 w-full lg:w-1/2 p-5 sm:p-8 lg:p-10 flex flex-col justify-start space-y-4 overflow-y-auto no-scrollbar"
+            className="absolute inset-y-0 left-0 lg:left-auto lg:right-0 w-full lg:w-1/2 p-4 sm:p-6 lg:p-8 flex flex-col justify-center space-y-2.5 overflow-y-auto no-scrollbar"
             initial={{ opacity: 0 }}
             animate={{
               opacity: isSignUp ? 1 : 0,
@@ -444,15 +578,34 @@ export default function LoginForm() {
               pointerEvents: isSignUp ? "auto" : "none"
             }}
             transition={springTransition}
+            style={{ display: isMobile ? (isSignUp ? 'flex' : 'none') : 'flex' }}
           >
             <div>
-              <div className="inline-flex items-center justify-center p-2.5 bg-gradient-to-tr from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl mb-3 text-indigo-650 shadow-sm">
-                <Sparkles className="w-5 h-5 animate-pulse text-indigo-600" />
+              <div className="inline-flex items-center justify-center p-1.5 bg-gradient-to-tr from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl mb-1.5 text-indigo-655 shadow-sm">
+                <Sparkles className="w-4 h-4 animate-pulse text-indigo-600" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold font-display text-slate-900 tracking-tight">
-                Create <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">Account</span>
+              <h2 className="text-lg sm:text-xl font-bold font-display text-slate-900 tracking-tight">
+                {setupRequired ? (
+                  <>Setup <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">Super Owner</span></>
+                ) : (
+                  <>Create <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">Account</span></>
+                )}
               </h2>
-              <p className="text-slate-400 text-xs mt-0.5">Sign up today and get onboarded to the Apex Suite platform.</p>
+              <p className="text-slate-400 text-[11px] mt-0.5">
+                {setupRequired ? 'First-time setup detected. Configure the platform master administrator.' : 'Sign up today and get onboarded to the Apex Suite platform.'}
+              </p>
+            </div>
+
+            {/* Step progress bar */}
+            <div className="w-full flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-slate-450 select-none py-1">
+              <span className={signUpStep === 1 ? 'text-indigo-600' : ''}>1. Company</span>
+              <div className="flex-1 mx-2 h-1 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-indigo-600 transition-all duration-300" 
+                  style={{ width: signUpStep === 1 ? '50%' : '100%' }}
+                />
+              </div>
+              <span className={signUpStep === 2 ? 'text-indigo-600' : ''}>2. Location & Credentials</span>
             </div>
 
             {error && isSignUp && (
@@ -461,241 +614,300 @@ export default function LoginForm() {
               </div>
             )}
 
-            <form onSubmit={handleSignUpSubmit} className="space-y-3.5 mt-2">
-              <div className="space-y-3.5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Company Name *</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-500">
-                        <Building2 className="w-3.5 h-3.5" />
-                      </span>
-                      <input
-                        type="text"
-                        required
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
-                      />
+            <form onSubmit={handleSignUpSubmit} className="space-y-3 mt-1.5">
+              {signUpStep === 1 ? (
+                /* STEP 1 FIELDS */
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">{setupRequired ? 'Full Name *' : 'Company Name *'}</label>
+                      <div className="relative">
+                        {!(focusCompanyName || companyName) && (
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-500 pointer-events-none">
+                            <Building2 className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        <input
+                          type="text"
+                          required
+                          value={companyName}
+                          onFocus={() => setFocusCompanyName(true)}
+                          onBlur={() => setFocusCompanyName(false)}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          className="w-full pr-3 py-1.5 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
+                          style={{ paddingLeft: (focusCompanyName || companyName) ? '12px' : '36px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">{setupRequired ? 'Email Address *' : 'Company Email *'}</label>
+                      <div className="relative">
+                        {!(focusCompanyEmail || companyEmail) && (
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-500 pointer-events-none">
+                            <Mail className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        <input
+                          type="email"
+                          required
+                          value={companyEmail}
+                          onFocus={() => setFocusCompanyEmail(true)}
+                          onBlur={() => setFocusCompanyEmail(false)}
+                          onChange={(e) => setCompanyEmail(e.target.value)}
+                          className="w-full pr-3 py-1.5 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
+                          style={{ paddingLeft: (focusCompanyEmail || companyEmail) ? '12px' : '36px' }}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Company Email *</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-500">
-                        <Mail className="w-3.5 h-3.5" />
-                      </span>
-                      <input
-                        type="email"
-                        required
-                        value={companyEmail}
-                        onChange={(e) => setCompanyEmail(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
-                      />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">{setupRequired ? 'Mobile Number *' : 'Company Phone *'}</label>
+                      <div className="relative">
+                        {!(focusCompanyPhone || companyPhone) && (
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-500 pointer-events-none">
+                            <Phone className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        <input
+                          type="text"
+                          required
+                          value={companyPhone}
+                          onFocus={() => setFocusCompanyPhone(true)}
+                          onBlur={() => setFocusCompanyPhone(false)}
+                          onChange={(e) => setCompanyPhone(e.target.value)}
+                          className="w-full pr-3 py-1.5 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
+                          style={{ paddingLeft: (focusCompanyPhone || companyPhone) ? '12px' : '36px' }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Company Phone *</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-500">
-                        <Phone className="w-3.5 h-3.5" />
-                      </span>
-                      <input
-                        type="text"
-                        required
-                        value={companyPhone}
-                        onChange={(e) => setCompanyPhone(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Company Website</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-500">
-                        <Globe className="w-3.5 h-3.5" />
-                      </span>
-                      <input
-                        type="url"
-                        value={companyWebsite}
-                        onChange={(e) => setCompanyWebsite(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
-                        placeholder="https://example.com"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Industry Type</label>
-                    <select
-                      value={industryType}
-                      onChange={(e) => setIndustryType(e.target.value)}
-                      className="w-full px-2.5 py-2 premium-input rounded-xl text-slate-900 text-xs cursor-pointer focus:ring-4 focus:ring-indigo-500/10"
-                    >
-                      <option value="IT">IT & Software</option>
-                      <option value="Healthcare">Healthcare</option>
-                      <option value="Education">Education</option>
-                      <option value="Finance">Finance & Banking</option>
-                      <option value="Other">Other Services</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Company Size *</label>
-                    <select
-                      value={companySize}
-                      onChange={(e) => setCompanySize(e.target.value)}
-                      className="w-full px-2.5 py-2 premium-input rounded-xl text-slate-900 text-xs cursor-pointer focus:ring-4 focus:ring-indigo-500/10"
-                    >
-                      <option value="1-10 Employees">1-10 Employees</option>
-                      <option value="11-50 Employees">11-50 Employees</option>
-                      <option value="51-200 Employees">51-200 Employees</option>
-                      <option value="200+ Employees">200+ Employees</option>
-                      <option value="Custom">Custom</option>
-                    </select>
-                  </div>
-                </div>
-
-                {companySize === 'Custom' && (
-                  <div className="space-y-1 animate-fade-in">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Employee Count *</label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      value={customEmployeesCount}
-                      onChange={(e) => setCustomEmployeesCount(e.target.value)}
-                      className="w-full px-3 py-2 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
-                      placeholder="Enter custom employees count"
-                    />
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Full Address *</label>
-                    <div className="relative">
-                      <span className="absolute top-2.5 left-3 text-indigo-500">
-                        <MapPin className="w-3.5 h-3.5" />
-                      </span>
-                      <textarea
-                        rows={1}
-                        required
-                        value={fullAddress}
-                        onChange={(e) => setFullAddress(e.target.value)}
-                        className="w-full pl-9 pr-3 py-1.5 premium-input rounded-xl text-slate-900 text-xs resize-none focus:ring-4 focus:ring-indigo-500/10"
-                        placeholder="Street details..."
-                      />
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Company Website</label>
+                      <div className="relative">
+                        {!(focusCompanyWebsite || companyWebsite) && (
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-500 pointer-events-none">
+                            <Globe className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        <input
+                          type="url"
+                          value={companyWebsite}
+                          onFocus={() => setFocusCompanyWebsite(true)}
+                          onBlur={() => setFocusCompanyWebsite(false)}
+                          onChange={(e) => setCompanyWebsite(e.target.value)}
+                          className="w-full pr-3 py-1.5 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
+                          style={{ paddingLeft: (focusCompanyWebsite || companyWebsite) ? '12px' : '36px' }}
+                          placeholder="https://example.com"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Country *</label>
-                    <input
-                      type="text"
-                      required
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className="w-full px-3 py-2 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3.5">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">State *</label>
-                    <input
-                      type="text"
-                      required
-                      value={stateName}
-                      onChange={(e) => setStateName(e.target.value)}
-                      className="w-full px-3 py-2 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">City *</label>
-                    <input
-                      type="text"
-                      required
-                      value={cityName}
-                      onChange={(e) => setCityName(e.target.value)}
-                      className="w-full px-3 py-2 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Password *</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-indigo-500">
-                        <Lock className="w-3.5 h-3.5" />
-                      </span>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-9 pr-9 py-2 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-indigo-500 hover:text-indigo-700"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Industry Type</label>
+                      <select
+                        value={industryType}
+                        onChange={(e) => setIndustryType(e.target.value)}
+                        className="w-full px-2.5 py-1.5 premium-input rounded-xl text-slate-900 text-xs cursor-pointer focus:ring-4 focus:ring-indigo-500/10"
                       >
-                        {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
+                        <option value="IT">IT & Software</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Education">Education</option>
+                        <option value="Finance">Finance & Banking</option>
+                        <option value="Other">Other Services</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Company Size *</label>
+                      <select
+                        value={companySize}
+                        onChange={(e) => setCompanySize(e.target.value)}
+                        className="w-full px-2.5 py-1.5 premium-input rounded-xl text-slate-900 text-xs cursor-pointer focus:ring-4 focus:ring-indigo-500/10"
+                      >
+                        <option value="1-10 Employees">1-10 Employees</option>
+                        <option value="11-50 Employees">11-50 Employees</option>
+                        <option value="51-200 Employees">51-200 Employees</option>
+                        <option value="200+ Employees">200+ Employees</option>
+                        <option value="Custom">Custom</option>
+                      </select>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Confirm Password *</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-indigo-500">
-                        <Lock className="w-3.5 h-3.5" />
-                      </span>
+                  {companySize === 'Custom' && (
+                    <div className="space-y-0.5 animate-fade-in">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Employee Count *</label>
                       <input
-                        type={showPassword ? 'text' : 'password'}
+                        type="number"
+                        min="1"
                         required
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
+                        value={customEmployeesCount}
+                        onChange={(e) => setCustomEmployeesCount(e.target.value)}
+                        className="w-full px-3 py-1.5 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
+                        placeholder="Enter custom employees count"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2.5 pt-1.5">
+                    <button
+                      type="button"
+                      onClick={handleNextStep}
+                      className="flex-grow py-2 px-4 bg-gradient-to-r from-indigo-650 to-indigo-700 hover:from-indigo-600 hover:to-indigo-650 text-white font-semibold text-xs rounded-xl shadow-[0_3px_10px_rgba(79,70,229,0.18)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      Next Step
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleMode(false)}
+                      className="py-2 px-4 border border-indigo-200 hover:border-indigo-400 bg-white text-indigo-600 hover:bg-indigo-50/20 font-semibold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* STEP 2 FIELDS */
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Full Address *</label>
+                      <div className="relative">
+                        {!(focusAddress || fullAddress) && (
+                          <span className="absolute top-2 left-3 text-indigo-500 pointer-events-none">
+                            <MapPin className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        <textarea
+                          rows={1}
+                          required
+                          value={fullAddress}
+                          onFocus={() => setFocusAddress(true)}
+                          onBlur={() => setFocusAddress(false)}
+                          onChange={(e) => setFullAddress(e.target.value)}
+                          className="w-full pr-3 py-1 premium-input rounded-xl text-slate-900 text-xs resize-none focus:ring-4 focus:ring-indigo-500/10"
+                          style={{ paddingLeft: (focusAddress || fullAddress) ? '12px' : '36px' }}
+                          placeholder="Street details..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Country *</label>
+                      <input
+                        type="text"
+                        required
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        className="w-full px-3 py-1.5 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
                       />
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-3 mt-4">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 py-2.5 px-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs rounded-xl shadow-[0_4px_12px_rgba(79,70,229,0.22)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1"
-                >
-                  {isLoading ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      Create Account
-                      <Check className="w-3 h-3" />
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleToggleMode(false)}
-                  className="flex-1 py-2.5 px-3 border border-indigo-200 hover:border-indigo-400 bg-white text-indigo-600 hover:bg-indigo-50/30 font-semibold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
-                >
-                  Sign In
-                </button>
-              </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">State *</label>
+                      <input
+                        type="text"
+                        required
+                        value={stateName}
+                        onChange={(e) => setStateName(e.target.value)}
+                        className="w-full px-3 py-1.5 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
+                      />
+                    </div>
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">City *</label>
+                      <input
+                        type="text"
+                        required
+                        value={cityName}
+                        onChange={(e) => setCityName(e.target.value)}
+                        className="w-full px-3 py-1.5 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Password *</label>
+                      <div className="relative">
+                        {!(focusPassword || password) && (
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-indigo-500 pointer-events-none">
+                            <Lock className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          value={password}
+                          onFocus={() => setFocusPassword(true)}
+                          onBlur={() => setFocusPassword(false)}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full pr-9 py-1.5 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
+                          style={{ paddingLeft: (focusPassword || password) ? '14px' : '38px' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-indigo-500 hover:text-indigo-700"
+                        >
+                          {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Confirm Password *</label>
+                      <div className="relative">
+                        {!(focusConfirmPassword || confirmPassword) && (
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-indigo-500 pointer-events-none">
+                            <Lock className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          value={confirmPassword}
+                          onFocus={() => setFocusConfirmPassword(true)}
+                          onBlur={() => setFocusConfirmPassword(false)}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full pr-3 py-1.5 premium-input rounded-xl text-slate-900 text-xs focus:ring-4 focus:ring-indigo-500/10"
+                          style={{ paddingLeft: (focusConfirmPassword || confirmPassword) ? '14px' : '38px' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 pt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSignUpStep(1)}
+                      className="py-2 px-3 border border-slate-200 hover:border-slate-400 bg-white text-slate-600 font-semibold text-xs rounded-xl transition-all cursor-pointer"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-grow py-2 px-4 bg-gradient-to-r from-indigo-650 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs rounded-xl shadow-[0_3px_10px_rgba(79,70,229,0.18)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      {isLoading ? (
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          {setupRequired ? 'Initialize Platform' : 'Create Account'}
+                          <Check className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </form>
 
 
