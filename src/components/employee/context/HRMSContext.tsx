@@ -38,6 +38,8 @@ export interface AttendanceCorrection {
   requestedCheckOut: string;
   reason: string;
   status: "Pending" | "Approved" | "Rejected";
+  type?: "Missing Punch" | "Correction" | "Shift Change" | "Overtime";
+  managerComment?: string;
 }
 
 export interface LeaveRequest {
@@ -52,6 +54,9 @@ export interface LeaveRequest {
   appliedDate: string;
   totalDays: number;
   currentStep: number; // 1: Submitted, 2: Manager, 3: HR, 4: Final
+  attachment?: string;
+  managerStatus?: "Pending" | "Approved" | "Rejected";
+  managerComment?: string;
 }
 
 export interface Payslip {
