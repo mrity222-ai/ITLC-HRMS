@@ -35,9 +35,11 @@ export const AttendanceManagement: React.FC = () => {
     setActiveSubTab: setGlobalSubTab,
   } = useHRMS();
 
-  const activeSubTab = ["attendance-punch", "attendance-calendar", "attendance-history"].includes(globalSubTab)
-    ? globalSubTab
-    : "attendance-punch";
+  const activeSubTab = globalSubTab === "att-tracker"
+    ? "attendance-punch"
+    : ["attendance-punch", "attendance-calendar", "attendance-history", "att-regularize", "att-overtime"].includes(globalSubTab)
+      ? globalSubTab
+      : "attendance-punch";
 
   const setActiveSubTab = (tabId: string) => setGlobalSubTab(tabId);
 
@@ -145,31 +147,33 @@ export const AttendanceManagement: React.FC = () => {
     <div className="space-y-6">
       
       {/* Tabs navigation */}
-      <div className="flex bg-card p-1 rounded-xl border border-border overflow-x-auto space-x-1 shrink-0 scrollbar-none print:hidden">
-        {[
-          { id: "attendance-punch", label: "Check In / Out", icon: Clock },
-          { id: "attendance-calendar", label: "Attendance Calendar", icon: CalendarDays },
-          { id: "attendance-history", label: "Attendance History", icon: SlidersHorizontal },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeSubTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveSubTab(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer transition-all",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-xs font-bold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {["attendance-punch", "attendance-calendar", "attendance-history"].includes(activeSubTab) && (
+        <div className="flex bg-card p-1 rounded-xl border border-border overflow-x-auto space-x-1 shrink-0 scrollbar-none print:hidden">
+          {[
+            { id: "attendance-punch", label: "Check In / Out", icon: Clock },
+            { id: "attendance-calendar", label: "Attendance Calendar", icon: CalendarDays },
+            { id: "attendance-history", label: "Attendance History", icon: SlidersHorizontal },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeSubTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSubTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer transition-all",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* RENDER PUNCH PANEL VIEW */}
       {activeSubTab === "attendance-punch" && (
@@ -412,9 +416,160 @@ export const AttendanceManagement: React.FC = () => {
         </Card>
       )}
 
+        </Card>
+      )}
+
+      {/* RENDER REGULARIZATION PANEL VIEW */}
+      {activeSubTab === "att-regularize" && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Header */}
+          <div className="p-5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl border border-primary/10 flex justify-between items-center gap-4">
+            <div>
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                <FileEdit className="h-4.5 w-4.5 text-primary" /> Attendance Regularization Requests
+              </h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Request correction for missing punches or incorrect check-in/out logs
+              </p>
+            </div>
+            <Button size="sm" variant="primary" onClick={() => setIsCorrOpen(true)}>
+              New Request
+            </Button>
+          </div>
+
+          {/* Table list */}
+          <Card className="p-0 overflow-hidden border border-border">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
+                    <th className="p-3">ID</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Classification</th>
+                    <th className="p-3">Requested In</th>
+                    <th className="p-3">Requested Out</th>
+                    <th className="p-3">Reason</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Manager Comment</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {attendanceCorrections.filter(c => c.type !== 'Overtime').length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="p-6 text-center text-muted-foreground">
+                        No regularization requests submitted yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    attendanceCorrections.filter(c => c.type !== 'Overtime').map(corr => (
+                      <tr key={corr.id} className="hover:bg-secondary/15 font-semibold">
+                        <td className="p-3 font-mono font-bold text-primary">{corr.id}</td>
+                        <td className="p-3 font-mono">{corr.date}</td>
+                        <td className="p-3">
+                          <Badge variant="info" className="text-[9px]">{corr.type || 'Correction'}</Badge>
+                        </td>
+                        <td className="p-3 font-mono">{corr.requestedCheckIn || 'N/A'}</td>
+                        <td className="p-3 font-mono">{corr.requestedCheckOut || 'N/A'}</td>
+                        <td className="p-3">{corr.reason}</td>
+                        <td className="p-3">
+                          <Badge variant={corr.status === 'Approved' ? 'success' : corr.status === 'Pending' ? 'warning' : 'danger'}>
+                            {corr.status}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-muted-foreground">{corr.managerComment || 'No comment yet'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* RENDER OVERTIME PANEL VIEW */}
+      {activeSubTab === "att-overtime" && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Header */}
+          <div className="p-5 bg-gradient-to-r from-warning/10 via-warning/5 to-transparent rounded-2xl border border-warning/10 flex justify-between items-center gap-4">
+            <div>
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                <Clock className="h-4.5 w-4.5 text-warning" /> Overtime Logging
+              </h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Log and track extra working hours for manager validation and billing
+              </p>
+            </div>
+            <Button size="sm" variant="primary" onClick={() => {
+              setCorrDate(new Date().toISOString().split('T')[0]);
+              setCorrIn("18:00:00");
+              setCorrOut("21:00:00");
+              setIsCorrOpen(true);
+            }}>
+              Log Overtime
+            </Button>
+          </div>
+
+          {/* Table list */}
+          <Card className="p-0 overflow-hidden border border-border">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
+                    <th className="p-3">ID</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Hours Logged</th>
+                    <th className="p-3">Reason / Project</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Manager Comment</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {attendanceCorrections.filter(c => c.type === 'Overtime').length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                        No overtime hours logged yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    attendanceCorrections.filter(c => c.type === 'Overtime').map(corr => (
+                      <tr key={corr.id} className="hover:bg-secondary/15 font-semibold">
+                        <td className="p-3 font-mono font-bold text-primary">{corr.id}</td>
+                        <td className="p-3 font-mono">{corr.date}</td>
+                        <td className="p-3 font-mono">{corr.requestedCheckIn} to {corr.requestedCheckOut}</td>
+                        <td className="p-3">{corr.reason}</td>
+                        <td className="p-3">
+                          <Badge variant={corr.status === 'Approved' ? 'success' : corr.status === 'Pending' ? 'warning' : 'danger'}>
+                            {corr.status}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-muted-foreground">{corr.managerComment || 'No comment yet'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Attendance Correction Modal */}
-      <Modal isOpen={isCorrOpen} onClose={() => setIsCorrOpen(false)} title="Submit Attendance Correction">
-        <form onSubmit={handleCorrectionSubmit} className="space-y-4">
+      <Modal isOpen={isCorrOpen} onClose={() => setIsCorrOpen(false)} title={activeSubTab === "att-overtime" ? "Log Overtime Hours" : "Submit Attendance Correction"}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          if (!corrDate || !corrIn || !corrOut || !corrReason) return;
+          const reqType = activeSubTab === "att-overtime" ? "Overtime" : "Correction";
+          requestCorrection({
+            date: corrDate,
+            type: reqType as any,
+            requestedCheckIn: corrIn,
+            requestedCheckOut: corrOut,
+            reason: corrReason,
+          });
+          setIsCorrOpen(false);
+          setCorrReason("");
+        }} className="space-y-4">
           
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">Select Date</label>
@@ -429,7 +584,7 @@ export const AttendanceManagement: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Requested Check-In (HH:MM:SS)</label>
+              <label className="text-xs font-medium text-muted-foreground">{activeSubTab === "att-overtime" ? "Overtime Start (HH:MM:SS)" : "Requested Check-In (HH:MM:SS)"}</label>
               <input
                 type="text"
                 value={corrIn}
@@ -441,7 +596,7 @@ export const AttendanceManagement: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Requested Check-Out (HH:MM:SS)</label>
+              <label className="text-xs font-medium text-muted-foreground">{activeSubTab === "att-overtime" ? "Overtime End (HH:MM:SS)" : "Requested Check-Out (HH:MM:SS)"}</label>
               <input
                 type="text"
                 value={corrOut}
@@ -454,11 +609,11 @@ export const AttendanceManagement: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">Reason for Correction</label>
+            <label className="text-xs font-medium text-muted-foreground">{activeSubTab === "att-overtime" ? "Justification / Project details" : "Reason for Correction"}</label>
             <textarea
               value={corrReason}
               onChange={(e) => setCorrReason(e.target.value)}
-              placeholder="Provide a detailed explanation of why the correction is needed..."
+              placeholder={activeSubTab === "att-overtime" ? "Enter project name or work done during overtime..." : "Provide a detailed explanation of why the correction is needed..."}
               required
               rows={3}
               className="px-3 py-2 text-xs md:text-sm rounded-lg border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"

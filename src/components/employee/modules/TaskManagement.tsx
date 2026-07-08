@@ -151,6 +151,12 @@ export const TaskManagement: React.FC = () => {
                 {task.description}
               </p>
 
+              {task.attachments && (
+                <div className="relative rounded-lg overflow-hidden border border-border/60 max-h-48 bg-secondary/10 flex items-center justify-center">
+                  <img src={task.attachments} alt="Task photo" className="object-contain max-h-48 w-full" />
+                </div>
+              )}
+
               {/* Attributes line */}
               <div className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] text-muted-foreground border-t border-border pt-3">
                 <span className="flex items-center gap-1">
@@ -164,35 +170,68 @@ export const TaskManagement: React.FC = () => {
                 </span>
               </div>
 
-              {/* Status Update Actions */}
-              <div className="flex gap-2 pt-2 border-t border-border/40 justify-end">
-                {task.status !== "In Progress" && task.status !== "Completed" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleStatusChange(task.id, "In Progress")}
-                  >
-                    Start Work
-                  </Button>
-                )}
-                {task.status !== "Completed" && (
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => handleStatusChange(task.id, "Completed")}
-                  >
-                    Mark Done
-                  </Button>
-                )}
-                {task.status !== "Blocked" && task.status !== "Completed" && (
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => handleStatusChange(task.id, "Blocked")}
-                  >
-                    Report Blocked
-                  </Button>
-                )}
+              {/* Status Update Actions & Upload */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-border/40 justify-between items-center">
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id={`file-task-${task.id}`}
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = async () => {
+                          if (typeof reader.result === 'string') {
+                            try {
+                              const base64Data = reader.result;
+                              await api.updateEmployeeTask(task.id, { attachments: base64Data });
+                              setTasks(prev => prev.map(t => t.id === task.id ? { ...t, attachments: base64Data } : t));
+                              alert("Task photo uploaded successfully!");
+                            } catch (err) {
+                              alert("Failed to upload task photo");
+                            }
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  <label htmlFor={`file-task-${task.id}`} className="px-2.5 py-1.5 border border-dashed border-border rounded-lg bg-secondary/20 hover:bg-secondary/40 text-[10px] text-muted-foreground cursor-pointer flex items-center gap-1">
+                    <span>📷 Upload Photo</span>
+                  </label>
+                </div>
+
+                <div className="flex gap-2">
+                  {task.status !== "In Progress" && task.status !== "Completed" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleStatusChange(task.id, "In Progress")}
+                    >
+                      Start Work
+                    </Button>
+                  )}
+                  {task.status !== "Completed" && (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => handleStatusChange(task.id, "Completed")}
+                    >
+                      Mark Done
+                    </Button>
+                  )}
+                  {task.status !== "Blocked" && task.status !== "Completed" && (
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleStatusChange(task.id, "Blocked")}
+                    >
+                      Report Blocked
+                    </Button>
+                  )}
+                </div>
               </div>
             </Card>
           ))}

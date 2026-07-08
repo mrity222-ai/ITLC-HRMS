@@ -1179,43 +1179,46 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 10 }}>
-                        {(selectedProfile.documents || [
-                          'Profile_Photo.jpg',
-                          'Aadhaar_Card.pdf',
-                          'PAN_Card.pdf',
-                          'Experience_Letter.pdf',
-                          'Bank_Passbook.pdf',
-                          'Cancelled_Cheque.pdf',
-                          'Offer_Letter.pdf',
-                          'Appointment_Letter.pdf'
-                        ]).map((doc, idx) => (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(0,0,0,0.01)' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{doc.replace(/_/g, ' ')}</span>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <button 
-                                onClick={() => setActiveDocPreview(doc)} 
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 700 }}
-                              >
-                                View
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  const updatedDocs = (selectedProfile.documents || []).filter(d => d !== doc);
-                                  setSelectedProfile({ ...selectedProfile, documents: updatedDocs });
-                                  setEmployees(employees.map(emp => 
-                                    emp.id === selectedProfile.id 
-                                      ? { ...emp, documents: updatedDocs }
-                                      : emp
-                                  ));
-                                  alert(`Document "${doc}" removed successfully!`);
-                                }} 
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-danger)', fontSize: '0.75rem', fontWeight: 700 }}
-                              >
-                                Delete
-                              </button>
+                        {(selectedProfile.documents && selectedProfile.documents.length > 0 ? selectedProfile.documents : [
+                          { name: 'Profile Photo', fileData: '', fileName: 'Profile_Photo.jpg' },
+                          { name: 'Aadhaar Card', fileData: '', fileName: 'Aadhaar_Card.pdf' },
+                          { name: 'PAN Card', fileData: '', fileName: 'PAN_Card.pdf' },
+                          { name: 'Experience Letter', fileData: '', fileName: 'Experience_Letter.pdf' },
+                          { name: 'Bank Passbook', fileData: '', fileName: 'Bank_Passbook.pdf' },
+                          { name: 'Cancelled Cheque', fileData: '', fileName: 'Cancelled_Cheque.pdf' },
+                          { name: 'Offer Letter', fileData: '', fileName: 'Offer_Letter.pdf' },
+                          { name: 'Appointment Letter', fileData: '', fileName: 'Appointment_Letter.pdf' }
+                        ]).map((doc, idx) => {
+                          const docName = doc.name || (typeof doc === 'string' ? doc.replace(/_/g, ' ') : 'KYC Document');
+                          return (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(0,0,0,0.01)' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{docName}</span>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button 
+                                  onClick={() => setActiveDocPreview(doc)} 
+                                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 700 }}
+                                >
+                                  View
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    const updatedDocs = (selectedProfile.documents || []).filter(d => (d.id ? d.id !== doc.id : d !== doc));
+                                    setSelectedProfile({ ...selectedProfile, documents: updatedDocs });
+                                    setEmployees(employees.map(emp => 
+                                      emp.id === selectedProfile.id 
+                                        ? { ...emp, documents: updatedDocs }
+                                        : emp
+                                    ));
+                                    alert(`Document "${docName}" removed successfully!`);
+                                  }} 
+                                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-danger)', fontSize: '0.75rem', fontWeight: 700 }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </motion.div>
                   )}
@@ -1397,13 +1400,13 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                 <FileText size={28} style={{ color: 'var(--color-primary)' }} />
                 <div>
                   <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>Document Preview Console</h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>File: {activeDocPreview}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>File: {activeDocPreview.fileName || (typeof activeDocPreview === 'string' ? activeDocPreview : 'KYC Document')}</span>
                 </div>
               </div>
 
-              {/* Scanned Certificate Canvas mockup */}
+              {/* Scanned Certificate Canvas mockup / Real base64 preview */}
               <div style={{
-                height: 320,
+                height: 360,
                 border: '2px dashed var(--color-border)',
                 borderRadius: 14,
                 background: 'rgba(0,0,0,0.01)',
@@ -1412,39 +1415,56 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
-                padding: 24,
-                textAlign: 'center'
+                padding: 12,
+                textAlign: 'center',
+                overflow: 'hidden'
               }}>
-                {/* Verified Watermark */}
-                <div style={{
-                  position: 'absolute',
-                  fontSize: '3rem',
-                  fontWeight: 900,
-                  color: 'rgba(16, 185, 129, 0.08)',
-                  transform: 'rotate(-25deg)',
-                  pointerEvents: 'none',
-                  textTransform: 'uppercase',
-                  letterSpacing: 4
-                }}>
-                  Verified HR Admin
-                </div>
+                {activeDocPreview.fileData ? (
+                  activeDocPreview.fileData.startsWith('data:image/') ? (
+                    <img src={activeDocPreview.fileData} alt="Document preview" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+                  ) : (
+                    <iframe src={activeDocPreview.fileData} title="PDF Preview" style={{ width: '100%', height: '100%', border: 'none' }} />
+                  )
+                ) : (
+                  <>
+                    {/* Verified Watermark */}
+                    <div style={{
+                      position: 'absolute',
+                      fontSize: '3rem',
+                      fontWeight: 900,
+                      color: 'rgba(16, 185, 129, 0.08)',
+                      transform: 'rotate(-25deg)',
+                      pointerEvents: 'none',
+                      textTransform: 'uppercase',
+                      letterSpacing: 4
+                    }}>
+                      Verified HR Admin
+                    </div>
 
-                <div style={{ zIndex: 2 }}>
-                  <ShieldCheck size={48} style={{ color: 'var(--color-success)', marginBottom: 12 }} />
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>{activeDocPreview.replace(/_/g, ' ').replace(/\.[^/.]+$/, "")}</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 6, maxWidth: 300, lineHeight: 1.4 }}>
-                    This official certificate is scanned, encrypted, and locked in the secure database. Audit verification completed by HR Super Admin.
-                  </p>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', display: 'block', marginTop: 10 }}>
-                    SHA-256 Hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-                  </span>
-                </div>
+                    <div style={{ zIndex: 2 }}>
+                      <ShieldCheck size={48} style={{ color: 'var(--color-success)', marginBottom: 12 }} />
+                      <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>{(activeDocPreview.name || (typeof activeDocPreview === 'string' ? activeDocPreview : 'Document')).replace(/_/g, ' ').replace(/\.[^/.]+$/, "")}</h4>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 6, maxWidth: 300, lineHeight: 1.4 }}>
+                        This official certificate is scanned, encrypted, and locked in the secure database. Audit verification completed by HR Super Admin.
+                      </p>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', display: 'block', marginTop: 10 }}>
+                        SHA-256 Hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: 14 }}>
-                <button onClick={() => alert("Downloading digital copy...")} className="premium-btn premium-btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
-                  Download Copy
-                </button>
+                {activeDocPreview.fileData ? (
+                  <a href={activeDocPreview.fileData} download={activeDocPreview.fileName || 'document.png'} className="premium-btn premium-btn-secondary" style={{ flex: 1, justifyContent: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                    Download Copy
+                  </a>
+                ) : (
+                  <button onClick={() => alert("Downloading digital copy...")} className="premium-btn premium-btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
+                    Download Copy
+                  </button>
+                )}
                 <button onClick={() => setActiveDocPreview(null)} className="premium-btn premium-btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
                   Close Preview
                 </button>

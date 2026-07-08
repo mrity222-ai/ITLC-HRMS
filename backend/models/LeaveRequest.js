@@ -13,6 +13,7 @@ const LeaveRequest = sequelize.define('LeaveRequest', {
   status: { type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Cancelled'), defaultValue: 'Pending' },
   appliedDate: { type: DataTypes.STRING, field: 'applied_date' },
   totalDays: { type: DataTypes.INTEGER, field: 'total_days', allowNull: false },
+  attachment: { type: DataTypes.TEXT('long'), defaultValue: '' },
   managerStatus: { type: DataTypes.ENUM('Pending', 'Approved', 'Rejected'), defaultValue: 'Pending', field: 'manager_status' },
   managerComment: { type: DataTypes.TEXT, allowNull: true, field: 'manager_comment' }
 }, {

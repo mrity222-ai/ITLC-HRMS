@@ -14,8 +14,13 @@ export default function CompanySettings() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // Admin Profile states
+  const [adminName, setAdminName] = useState('');
+  const [adminPhone, setAdminPhone] = useState('');
+  const [adminAvatar, setAdminAvatar] = useState('');
+
   useEffect(() => {
-    const fetchCompanyDetails = async () => {
+    const fetchDetails = async () => {
       try {
         const details = await api.getAdminCompany();
         if (details) {
@@ -29,8 +34,19 @@ export default function CompanySettings() {
       } catch (err) {
         console.error('Failed to load company details:', err);
       }
+
+      try {
+        const profile = await api.getProfile();
+        if (profile) {
+          setAdminName(profile.name || '');
+          setAdminPhone(profile.phone || '');
+          setAdminAvatar(profile.avatar || '');
+        }
+      } catch (err) {
+        console.error('Failed to load admin profile:', err);
+      }
     };
-    fetchCompanyDetails();
+    fetchDetails();
   }, []);
 
   const handleSave = async (e) => {
@@ -53,6 +69,24 @@ export default function CompanySettings() {
       }, 1000);
     } catch (err) {
       alert(err.message || 'Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveAdminProfile = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.updateProfile({
+        name: adminName,
+        phone: adminPhone,
+        avatar: adminAvatar
+      });
+      alert('Profile updated successfully! Refreshing workspace...');
+      window.location.reload();
+    } catch (err) {
+      alert(err.message || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -142,6 +176,82 @@ export default function CompanySettings() {
               placeholder="Entity address details"
             />
           </div>
+        </div>
+
+        {/* Admin Profile Settings */}
+        <div className="premium-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Globe size={18} style={{ color: 'var(--color-primary)' }} />
+            <span>My Profile Settings</span>
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <div style={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: '#f1f5f9',
+              border: '1px solid #cbd5e1',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden'
+            }}>
+              {adminAvatar ? (
+                <img src={adminAvatar} alt="Admin avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#64748b' }}>A</span>
+              )}
+            </div>
+            <input 
+              type="file" 
+              accept="image/*" 
+              id="admin-avatar-file" 
+              style={{ display: 'none' }} 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    if (typeof reader.result === 'string') {
+                      setAdminAvatar(reader.result);
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+            />
+            <label htmlFor="admin-avatar-file" style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--color-primary)', cursor: 'pointer' }}>
+              📷 Upload Photo
+            </label>
+          </div>
+
+          <div className="premium-form-group">
+            <label className="premium-label">Admin Name</label>
+            <input 
+              type="text" 
+              required
+              value={adminName} 
+              onChange={(e) => setAdminName(e.target.value)} 
+              className="premium-input" 
+              placeholder="e.g. Administrator"
+            />
+          </div>
+
+          <div className="premium-form-group">
+            <label className="premium-label">Admin Phone</label>
+            <input 
+              type="text" 
+              value={adminPhone} 
+              onChange={(e) => setAdminPhone(e.target.value)} 
+              className="premium-input" 
+              placeholder="Admin phone number"
+            />
+          </div>
+
+          <button type="button" onClick={handleSaveAdminProfile} className="premium-btn premium-btn-primary" style={{ padding: '10px 20px', width: '100%', justifyContent: 'center' }}>
+            <span>Save My Profile</span>
+          </button>
         </div>
 
         {/* Gateways & Integrations Config */}

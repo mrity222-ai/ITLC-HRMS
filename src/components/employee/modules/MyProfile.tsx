@@ -279,17 +279,21 @@ export const MyProfile: React.FC = () => {
   const [activeDocUploadId, setActiveDocUploadId] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("hrms_profile_vault_docs");
-    if (saved) {
-      try {
-        setDocumentsVault(JSON.parse(saved));
-      } catch (e) {
+    if (profile.documents && profile.documents.length > 0) {
+      setDocumentsVault(profile.documents);
+    } else {
+      const saved = localStorage.getItem("hrms_profile_vault_docs");
+      if (saved) {
+        try {
+          setDocumentsVault(JSON.parse(saved));
+        } catch (e) {
+          setDocumentsVault(DEFAULT_DOCUMENTS);
+        }
+      } else {
         setDocumentsVault(DEFAULT_DOCUMENTS);
       }
-    } else {
-      setDocumentsVault(DEFAULT_DOCUMENTS);
     }
-  }, []);
+  }, [profile.documents]);
 
   useEffect(() => {
     if (globalSubTab) {
@@ -305,6 +309,7 @@ export const MyProfile: React.FC = () => {
   const saveDocs = (newDocs: ProfileDoc[]) => {
     setDocumentsVault(newDocs);
     localStorage.setItem("hrms_profile_vault_docs", JSON.stringify(newDocs));
+    updateProfile({ documents: newDocs });
   };
 
   // Trigger file upload dialog for main avatar

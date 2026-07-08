@@ -5,6 +5,7 @@ const LeaveRequest = require('../models/LeaveRequest');
 const ExpenseClaim = require('../models/ExpenseClaim');
 const SupportTicket = require('../models/SupportTicket');
 const Company = require('../models/Company');
+const CorrectionRequest = require('../models/CorrectionRequest');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 
@@ -20,7 +21,7 @@ router.get('/leaves', auth(['Employee', 'Manager', 'HR', 'Company Admin']), asyn
 
 // Apply Leave
 router.post('/leaves', auth(['Employee', 'Manager', 'HR', 'Company Admin']), async (req, res) => {
-  const { type, fromDate, toDate, reason, totalDays } = req.body;
+  const { type, fromDate, toDate, reason, totalDays, attachment } = req.body;
   try {
     const user = await Employee.findByPk(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -36,7 +37,8 @@ router.post('/leaves', auth(['Employee', 'Manager', 'HR', 'Company Admin']), asy
       reason,
       status: 'Pending',
       appliedDate: new Date().toISOString().split('T')[0],
-      totalDays: Number(totalDays) || 1
+      totalDays: Number(totalDays) || 1,
+      attachment: attachment || ''
     });
     res.json(newLeave);
   } catch (err) {
@@ -237,6 +239,59 @@ router.put('/tasks/:id/status', auth(['Employee', 'Manager', 'HR', 'Company Admi
     task.status = status;
     await task.save();
     res.json(task);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update task details (status and/or attachments) of assigned task
+router.put('/tasks/:id', auth(['Employee', 'Manager', 'HR', 'Company Admin']), async (req, res) => {
+  const { status, attachments } = req.body;
+  try {
+    const task = await Task.findOne({ where: { id: req.params.id, assignedTo: req.user.id } });
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found or not assigned to you' });
+    }
+    if (status !== undefined) task.status = status;
+    if (attachments !== undefined) task.attachments = attachments;
+    await task.save();
+    res.json(task);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all regularization / overtime requests of logged-in employee
+router.get('/corrections', auth(['Employee', 'Manager', 'HR', 'Company Admin']), async (req, res) => {
+  try {
+    const list = await CorrectionRequest.findAll({ where: { employeeId: req.user.id } });
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Apply for a regularization / overtime request
+router.post('/corrections', auth(['Employee', 'Manager', 'HR', 'Company Admin']), async (req, res) => {
+  const { date, type, requestedCheckIn, requestedCheckOut, reason, attendanceId } = req.body;
+  try {
+    const user = await Employee.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const newRequest = await CorrectionRequest.create({
+      id: `corr_${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+      companyId: user.companyId,
+      employeeId: user.id,
+      employeeName: user.name,
+      attendanceId: attendanceId || null,
+      date,
+      type: type || 'Correction',
+      requestedCheckIn: requestedCheckIn || '',
+      requestedCheckOut: requestedCheckOut || '',
+      reason,
+      status: 'Pending'
+    });
+    res.json(newRequest);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

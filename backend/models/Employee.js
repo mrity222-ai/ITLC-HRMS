@@ -13,6 +13,7 @@ const Employee = sequelize.define('Employee', {
   salary: { type: DataTypes.STRING },
   phone: { type: DataTypes.STRING },
   avatar: { type: DataTypes.STRING, defaultValue: '' },
+  documents: { type: DataTypes.TEXT('long'), defaultValue: '[]' },
   status: { type: DataTypes.ENUM('Active', 'On Leave', 'Suspended'), defaultValue: 'Active' },
   dob: { type: DataTypes.STRING },
   gender: { type: DataTypes.STRING },

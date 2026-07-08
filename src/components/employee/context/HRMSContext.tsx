@@ -19,6 +19,7 @@ export interface EmployeeProfile {
   reportingManager: string;
   employmentType: string;
   companyName?: string;
+  documents?: any[];
 }
 
 export interface AttendanceRecord {
@@ -219,6 +220,7 @@ const defaultProfile: EmployeeProfile = {
   designation: "Senior Software Engineer",
   reportingManager: "Sarah Jenkins (Director of Engineering)",
   employmentType: "Full-Time Permanent",
+  documents: [],
 };
 
 const defaultAttendanceHistory: AttendanceRecord[] = [];
@@ -301,7 +303,8 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
           designation: prof.role,
           reportingManager: prof.reportingManager || "None",
           employmentType: "Full-Time Permanent",
-          companyName: prof.companyName || "ITLC HRMS"
+          companyName: prof.companyName || "ITLC HRMS",
+          documents: prof.documents || []
         });
 
         // Load Leaves
@@ -312,12 +315,13 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
           fromDate: l.fromDate,
           toDate: l.toDate,
           reason: l.reason,
-          attachmentName: null,
+          attachmentName: l.attachment ? 'attachment' : null,
+          attachment: l.attachment || '',
           status: l.status,
           isHalfDay: false,
           appliedDate: l.appliedDate,
           totalDays: l.totalDays,
-          currentStep: l.status === 'Approved' ? 4 : l.status === 'Rejected' ? 4 : 1
+          currentStep: l.status === 'Approved' ? 4 : l.status === 'Rejected' ? 4 : (l.managerStatus === 'Approved' ? 3 : 2)
         }));
         setLeaveRequests(mappedLeaves);
 
@@ -355,6 +359,26 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
           }
         } catch (e) {
           console.error("Failed to load attendance history from DB:", e);
+        }
+
+        // Load Corrections
+        try {
+          const corrList = await api.getEmployeeCorrections();
+          if (corrList) {
+            const mappedCorrections = corrList.map((c: any) => ({
+              id: c.id,
+              date: c.date,
+              type: c.type || 'Correction',
+              requestedCheckIn: c.requestedCheckIn,
+              requestedCheckOut: c.requestedCheckOut,
+              reason: c.reason,
+              status: c.status,
+              managerComment: c.managerComment || ''
+            }));
+            setAttendanceCorrections(mappedCorrections);
+          }
+        } catch (e) {
+          console.error("Failed to load attendance corrections from DB:", e);
         }
 
         // Dynamically build notifications from leaves, expenses, and tickets
@@ -663,19 +687,38 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
     setBreakStartTime(null);
   };
 
-  const requestCorrection = (correction: Omit<AttendanceCorrection, "id" | "status">) => {
-    const newCorrection: AttendanceCorrection = {
-      ...correction,
-      id: `AC-${Math.floor(100 + Math.random() * 900)}`,
-      status: "Pending",
-    };
-    setAttendanceCorrections((prev) => [newCorrection, ...prev]);
-    
-    addNotification({
-      title: "Attendance Correction Submitted",
-      message: `Correction request for ${correction.date} submitted for approval.`,
-      category: "policy",
-    });
+  const requestCorrection = async (correction: Omit<AttendanceCorrection, "id" | "status">) => {
+    try {
+      const result = await api.createEmployeeCorrection({
+        date: correction.date,
+        type: correction.type || 'Correction',
+        requestedCheckIn: correction.requestedCheckIn,
+        requestedCheckOut: correction.requestedCheckOut,
+        reason: correction.reason
+      });
+
+      const newCorrection: AttendanceCorrection = {
+        id: result.id,
+        date: result.date,
+        type: result.type as any,
+        requestedCheckIn: result.requestedCheckIn,
+        requestedCheckOut: result.requestedCheckOut,
+        reason: result.reason,
+        status: result.status as any,
+        managerComment: result.managerComment || ''
+      };
+
+      setAttendanceCorrections((prev) => [newCorrection, ...prev]);
+
+      addNotification({
+        title: "Regularization Submitted",
+        message: `Request for ${correction.date} submitted for approval.`,
+        category: "policy",
+      });
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to submit regularization request");
+    }
   };
 
   const applyLeave = async (leave: Omit<LeaveRequest, "id" | "status" | "currentStep">) => {
@@ -685,7 +728,8 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
         fromDate: leave.fromDate,
         toDate: leave.toDate,
         reason: leave.reason,
-        totalDays: leave.totalDays
+        totalDays: leave.totalDays,
+        attachment: leave.attachment || ''
       });
 
       const mappedRequest: LeaveRequest = {
@@ -694,9 +738,10 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
         fromDate: result.fromDate,
         toDate: result.toDate,
         reason: result.reason,
-        attachmentName: null,
+        attachmentName: leave.attachmentName,
+        attachment: result.attachment || '',
         status: result.status as any,
-        isHalfDay: false,
+        isHalfDay: leave.isHalfDay,
         appliedDate: result.appliedDate,
         totalDays: result.totalDays,
         currentStep: 1
@@ -751,8 +796,29 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
     });
   };
 
-  const updateProfile = (updatedFields: Partial<EmployeeProfile>) => {
-    setProfile((prev) => ({ ...prev, ...updatedFields }));
+  const updateProfile = async (updatedFields: Partial<EmployeeProfile>) => {
+    try {
+      const payload: any = {};
+      if (updatedFields.fullName !== undefined) payload.name = updatedFields.fullName;
+      if (updatedFields.mobile !== undefined) payload.phone = updatedFields.mobile;
+      if (updatedFields.dob !== undefined) payload.dob = updatedFields.dob;
+      if (updatedFields.gender !== undefined) payload.gender = updatedFields.gender;
+      if (updatedFields.address !== undefined) payload.address = updatedFields.address;
+      if (updatedFields.photo !== undefined) payload.avatar = updatedFields.photo;
+      if (updatedFields.documents !== undefined) payload.documents = updatedFields.documents;
+
+      await api.updateProfile(payload);
+      setProfile((prev) => ({ ...prev, ...updatedFields }));
+      
+      addNotification({
+        title: "Profile Saved",
+        message: "Your profile changes have been saved to the database.",
+        category: "policy"
+      });
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to update profile: " + (err.message || err));
+    }
   };
 
   const changePassword = async (oldPass: string, newPass: string): Promise<boolean> => {

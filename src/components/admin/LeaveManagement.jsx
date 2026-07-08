@@ -27,6 +27,7 @@ import { useEffect } from 'react';
 export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) {
   const [balances, setBalances] = useState(initialLeaveBalances);
   const [requests, setRequests] = useState([]);
+  const [selectedLeaveDetails, setSelectedLeaveDetails] = useState(null);
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -51,7 +52,8 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
           reason: req.reason,
           status: req.status,
           managerStatus: req.managerStatus || 'Pending',
-          managerComment: req.managerComment || ''
+          managerComment: req.managerComment || '',
+          attachment: req.attachment || ''
         }));
         setRequests(mapped);
       } catch (err) {
@@ -209,7 +211,7 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
                       </tr>
                     ) : (
                       requests.filter(r => r.status.toLowerCase() === 'pending').map(req => (
-                        <tr key={req.id}>
+                        <tr key={req.id} onClick={() => setSelectedLeaveDetails(req)} style={{ cursor: 'pointer' }}>
                           <td style={{ fontWeight: 600 }}>{req.name}</td>
                           <td><span className="badge badge-info">{req.type}</span></td>
                           <td className="number-font" style={{ fontSize: '0.85rem' }}>{req.days} days</td>
@@ -231,15 +233,15 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
                           </td>
                           <td style={{ textAlign: 'right' }}>
                             {req.status === 'Pending' && (
-                              <div style={{ display: 'inline-flex', gap: 8 }}>
+                              <div style={{ display: 'inline-flex', gap: 8 }} onClick={(e) => e.stopPropagation()}>
                                 <button 
-                                  onClick={() => handleAction(req.id, 'Approved')}
+                                  onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Approved'); }}
                                   style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-success)', padding: 4 }}
                                 >
                                   <Check size={16} />
                                 </button>
                                 <button 
-                                  onClick={() => handleAction(req.id, 'Rejected')}
+                                  onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Rejected'); }}
                                   style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: 4 }}
                                 >
                                   <X size={16} />
@@ -295,7 +297,7 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
                     </tr>
                   ) : (
                     requests.map(req => (
-                      <tr key={req.id}>
+                      <tr key={req.id} onClick={() => setSelectedLeaveDetails(req)} style={{ cursor: 'pointer' }}>
                         <td style={{ fontWeight: 600 }}>{req.name}</td>
                         <td><span className="badge badge-info">{req.type}</span></td>
                         <td className="number-font" style={{ fontSize: '0.85rem' }}>{req.days} days</td>
@@ -317,18 +319,16 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           {req.status === 'Pending' && (
-                            <div style={{ display: 'inline-flex', gap: 8 }}>
+                            <div style={{ display: 'inline-flex', gap: 8 }} onClick={(e) => e.stopPropagation()}>
                               <button 
-                                onClick={() => handleAction(req.id, 'Approved')}
+                                onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Approved'); }}
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-success)', padding: 4 }}
-                                title="Approve"
                               >
                                 <Check size={16} />
                               </button>
                               <button 
-                                onClick={() => handleAction(req.id, 'Rejected')}
+                                onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Rejected'); }}
                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: 4 }}
-                                title="Reject"
                               >
                                 <X size={16} />
                               </button>
@@ -514,6 +514,125 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
           </motion.div>
         )}
 
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedLeaveDetails && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                width: 500,
+                background: 'white',
+                borderRadius: 24,
+                padding: 30,
+                boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                border: '1px solid rgba(226, 232, 240, 0.8)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 20
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Leave Request Details</h3>
+                <button 
+                  onClick={() => setSelectedLeaveDetails(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '1.25rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-secondary)'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, fontSize: '0.85rem' }}>
+                <div>
+                  <span style={{ color: 'var(--color-text-secondary)', display: 'block' }}>Employee Name</span>
+                  <strong style={{ fontSize: '0.9rem' }}>{selectedLeaveDetails.name}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--color-text-secondary)', display: 'block' }}>Leave Type</span>
+                  <strong>{selectedLeaveDetails.type}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--color-text-secondary)', display: 'block' }}>Requested Duration</span>
+                  <strong>{selectedLeaveDetails.days} Days ({selectedLeaveDetails.range})</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--color-text-secondary)', display: 'block' }}>Manager Rec.</span>
+                  <span className={`badge ${selectedLeaveDetails.managerStatus === 'Approved' ? 'badge-success' : selectedLeaveDetails.managerStatus === 'Pending' ? 'badge-warning' : 'badge-danger'}`}>
+                    {selectedLeaveDetails.managerStatus || 'Pending'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ padding: 16, borderRadius: 16, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Reason for Leave</span>
+                <p style={{ fontSize: '0.85rem', lineHeight: '1.5', margin: 0 }}>{selectedLeaveDetails.reason}</p>
+              </div>
+
+              {selectedLeaveDetails.attachment && (
+                <div>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Receipt Attachment</span>
+                  {selectedLeaveDetails.attachment.startsWith('data:image/') ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', background: '#f1f5f9', padding: 8, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                      <img src={selectedLeaveDetails.attachment} alt="Receipt" style={{ maxHeight: 200, maxWidth: '100%', objectFit: 'contain', borderRadius: 8 }} />
+                    </div>
+                  ) : (
+                    <div style={{ padding: 12, border: '1px solid #e2e8f0', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
+                      <span>Supporting Document</span>
+                      <a href={selectedLeaveDetails.attachment} download="receipt.pdf" style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>Download</a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {selectedLeaveDetails.status.toLowerCase() === 'pending' && (
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 10 }}>
+                  <button 
+                    onClick={() => {
+                      handleAction(selectedLeaveDetails.id, 'Rejected');
+                      setSelectedLeaveDetails(null);
+                    }}
+                    className="btn-punch-out" 
+                    style={{ padding: '10px 20px', borderRadius: 10 }}
+                  >
+                    Reject
+                  </button>
+                  <button 
+                    onClick={() => {
+                      handleAction(selectedLeaveDetails.id, 'Approved');
+                      setSelectedLeaveDetails(null);
+                    }}
+                    className="btn-punch-in" 
+                    style={{ padding: '10px 20px', borderRadius: 10 }}
+                  >
+                    Approve
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
 
     </div>

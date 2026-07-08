@@ -92,6 +92,22 @@ sequelize.sync({ force: false })
       }
     }
     console.log("Checked and verified all leave_requests manager recommendation columns are up to date.");
+
+    // Alter employees table with documents column
+    try {
+      await sequelize.query("ALTER TABLE employees ADD COLUMN documents LONGTEXT;");
+      console.log("Successfully altered employees table to add documents column");
+    } catch (err) {
+      // Column already exists, safe to ignore
+    }
+
+    // Alter leave_requests table with attachment column
+    try {
+      await sequelize.query("ALTER TABLE leave_requests ADD COLUMN attachment LONGTEXT;");
+      console.log("Successfully altered leave_requests table to add attachment column");
+    } catch (err) {
+      // Column already exists, safe to ignore
+    }
   })
   .catch(err => console.error('Database sync error:', err));
 

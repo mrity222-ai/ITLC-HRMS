@@ -94,6 +94,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  async updateProfile(data: any) {
+    const res = await fetch(`${API_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   // ========================================================
   // SUPER OWNER PLAN & TENANT APIs
   // ========================================================
@@ -612,6 +621,32 @@ export const api = {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ status })
+    });
+    return handleResponse(res);
+  },
+
+  async updateEmployeeTask(id: string, data: any) {
+    const res = await fetch(`${API_URL}/employee/tasks/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async getEmployeeCorrections() {
+    const res = await fetch(`${API_URL}/employee/corrections`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createEmployeeCorrection(data: any) {
+    const res = await fetch(`${API_URL}/employee/corrections`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
     });
     return handleResponse(res);
   }

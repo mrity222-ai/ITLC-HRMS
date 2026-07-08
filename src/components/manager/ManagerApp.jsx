@@ -40,6 +40,9 @@ export default function ManagerApp({ onLogout }) {
   
   // Detail views & Modals
   const [selectedEmpProfile, setSelectedEmpProfile] = useState(null);
+  const [selectedLeaveDetails, setSelectedLeaveDetails] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [activeTaskView, setActiveTaskView] = useState('kanban'); // 'kanban' | 'table'
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -92,6 +95,46 @@ export default function ManagerApp({ onLogout }) {
     const interval = setInterval(loadLiveManagerPortal, 8000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const notifs = [];
+    
+    // 1. Pending leaves
+    leaves.filter(l => l.status === 'Pending' && l.managerStatus === 'Pending').forEach(l => {
+      notifs.push({
+        id: `leave_${l.id}`,
+        title: 'New Leave Request',
+        message: `${l.employeeName} requested leave for ${l.totalDays} days.`,
+        time: 'Pending review',
+        read: false
+      });
+    });
+
+    // 2. Pending corrections
+    corrections.filter(c => c.status === 'Pending').forEach(c => {
+      notifs.push({
+        id: `corr_${c.id}`,
+        title: 'Correction/Overtime Log',
+        message: `${c.employeeName} requested correction for ${c.date}.`,
+        time: 'Pending review',
+        read: false
+      });
+    });
+
+    // 3. Blocked tasks
+    tasks.filter(t => t.status === 'Blocked').forEach(t => {
+      notifs.push({
+        id: `task_${t.id}`,
+        title: 'Task Blocked',
+        message: `Task ${t.id} assigned to ${t.assignedToName} is blocked.`,
+        time: 'Attention',
+        read: false
+      });
+    });
+
+    setNotifications(notifs);
+  }, [leaves, corrections, tasks, loading]);
 
   // ----------------------------------------------------------------------
   // HANDLERS & ACTIONS
@@ -335,7 +378,54 @@ export default function ManagerApp({ onLogout }) {
             <Menu className="h-5 w-5" />
           </button>
 
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-3 ml-auto relative">
+            {/* Bell Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 rounded-xl border border-border hover:bg-secondary text-foreground cursor-pointer flex items-center justify-center bg-card transition-all"
+              >
+                <Bell size={16} />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-danger rounded-full border border-card" />
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showNotifications && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-80 bg-card rounded-2xl border border-border shadow-xl p-4 z-50 space-y-3"
+                  >
+                    <div className="flex justify-between items-center pb-2 border-b border-border">
+                      <span className="text-xs font-bold text-foreground">Manager Alerts ({notifications.length})</span>
+                      <button onClick={() => setShowNotifications(false)} className="text-[10px] text-muted-foreground hover:text-foreground font-bold">Close</button>
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto space-y-2.5 pr-1 select-none">
+                      {notifications.length === 0 ? (
+                        <div className="text-center py-6 text-xs text-muted-foreground">
+                          All caught up! No alerts.
+                        </div>
+                      ) : (
+                        notifications.map(n => (
+                          <div key={n.id} className="p-2.5 rounded-xl bg-secondary/15 border border-border/40 text-left text-[10px] space-y-1">
+                            <div className="font-bold text-foreground flex justify-between">
+                              <span>{n.title}</span>
+                              <span className="text-[8px] font-mono text-primary uppercase">{n.time}</span>
+                            </div>
+                            <p className="text-muted-foreground leading-normal">{n.message}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <div className="text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-xl uppercase tracking-wider select-none">
               Welcome, <strong className="font-extrabold">{managerProfile?.name || 'Manager'}</strong>
             </div>
@@ -701,6 +791,11 @@ export default function ManagerApp({ onLogout }) {
                                 <span className="text-[9px] font-bold text-primary font-mono">{task.id}</span>
                                 <h5 className="text-[11px] font-bold text-foreground">{task.title}</h5>
                                 <p className="text-[10px] text-muted-foreground line-clamp-2">{task.description}</p>
+                                {task.attachments && (
+                                  <div className="relative rounded overflow-hidden max-h-24 bg-secondary/15 flex items-center justify-center border border-border/50">
+                                    <img src={task.attachments} alt="Task attachment" className="object-contain max-h-24 w-full" />
+                                  </div>
+                                )}
                                 <div className="flex justify-between items-center text-[9px] text-muted-foreground border-t border-border/40 pt-2">
                                   <span>{task.assignedToName}</span>
                                   <Badge variant={task.priority === 'High' ? 'danger' : 'info'}>{task.priority}</Badge>
@@ -718,37 +813,46 @@ export default function ManagerApp({ onLogout }) {
                     </div>
                   ) : (
                     <Card className="p-0 overflow-hidden">
-                      <table className="w-full text-left text-sm border-collapse">
-                        <thead>
-                          <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
-                            <th className="p-3">ID</th>
-                            <th className="p-3">Title</th>
-                            <th className="p-3">Assigned To</th>
-                            <th className="p-3">Priority</th>
-                            <th className="p-3">Deadline</th>
-                            <th className="p-3">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {tasks.map(task => (
-                            <tr key={task.id} className="hover:bg-secondary/25">
-                              <td className="p-3 font-mono font-bold text-primary">{task.id}</td>
-                              <td className="p-3 font-semibold">{task.title}</td>
-                              <td className="p-3">{task.assignedToName}</td>
-                              <td className="p-3"><Badge variant={task.priority === 'High' ? 'danger' : 'info'}>{task.priority}</Badge></td>
-                              <td className="p-3 font-mono">{task.deadline}</td>
-                              <td className="p-3"><Badge variant={task.status === 'Completed' ? 'success' : 'warning'}>{task.status}</Badge></td>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
+                              <th className="p-3">ID</th>
+                              <th className="p-3">Title</th>
+                              <th className="p-3">Assigned To</th>
+                              <th className="p-3">Deadline</th>
+                              <th className="p-3">Priority</th>
+                              <th className="p-3">Status</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {tasks.map(task => (
+                              <tr key={task.id} className="hover:bg-secondary/25 transition-colors">
+                                <td className="p-3 font-mono font-bold text-primary text-[10px]">{task.id}</td>
+                                <td className="p-3 font-semibold">
+                                  <div>{task.title}</div>
+                                  {task.attachments && (
+                                    <div className="mt-1 flex gap-1 items-center text-[9px] text-primary">
+                                      <span>📷 Attachment Uploaded</span>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="p-3">{task.assignedToName}</td>
+                                <td className="p-3 font-mono">{task.deadline}</td>
+                                <td className="p-3"><Badge variant={task.priority === 'High' ? 'danger' : 'info'}>{task.priority}</Badge></td>
+                                <td className="p-3"><Badge variant={task.status === 'Completed' ? 'success' : 'warning'}>{task.status}</Badge></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </Card>
                   )}
                 </motion.div>
               )}
 
               {/* ------------------------------------------------------------------
-                  TAB: PERFORMANCE
+                  TAB: PERFORMANCE REVIEWS
                   ------------------------------------------------------------------ */}
               {activeTab === 'performance' && (
                 <motion.div
@@ -758,54 +862,58 @@ export default function ManagerApp({ onLogout }) {
                   exit={{ opacity: 0, y: -10 }}
                   className="space-y-6"
                 >
-                  <div className="flex justify-between items-center">
+                  {/* Header */}
+                  <div className="p-5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl border border-primary/10 flex justify-between items-center gap-4">
                     <div>
-                      <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Performance Appraisals</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">Manage employee ratings and objectives reviews</p>
+                      <h3 className="text-sm font-bold text-foreground">Performance Review Ledger</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Manage goals, productivity ratings and appreciation feedback</p>
                     </div>
-
-                    <Button size="sm" variant="primary" onClick={() => setShowPerfModal(true)}>
-                      Add Review / KPI Goals
-                    </Button>
+                    <Button variant="primary" onClick={() => setShowPerfModal(true)}>Add Performance Log</Button>
                   </div>
 
                   <Card className="p-0 overflow-hidden">
-                    <table className="w-full text-left text-sm border-collapse">
-                      <thead>
-                        <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
-                          <th className="p-3">Employee</th>
-                          <th className="p-3">Period</th>
-                          <th className="p-3">Productivity Score</th>
-                          <th className="p-3">Promotion Notes</th>
-                          <th className="p-3">Appreciation Log</th>
-                          <th className="p-3">Warnings</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {performance.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="p-8 text-center text-muted-foreground">No records logged.</td>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
+                            <th className="p-3">Employee</th>
+                            <th className="p-3">Period</th>
+                            <th className="p-3">Productivity Score</th>
+                            <th className="p-3">KPIs / Goals</th>
+                            <th className="p-3">Status</th>
                           </tr>
-                        ) : (
-                          performance.map(p => (
-                            <tr key={p.id}>
-                              <td className="p-3 font-semibold text-foreground">{p.employeeName}</td>
-                              <td className="p-3">{p.reviewPeriod}</td>
-                              <td className="p-3 font-mono font-bold">{p.rating} / 10</td>
-                              <td className="p-3">{p.promotionRecommendation || 'None'}</td>
-                              <td className="p-3">{p.appreciation || 'None'}</td>
-                              <td className="p-3">{p.warning || 'None'}</td>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {performance.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                                No performance logs entered.
+                              </td>
                             </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
+                          ) : (
+                            performance.map(perf => (
+                              <tr key={perf.id} className="hover:bg-secondary/25 transition-colors">
+                                <td className="p-3 font-semibold text-foreground">{perf.employeeName}</td>
+                                <td className="p-3">{perf.reviewPeriod}</td>
+                                <td className="p-3 font-mono font-bold">{perf.rating} / 10</td>
+                                <td className="p-3">{perf.goals}</td>
+                                <td className="p-3">
+                                  <Badge variant={perf.rating >= 8 ? 'success' : perf.rating >= 5 ? 'info' : 'danger'}>
+                                    {perf.rating >= 8 ? 'Excellent' : perf.rating >= 5 ? 'Satisfactory' : 'Needs Review'}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </Card>
                 </motion.div>
               )}
 
               {/* ------------------------------------------------------------------
-                  TAB: EXPENSES
+                  TAB: EXPENSES COMPLIANCE
                   ------------------------------------------------------------------ */}
               {activeTab === 'expenses' && (
                 <motion.div
@@ -816,62 +924,55 @@ export default function ManagerApp({ onLogout }) {
                   className="space-y-6"
                 >
                   <div>
-                    <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Expense Claims approvals</h3>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Verify and process team travel and utility claims</p>
+                    <h3 className="text-sm font-bold text-foreground">Expense Claims</h3>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Approve or reject team business expenses</p>
                   </div>
 
                   <Card className="p-0 overflow-hidden">
-                    <table className="w-full text-left text-sm border-collapse">
-                      <thead>
-                        <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
-                          <th className="p-3">Employee</th>
-                          <th className="p-3">Date</th>
-                          <th className="p-3">Category</th>
-                          <th className="p-3">Amount</th>
-                          <th className="p-3">Reason</th>
-                          <th className="p-3">Status</th>
-                          <th className="p-3 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {expenses.length === 0 ? (
-                          <tr>
-                            <td colSpan={7} className="p-8 text-center text-muted-foreground">No claims submitted.</td>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
+                            <th className="p-3">Employee</th>
+                            <th className="p-3">Date</th>
+                            <th className="p-3">Category</th>
+                            <th className="p-3">Amount</th>
+                            <th className="p-3">Reason</th>
+                            <th className="p-3">Status</th>
                           </tr>
-                        ) : (
-                          expenses.map(exp => (
-                            <tr key={exp.id}>
-                              <td className="p-3 font-semibold text-foreground">{exp.employeeName}</td>
-                              <td className="p-3 font-mono">{exp.date}</td>
-                              <td className="p-3"><Badge variant="info">{exp.category}</Badge></td>
-                              <td className="p-3 font-mono font-bold">${exp.amount}</td>
-                              <td className="p-3">{exp.reason}</td>
-                              <td className="p-3">
-                                <Badge variant={exp.status === 'Approved' ? 'success' : exp.status === 'Pending' ? 'warning' : 'danger'}>
-                                  {exp.status}
-                                </Badge>
-                              </td>
-                              <td className="p-3 text-right">
-                                {exp.status === 'Pending' ? (
-                                  <div className="flex gap-1.5 justify-end">
-                                    <Button size="sm" variant="primary" onClick={() => handleExpenseRequest(exp.id, 'Approved')}>Approve</Button>
-                                    <Button size="sm" variant="danger" onClick={() => handleExpenseRequest(exp.id, 'Rejected')}>Reject</Button>
-                                  </div>
-                                ) : (
-                                  <span className="text-[10px] text-muted-foreground">Processed</span>
-                                )}
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {expenses.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                                No expense claims found.
                               </td>
                             </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
+                          ) : (
+                            expenses.map(exp => (
+                              <tr key={exp.id} className="hover:bg-secondary/25 transition-colors">
+                                <td className="p-3 font-semibold text-foreground">{exp.employeeName}</td>
+                                <td className="p-3 font-mono">{exp.date}</td>
+                                <td className="p-3"><Badge variant="neutral">{exp.category}</Badge></td>
+                                <td className="p-3 font-mono font-bold text-foreground">${exp.amount}</td>
+                                <td className="p-3">{exp.reason}</td>
+                                <td className="p-3">
+                                  <Badge variant={exp.status === 'Approved' ? 'success' : exp.status === 'Pending' ? 'warning' : 'danger'}>
+                                    {exp.status}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </Card>
                 </motion.div>
               )}
 
               {/* ------------------------------------------------------------------
-                  TAB: ASSIGNED ASSETS
+                  TAB: ASSETS ALLOCATED
                   ------------------------------------------------------------------ */}
               {activeTab === 'assets' && (
                 <motion.div
@@ -882,193 +983,44 @@ export default function ManagerApp({ onLogout }) {
                   className="space-y-6"
                 >
                   <div>
-                    <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Device Assets Tracking</h3>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Monitor laptop and screen allocations among reporting staff</p>
+                    <h3 className="text-sm font-bold text-foreground">Assets Ledger</h3>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Asset registers and company gadgets assigned to employees</p>
                   </div>
 
                   <Card className="p-0 overflow-hidden">
-                    <table className="w-full text-left text-sm border-collapse">
-                      <thead>
-                        <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
-                          <th className="p-3">Asset</th>
-                          <th className="p-3">Type</th>
-                          <th className="p-3">Serial Number</th>
-                          <th className="p-3">Assigned To</th>
-                          <th className="p-3">Status</th>
-                          <th className="p-3 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {assets.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="p-8 text-center text-muted-foreground">No assets linked to direct reports.</td>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
+                            <th className="p-3">Employee</th>
+                            <th className="p-3">Asset Code</th>
+                            <th className="p-3">Device Name</th>
+                            <th className="p-3">Serial / Details</th>
+                            <th className="p-3">Status</th>
                           </tr>
-                        ) : (
-                          assets.map(asset => (
-                            <tr key={asset.id}>
-                              <td className="p-3 font-semibold text-foreground">{asset.assetName}</td>
-                              <td className="p-3">{asset.assetType}</td>
-                              <td className="p-3 font-mono">{asset.serialNumber || 'N/A'}</td>
-                              <td className="p-3">{asset.employeeName || 'N/A'}</td>
-                              <td className="p-3"><Badge variant={asset.status === 'Assigned' ? 'success' : 'warning'}>{asset.status}</Badge></td>
-                              <td className="p-3 text-right">
-                                {asset.status === 'Requested' ? (
-                                  <Button size="sm" variant="primary" onClick={() => handleAssetRequest(asset.id, 'Assigned', 'Approved')}>Assign</Button>
-                                ) : (
-                                  <span className="text-[10px] text-muted-foreground">Configured</span>
-                                )}
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {assets.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                                No assets registered.
                               </td>
                             </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </Card>
-                </motion.div>
-              )}
-
-              {/* ------------------------------------------------------------------
-                  TAB: MEETINGS SCHEDULER
-                  ------------------------------------------------------------------ */}
-              {activeTab === 'meetings' && (
-                <motion.div
-                  key="meetings"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Meetings Sync Scheduler</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">Schedule calls and invitations</p>
+                          ) : (
+                            assets.map(asset => (
+                              <tr key={asset.id} className="hover:bg-secondary/25 transition-colors">
+                                <td className="p-3 font-semibold text-foreground">{asset.employeeName}</td>
+                                <td className="p-3 font-mono font-bold text-primary">{asset.assetCode}</td>
+                                <td className="p-3">{asset.assetName}</td>
+                                <td className="p-3 font-mono text-muted-foreground text-[10px]">{asset.serialNumber}</td>
+                                <td className="p-3"><Badge variant="success">Assigned</Badge></td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
                     </div>
-
-                    <Button size="sm" variant="primary" onClick={() => setShowMeetingModal(true)}>
-                      Schedule Meeting
-                    </Button>
-                  </div>
-
-                  <Card className="p-0 overflow-hidden">
-                    <table className="w-full text-left text-sm border-collapse">
-                      <thead>
-                        <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
-                          <th className="p-3">Title</th>
-                          <th className="p-3">Agenda</th>
-                          <th className="p-3">Date / Time</th>
-                          <th className="p-3">Platform</th>
-                          <th className="p-3">Conference Link</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {meetings.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} className="p-8 text-center text-muted-foreground">No sync calls scheduled.</td>
-                          </tr>
-                        ) : (
-                          meetings.map(meet => (
-                            <tr key={meet.id}>
-                              <td className="p-3 font-semibold text-foreground">{meet.title}</td>
-                              <td className="p-3">{meet.agenda}</td>
-                              <td className="p-3 font-mono">{meet.date} at {meet.time}</td>
-                              <td className="p-3"><Badge variant="info">{meet.platform}</Badge></td>
-                              <td className="p-3">
-                                <a href={meet.link} target="_blank" rel="noreferrer" className="text-primary hover:underline font-bold">Join Call</a>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
                   </Card>
-                </motion.div>
-              )}
-
-              {/* ------------------------------------------------------------------
-                  TAB: REPORTS
-                  ------------------------------------------------------------------ */}
-              {activeTab === 'reports' && (
-                <motion.div
-                  key="reports"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
-                >
-                  <div>
-                    <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Reports & Data Ledger</h3>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Export operational sheets of your direct reports</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Card className="p-5 flex flex-col gap-3">
-                      <h4 className="text-sm font-bold text-foreground">Attendance Logs Summary</h4>
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">Download complete check-in records of your team.</p>
-                      <Button size="sm" variant="primary" onClick={() => exportToCSV(attendance, 'Attendance_Logs')} className="mt-auto">
-                        <Download className="h-5 w-5" /> Export CSV
-                      </Button>
-                    </Card>
-
-                    <Card className="p-5 flex flex-col gap-3">
-                      <h4 className="text-sm font-bold text-foreground">Leaves Audits Log</h4>
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">Download complete recommendations history logs of leaves.</p>
-                      <Button size="sm" variant="primary" onClick={() => exportToCSV(leaves, 'Leaves_Audits')} className="mt-auto">
-                        <Download className="h-5 w-5" /> Export CSV
-                      </Button>
-                    </Card>
-
-                    <Card className="p-5 flex flex-col gap-3">
-                      <h4 className="text-sm font-bold text-foreground">Expense Ledger Summaries</h4>
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">Download summaries sheets of claims submitted by team reports.</p>
-                      <Button size="sm" variant="primary" onClick={() => exportToCSV(expenses, 'Expense_Ledger')} className="mt-auto">
-                        <Download className="h-5 w-5" /> Export CSV
-                      </Button>
-                    </Card>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ------------------------------------------------------------------
-                  TAB: ANNOUNCEMENTS
-                  ------------------------------------------------------------------ */}
-              {activeTab === 'announcements' && (
-                <motion.div
-                  key="announcements"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Broadcast Team Announcements</h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">Post notification banners directly to direct reports dashboards</p>
-                    </div>
-
-                    <Button size="sm" variant="primary" onClick={() => setShowAnnouncementModal(true)}>
-                      Publish Announcement
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    {announcements.length === 0 ? (
-                      <Card className="p-8 text-center text-sm text-muted-foreground">No team announcements logged.</Card>
-                    ) : (
-                      announcements.map(ann => (
-                        <Card key={ann.id} className="p-5 flex flex-col gap-2">
-                          <div className="flex justify-between items-start">
-                            <h4 className="text-sm font-bold text-foreground">{ann.title}</h4>
-                            <Badge variant="info">{ann.type}</Badge>
-                          </div>
-                          <p className="text-[11px] text-muted-foreground leading-relaxed">{ann.content}</p>
-                          <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t border-border/40 pt-2 font-mono">
-                            <span>Author: {ann.authorName}</span>
-                            <span>{ann.date}</span>
-                          </div>
-                        </Card>
-                      ))
-                    )}
-                  </div>
                 </motion.div>
               )}
 
@@ -1081,55 +1033,35 @@ export default function ManagerApp({ onLogout }) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
+                  className="max-w-2xl mx-auto space-y-6 animate-fadeIn"
                 >
-                  <Card className="p-6 flex flex-col gap-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-lg uppercase">
-                        {managerProfile?.name ? managerProfile.name[0] : 'M'}
-                      </div>
-                      <div>
-                        <h3 className="text-base font-bold text-foreground">{managerProfile?.name}</h3>
-                        <span className="text-[10px] text-muted-foreground block">{managerProfile?.designation} - {managerProfile?.department}</span>
-                      </div>
+                  <Card className="p-6 flex flex-col items-center text-center gap-4 bg-card border border-border">
+                    <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-bold uppercase border border-primary/20">
+                      {managerProfile?.name ? managerProfile.name[0] : 'M'}
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-foreground">{managerProfile?.name}</h3>
+                      <span className="text-[10px] text-muted-foreground block">{managerProfile?.designation} - {managerProfile?.department}</span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-border/60 pt-6 text-sm text-muted-foreground">
-                      <div className="space-y-1">
-                        <span>Staff ID:</span>
+                    <div className="w-full grid grid-cols-2 gap-4 text-left border-t border-border pt-6 mt-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-bold">Employee ID</span>
                         <strong className="text-foreground block font-mono font-extrabold">{managerProfile?.id}</strong>
                       </div>
-                      <div className="space-y-1">
-                        <span>Email Contact:</span>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-bold">Email Address</span>
                         <strong className="text-foreground block">{managerProfile?.email}</strong>
                       </div>
-                      <div className="space-y-1">
-                        <span>Phone No:</span>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-bold">Phone Number</span>
                         <strong className="text-foreground block">{managerProfile?.phone || 'N/A'}</strong>
                       </div>
-                      <div className="space-y-1">
-                        <span>Joining Date:</span>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px] uppercase font-bold">Date of Joining</span>
                         <strong className="text-foreground block font-mono">{managerProfile?.joiningDate || 'N/A'}</strong>
                       </div>
                     </div>
-                  </Card>
-                </motion.div>
-              )}
-
-              {/* ------------------------------------------------------------------
-                  TAB: SETTINGS
-                  ------------------------------------------------------------------ */}
-              {activeTab === 'settings' && (
-                <motion.div
-                  key="settings"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
-                >
-                  <Card className="p-5 space-y-4">
-                    <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Workspace Preferences</h3>
-                    <p className="text-sm text-muted-foreground">System preferences are configured universally via the main enterprise admin panel.</p>
                   </Card>
                 </motion.div>
               )}
@@ -1139,37 +1071,107 @@ export default function ManagerApp({ onLogout }) {
         </main>
       </div>
 
-      {/* ------------------------------------------------------------------
-          MODALS & FORM POPUPS
-          ------------------------------------------------------------------ */}
+      {/* Leave Details Modal */}
+      {selectedLeaveDetails && (
+        <Modal isOpen={!!selectedLeaveDetails} onClose={() => setSelectedLeaveDetails(null)} title="Leave Request Detail">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="text-muted-foreground block">Employee Name</span>
+                <span className="font-bold text-foreground">{selectedLeaveDetails.employeeName}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">Leave Type</span>
+                <span className="font-bold text-foreground">{selectedLeaveDetails.type}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">Duration</span>
+                <span className="font-bold text-foreground">{selectedLeaveDetails.totalDays} Days ({selectedLeaveDetails.fromDate} to {selectedLeaveDetails.toDate})</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">HR Approval Status</span>
+                <Badge variant={selectedLeaveDetails.status === 'Approved' ? 'success' : selectedLeaveDetails.status === 'Pending' ? 'warning' : 'danger'}>
+                  {selectedLeaveDetails.status}
+                </Badge>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">Manager Recommendation</span>
+                <Badge variant={selectedLeaveDetails.managerStatus === 'Approved' ? 'success' : selectedLeaveDetails.managerStatus === 'Pending' ? 'warning' : 'danger'}>
+                  {selectedLeaveDetails.managerStatus || 'Pending'}
+                </Badge>
+              </div>
+            </div>
 
-      {/* 1. Task Assignment Modal */}
+            <div className="p-3 bg-secondary/15 rounded-xl border border-border">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Reason for Leave</span>
+              <p className="text-xs text-foreground leading-relaxed">{selectedLeaveDetails.reason}</p>
+            </div>
+
+            {selectedLeaveDetails.attachment && (
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase block">Supporting Attachment</span>
+                {selectedLeaveDetails.attachment.startsWith('data:image/') ? (
+                  <div className="relative rounded-xl overflow-hidden border border-border bg-secondary/10 flex items-center justify-center max-h-60 p-2">
+                    <img src={selectedLeaveDetails.attachment} alt="Attachment" className="object-contain max-h-56 rounded-lg w-full" />
+                  </div>
+                ) : (
+                  <div className="p-3 border border-border rounded-xl bg-secondary/15 flex items-center justify-between text-xs">
+                    <span className="truncate font-semibold">{selectedLeaveDetails.attachmentName || 'Supporting Document'}</span>
+                    <a href={selectedLeaveDetails.attachment} download="supporting_doc.pdf" className="text-primary font-bold hover:underline">Download</a>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedLeaveDetails.managerStatus === 'Pending' && selectedLeaveDetails.status === 'Pending' && (
+              <div className="flex gap-2 pt-4 border-t border-border justify-end">
+                <Button variant="danger" onClick={() => {
+                  handleLeaveRecommendation(selectedLeaveDetails.id, 'Rejected', 'Rejected');
+                  setSelectedLeaveDetails(null);
+                }}>
+                  Reject Request
+                </Button>
+                <Button variant="primary" onClick={() => {
+                  handleLeaveRecommendation(selectedLeaveDetails.id, 'Approved', 'Approved');
+                  setSelectedLeaveDetails(null);
+                }}>
+                  Recommend Approval
+                </Button>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {/* 1. Assign Task Modal */}
       <Modal isOpen={showTaskModal} onClose={() => setShowTaskModal(false)} title="Assign New Task">
         <form onSubmit={handleCreateTaskSubmit} className="space-y-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase">Assign To</label>
-            <select value={newTask.assignedTo} onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required>
-              <option value="">Select Employee...</option>
-              {teamMembers.map(emp => (
-                <option key={emp.id} value={emp.id}>{emp.name}</option>
-              ))}
-            </select>
-          </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-muted-foreground uppercase">Task Title</label>
             <input type="text" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required placeholder="e.g. Database Review" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase">Description</label>
-            <textarea value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary resize-none" required rows={3} placeholder="Specify requirements..." />
+            <label className="text-[10px] font-bold text-muted-foreground uppercase">Detailed Instructions</label>
+            <textarea value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary resize-none" required rows={3} placeholder="Specify steps..." />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase">Priority</label>
-            <select value={newTask.priority} onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary">
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Assign To</label>
+              <select value={newTask.assignedTo} onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required>
+                <option value="">Select Member...</option>
+                {teamMembers.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Priority</label>
+              <select value={newTask.priority} onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary">
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+            </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-muted-foreground uppercase">Deadline Date</label>
@@ -1183,40 +1185,66 @@ export default function ManagerApp({ onLogout }) {
       </Modal>
 
       {/* 2. Schedule Meeting Modal */}
-      <Modal isOpen={showMeetingModal} onClose={() => setShowMeetingModal(false)} title="Schedule Team Sync Meeting">
+      <Modal isOpen={showMeetingModal} onClose={() => setShowMeetingModal(false)} title="Schedule Team Meeting">
         <form onSubmit={handleCreateMeetingSubmit} className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase">Title</label>
-            <input type="text" value={newMeeting.title} onChange={(e) => setNewMeeting({ ...newMeeting, title: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required placeholder="e.g. Weekly Sync" />
+            <label className="text-[10px] font-bold text-muted-foreground uppercase">Meeting Title</label>
+            <input type="text" value={newMeeting.title} onChange={(e) => setNewMeeting({ ...newMeeting, title: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required placeholder="e.g. Sprint Planning" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase">Agenda</label>
-            <textarea value={newMeeting.agenda} onChange={(e) => setNewMeeting({ ...newMeeting, agenda: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary resize-none" required rows={2} placeholder="Specify topics..." />
+            <label className="text-[10px] font-bold text-muted-foreground uppercase">Agenda Details</label>
+            <textarea value={newMeeting.agenda} onChange={(e) => setNewMeeting({ ...newMeeting, agenda: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary resize-none" required rows={2} placeholder="Agenda items..." />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase">Date</label>
-            <input type="date" value={newMeeting.date} onChange={(e) => setNewMeeting({ ...newMeeting, date: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Meeting Date</label>
+              <input type="date" value={newMeeting.date} onChange={(e) => setNewMeeting({ ...newMeeting, date: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Meeting Time</label>
+              <input type="time" value={newMeeting.time} onChange={(e) => setNewMeeting({ ...newMeeting, time: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required />
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase">Time</label>
-            <input type="time" value={newMeeting.time} onChange={(e) => setNewMeeting({ ...newMeeting, time: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Platform</label>
+              <select value={newMeeting.platform} onChange={(e) => setNewMeeting({ ...newMeeting, platform: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary">
+                <option value="Google Meet">Google Meet</option>
+                <option value="Zoom">Zoom Meeting</option>
+                <option value="Microsoft Teams">MS Teams</option>
+                <option value="In Person">Physical Office Room</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Meeting Link / Room</label>
+              <input type="text" value={newMeeting.link} onChange={(e) => setNewMeeting({ ...newMeeting, link: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required placeholder="https://meet.google.com/abc-defg-hij" />
+            </div>
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button type="button" variant="outline" onClick={() => setShowMeetingModal(false)}>Cancel</Button>
-            <Button type="submit" variant="primary">Schedule</Button>
+            <Button type="submit" variant="primary">Schedule Meet</Button>
           </div>
         </form>
       </Modal>
 
-      {/* 3. Post Announcement Modal */}
-      <Modal isOpen={showAnnouncementModal} onClose={() => setShowAnnouncementModal(false)} title="Broadcast Announcement">
+      {/* 3. Broadcast Announcement Modal */}
+      <Modal isOpen={showAnnouncementModal} onClose={() => setShowAnnouncementModal(false)} title="Broadcast Team Announcement">
         <form onSubmit={handleCreateAnnouncementSubmit} className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase">Title</label>
-            <input type="text" value={newAnnouncement.title} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required placeholder="Announcement title..." />
+            <label className="text-[10px] font-bold text-muted-foreground uppercase">Announcement Title</label>
+            <input type="text" value={newAnnouncement.title} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" required placeholder="e.g. Server Maintenance window" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase">Broadcast Content</label>
+            <label className="text-[10px] font-bold text-muted-foreground uppercase">Classification</label>
+            <select value={newAnnouncement.type} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, type: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary">
+              <option value="Announcement">Standard Announcement</option>
+              <option value="Urgent Notice">Urgent Notice</option>
+              <option value="Policy Shift">Policy Update</option>
+              <option value="Event">Corporate Event</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase">Detailed Message</label>
             <textarea value={newAnnouncement.content} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })} className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary resize-none" required rows={3} placeholder="Specify details..." />
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t border-border">

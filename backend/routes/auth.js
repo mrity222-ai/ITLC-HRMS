@@ -184,6 +184,15 @@ router.get('/profile', auth(), async (req, res) => {
       }
     }
 
+    let docs = [];
+    try {
+      if (user.documents) {
+        docs = JSON.parse(user.documents);
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+
     res.json({
       id: user.id,
       name: user.name,
@@ -203,8 +212,32 @@ router.get('/profile', auth(), async (req, res) => {
       gender: user.gender,
       address: user.address,
       joiningDate: user.joiningDate,
-      reportingManager: user.reportingManager
+      reportingManager: user.reportingManager,
+      documents: docs
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update profile
+router.put('/profile', auth(), async (req, res) => {
+  const { name, phone, dob, gender, address, avatar, documents } = req.body;
+  try {
+    const user = await Employee.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+    if (name !== undefined) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (dob !== undefined) user.dob = dob;
+    if (gender !== undefined) user.gender = gender;
+    if (address !== undefined) user.address = address;
+    if (avatar !== undefined) user.avatar = avatar;
+    if (documents !== undefined) user.documents = JSON.stringify(documents);
+    
+    await user.save();
+    res.json({ success: true, message: 'Profile updated successfully', user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -89,6 +89,7 @@ export const LeaveManagement: React.FC = () => {
   const [isHalfDay, setIsHalfDay] = useState(false);
   const [reason, setReason] = useState("");
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const [attachmentData, setAttachmentData] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
 
@@ -158,6 +159,7 @@ export const LeaveManagement: React.FC = () => {
       toDate,
       reason,
       attachmentName,
+      attachment: attachmentData || "",
       isHalfDay,
       appliedDate: todayStr,
       totalDays,
@@ -169,6 +171,7 @@ export const LeaveManagement: React.FC = () => {
     setToDate("");
     setIsHalfDay(false);
     setAttachmentName(null);
+    setAttachmentData(null);
 
     // Auto-scroll to my-leaves to trace it
     setTimeout(() => {
@@ -185,6 +188,13 @@ export const LeaveManagement: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       setAttachmentName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setAttachmentData(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -275,9 +285,9 @@ export const LeaveManagement: React.FC = () => {
   const renderTimeline = (req: LeaveRequest) => {
     const steps = [
       { step: 1, label: "Request Submitted", description: `Applied on ${req.appliedDate}` },
-      { step: 2, label: "Manager Review", description: "Sarah Jenkins (Director of Engineering)" },
-      { step: 3, label: "HR Review", description: "ITLC HR Operations compliance" },
-      { step: 4, label: "Final Decision", description: req.status === "Approved" ? "Approved" : req.status === "Cancelled" ? "Cancelled by Employee" : req.status === "Rejected" ? "Rejected" : "Pending final gates" },
+      { step: 2, label: "Manager Review", description: req.managerStatus === "Approved" ? "Sarah Jenkins (Director of Engineering) - Recommended for approval" : req.managerStatus === "Rejected" ? "Sarah Jenkins (Director of Engineering) - Rejected request" : "Sarah Jenkins (Director of Engineering) - Awaiting Review" },
+      { step: 3, label: "HR Review", description: req.status === "Approved" ? "ITLC HR Operations - Approved" : req.status === "Rejected" ? "ITLC HR Operations - Rejected" : "ITLC HR Operations - Pending Compliance check" },
+      { step: 4, label: "Final Decision", description: req.status === "Approved" ? "Approved" : req.status === "Cancelled" ? "Cancelled by Employee" : req.status === "Rejected" ? "Rejected" : "Pending final decision" },
     ];
 
     return (
@@ -1025,14 +1035,17 @@ export const LeaveManagement: React.FC = () => {
                       </div>
                     </div>
 
-                    {selectedHistoryRequest.attachmentName && (
-                      <div className="pt-2 border-t border-border flex justify-between items-center text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-1 font-medium">
-                          <FileText className="h-3.5 w-3.5 text-primary" /> {selectedHistoryRequest.attachmentName}
-                        </span>
-                        <a href="#" className="text-primary hover:underline font-semibold" onClick={(e) => e.preventDefault()}>
-                          Download
-                        </a>
+                    {selectedHistoryRequest.attachment && (
+                      <div className="pt-2 border-t border-border flex flex-col gap-2">
+                        <span className="text-[10px] font-bold text-foreground">Attachment Preview:</span>
+                        {selectedHistoryRequest.attachment.startsWith('data:image/') ? (
+                          <img src={selectedHistoryRequest.attachment} alt="Leave receipt" className="max-h-40 rounded-lg border border-border object-contain" />
+                        ) : (
+                          <div className="p-2 border border-border rounded-lg bg-secondary/10 flex items-center justify-between text-[10px]">
+                            <span className="truncate">{selectedHistoryRequest.attachmentName || 'Attachment'}</span>
+                            <a href={selectedHistoryRequest.attachment} download={selectedHistoryRequest.attachmentName || 'receipt.pdf'} className="text-primary font-bold hover:underline">Download</a>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
