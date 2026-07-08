@@ -23,17 +23,21 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
       : null
   );
 
+  // Set default selected profile when employees list changes and we are in profile subTab
+  useEffect(() => {
+    if (subTab === 'profile' && !selectedProfile && employees.length > 0) {
+      setSelectedProfile(employees[0]);
+    }
+  }, [employees, subTab]);
+
+  // Update view mode only when subTab changes
   useEffect(() => {
     if (subTab === 'profile') {
       setViewMode('profile');
-      if (!selectedProfile && employees.length > 0) {
-        // Automatically default to the first employee if none is selected
-        setSelectedProfile(employees[0]);
-      }
     } else if (subTab === 'directory') {
       setViewMode('list');
     }
-  }, [subTab, employees]);
+  }, [subTab]);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [profileNotes, setProfileNotes] = useState([
     { text: 'Completed advanced UI patterns certification course.', date: 'June 20, 2026' },
