@@ -310,7 +310,7 @@ export default function App({ onLogout }) {
       case 'ai-assistant':
         return <AiFeatures setActiveTab={setActiveTab} />;
       default:
-        return <DashboardOverview employees={employees} notifications={notifications} setActiveTab={setActiveTab} />;
+        return <DashboardOverview employeesList={employees} notifications={notifications} setActiveTab={setActiveTab} />;
     }
   };
 
@@ -363,18 +363,20 @@ export default function App({ onLogout }) {
         />
 
         {/* Dynamic Inner Page Transitions */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            style={{ flex: 1 }}
-          >
-            {renderActiveView()}
-          </motion.div>
-        </AnimatePresence>
+        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }} className="premium-scrollbar">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              style={{ flex: 1 }}
+            >
+              {renderActiveView()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </main>
 
       {/* Floating AI Assistant overlay drawer */}
