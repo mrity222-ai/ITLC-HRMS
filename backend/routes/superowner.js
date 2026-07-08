@@ -16,6 +16,37 @@ router.get('/companies', auth(['Super Owner']), async (req, res) => {
   }
 });
 
+// Create additional Super Owner accounts
+router.post('/create-superowner', auth(['Super Owner']), async (req, res) => {
+  const { name, email, phone, password } = req.body;
+  try {
+    const existing = await Employee.findOne({ where: { email: email.toLowerCase() } });
+    if (existing) {
+      return res.status(400).json({ error: 'A user with this email already exists' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const newSuperOwner = await Employee.create({
+      id: `SUP_${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+      name,
+      email: email.toLowerCase(),
+      phone: phone || '',
+      passwordHash,
+      role: 'Super Owner',
+      department: 'Executive',
+      designation: 'Platform Administrator',
+      status: 'Active',
+      companyId: null
+    });
+
+    res.json({ success: true, employee: newSuperOwner });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Create new company and automatic Company Admin account
 router.post('/companies', auth(['Super Owner']), async (req, res) => {
   const { 

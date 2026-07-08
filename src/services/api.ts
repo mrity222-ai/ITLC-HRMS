@@ -148,6 +148,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  async createSuperOwner(data: any) {
+    const res = await fetch(`${API_URL}/superowner/create-superowner`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   // ========================================================
   // COMPANY ADMIN / HR MANAGERS APIs
   // ========================================================

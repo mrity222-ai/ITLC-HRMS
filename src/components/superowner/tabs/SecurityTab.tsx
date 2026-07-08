@@ -48,6 +48,46 @@ export const SecurityTab: React.FC = () => {
     }
   };
 
+  // Create Additional Super Owner State
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [isSubmittingReg, setIsSubmittingReg] = useState(false);
+
+  const handleCreateSuperOwnerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (regPassword !== regConfirmPassword) {
+      alert('Password and confirm password do not match.');
+      return;
+    }
+    if (regPassword.length < 6) {
+      alert('Password must be at least 6 characters long.');
+      return;
+    }
+    setIsSubmittingReg(true);
+    try {
+      await api.createSuperOwner({
+        name: regName,
+        email: regEmail,
+        phone: regPhone,
+        password: regPassword
+      });
+      addToast('Additional Super Owner registered successfully!', 'success');
+      addLog('Super Owner Created', `New Super Owner account registered: ${regEmail}`, 'security');
+      setRegName('');
+      setRegEmail('');
+      setRegPhone('');
+      setRegPassword('');
+      setRegConfirmPassword('');
+    } catch (err: any) {
+      alert(err.message || 'Failed to register Super Owner');
+    } finally {
+      setIsSubmittingReg(false);
+    }
+  };
+
   // Security Toggles
   const [twoFactor, setTwoFactor] = useState(true);
   const [sessionPinning, setSessionPinning] = useState(false);
@@ -265,6 +305,83 @@ export const SecurityTab: React.FC = () => {
               className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50 text-white text-xs font-semibold shrink-0 transition h-[36px]"
             >
               {isSubmittingPass ? 'Updating...' : 'Update Password'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Register Additional Super Owner Card */}
+      <div className="glass-card p-6 rounded-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 h-40 w-40 bg-gradient-to-bl from-indigo-500/10 to-transparent blur-3xl pointer-events-none"></div>
+        <h3 className="text-base font-semibold text-white mb-2 flex items-center gap-2">
+          <Plus className="h-5 w-5 text-indigo-400" /> Create Additional Super Owner
+        </h3>
+        <p className="text-xs text-slate-400 mb-6">Register another administrator account with global platform authority.</p>
+
+        <form onSubmit={handleCreateSuperOwnerSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-semibold text-slate-400 block font-mono">Full Name</label>
+              <input
+                type="text"
+                required
+                value={regName}
+                onChange={(e) => setRegName(e.target.value)}
+                className="glass-input w-full px-3.5 py-2 rounded-xl text-xs text-slate-200"
+                placeholder="e.g. John Doe"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-semibold text-slate-400 block font-mono">Email Address</label>
+              <input
+                type="email"
+                required
+                value={regEmail}
+                onChange={(e) => setRegEmail(e.target.value)}
+                className="glass-input w-full px-3.5 py-2 rounded-xl text-xs text-slate-200"
+                placeholder="e.g. admin@platform.com"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-semibold text-slate-400 block font-mono">Phone Number</label>
+              <input
+                type="text"
+                value={regPhone}
+                onChange={(e) => setRegPhone(e.target.value)}
+                className="glass-input w-full px-3.5 py-2 rounded-xl text-xs text-slate-200"
+                placeholder="e.g. +91 9999999999"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-semibold text-slate-400 block font-mono">Password</label>
+              <input
+                type="password"
+                required
+                value={regPassword}
+                onChange={(e) => setRegPassword(e.target.value)}
+                className="glass-input w-full px-3.5 py-2 rounded-xl text-xs text-slate-200"
+                placeholder="••••••••"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-semibold text-slate-400 block font-mono">Confirm Password</label>
+              <input
+                type="password"
+                required
+                value={regConfirmPassword}
+                onChange={(e) => setRegConfirmPassword(e.target.value)}
+                className="glass-input w-full px-3.5 py-2 rounded-xl text-xs text-slate-200"
+                placeholder="••••••••"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isSubmittingReg}
+              className="w-full px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 text-white text-xs font-semibold transition h-[36px]"
+            >
+              {isSubmittingReg ? 'Registering...' : 'Register Super Owner'}
             </button>
           </div>
         </form>
