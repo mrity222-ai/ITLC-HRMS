@@ -12,7 +12,20 @@ const SupportTicket = require('../models/SupportTicket');
 router.get('/employees', auth(['Company Admin', 'HR']), async (req, res) => {
   try {
     const employees = await Employee.findAll({ where: { companyId: req.user.companyId } });
-    res.json(employees);
+    const mapped = employees.map(emp => {
+      const data = emp.toJSON();
+      let parsedDocs = [];
+      if (data.documents) {
+        try {
+          parsedDocs = typeof data.documents === 'string' ? JSON.parse(data.documents) : data.documents;
+        } catch (e) {
+          parsedDocs = [];
+        }
+      }
+      data.documents = parsedDocs;
+      return data;
+    });
+    res.json(mapped);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
