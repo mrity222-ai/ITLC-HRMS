@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../services/api';
 import { 
@@ -7,7 +7,7 @@ import {
   Key, User, Calendar, Briefcase, DollarSign, Award, Star, Clock, Laptop, Eye, EyeOff
 } from 'lucide-react';
 
-export default function EmployeeManagement({ employees, setEmployees, searchQuery, initialSelectedEmpId }) {
+export default function EmployeeManagement({ employees, setEmployees, searchQuery, initialSelectedEmpId, subTab }) {
   const [deptFilter, setDeptFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [desgFilter, setDesgFilter] = useState('All');
@@ -22,6 +22,18 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
       ? employees.find(e => e.id === initialSelectedEmpId) 
       : null
   );
+
+  useEffect(() => {
+    if (subTab === 'profile') {
+      setViewMode('profile');
+      if (!selectedProfile && employees.length > 0) {
+        // Automatically default to the first employee if none is selected
+        setSelectedProfile(employees[0]);
+      }
+    } else if (subTab === 'directory') {
+      setViewMode('list');
+    }
+  }, [subTab, employees]);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [profileNotes, setProfileNotes] = useState([
     { text: 'Completed advanced UI patterns certification course.', date: 'June 20, 2026' },
