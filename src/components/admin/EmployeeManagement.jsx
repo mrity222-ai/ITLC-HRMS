@@ -76,18 +76,26 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   });
   
   const filteredEmployees = employees.filter(emp => {
+    if (!emp) return false;
     const query = localSearch || searchQuery || '';
-    const matchesSearch = emp.name.toLowerCase().includes(query.toLowerCase()) || 
-                          emp.email.toLowerCase().includes(query.toLowerCase()) ||
-                          (emp.designation || emp.role).toLowerCase().includes(query.toLowerCase());
+    
+    const nameVal = emp.name || '';
+    const emailVal = emp.email || '';
+    const descVal = emp.designation || emp.role || '';
+    
+    const matchesSearch = nameVal.toLowerCase().includes(query.toLowerCase()) || 
+                          emailVal.toLowerCase().includes(query.toLowerCase()) ||
+                          descVal.toLowerCase().includes(query.toLowerCase());
+                          
     const matchesDept = deptFilter === 'All' || emp.department === deptFilter;
     const matchesStatus = statusFilter === 'All' || emp.status === statusFilter;
     
-    // Fallback branch / type mappings
-    const empBranch = emp.id % 2 === 0 ? 'New York HQ' : 'London Tech Hub';
-    const empType = emp.id % 3 === 0 ? 'Contract' : emp.id % 4 === 0 ? 'Intern' : 'Full-time';
+    // Fallback branch / type mappings based on numeric ID
+    const empIdNum = parseInt(emp.id?.replace(/\D/g, '') || '0') || 0;
+    const empBranch = empIdNum % 2 === 0 ? 'New York HQ' : 'London Tech Hub';
+    const empType = empIdNum % 3 === 0 ? 'Contract' : empIdNum % 4 === 0 ? 'Intern' : 'Full-time';
     
-    const matchesDesg = desgFilter === 'All' || (emp.designation || emp.role) === desgFilter;
+    const matchesDesg = desgFilter === 'All' || descVal === desgFilter;
     const matchesBranch = branchFilter === 'All' || empBranch === branchFilter;
     const matchesType = typeFilter === 'All' || empType === typeFilter;
     
@@ -401,97 +409,102 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
 
             </div>
 
-            {/* Employee Cards Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
-              {filteredEmployees.map((emp) => (
-                <div 
-                  key={emp.id} 
-                  className="premium-card" 
-                  style={{ 
-                    padding: 20, 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    textAlign: 'center',
-                    gap: 14,
-                    cursor: 'pointer',
-                    position: 'relative'
-                  }}
-                  onClick={() => { setSelectedProfile(emp); setViewMode('profile'); }}
-                >
-                  {/* Status Badge */}
-                  <span className={`badge ${emp.status === 'Active' ? 'badge-success' : emp.status === 'On Leave' ? 'badge-warning' : 'badge-danger'}`} style={{ position: 'absolute', top: 12, right: 12, fontSize: '0.65rem' }}>
-                    {emp.status}
-                  </span>
-
-                  {/* Avatar */}
-                  <img 
-                    src={emp.avatar} 
-                    alt={emp.name} 
-                    style={{ width: 72, height: 72, borderRadius: 18, objectFit: 'cover', marginTop: 10 }} 
-                  />
-
-                  {/* Info */}
-                  <div>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800 }}>{emp.name}</h4>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{emp.email}</p>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <span className="badge badge-info" style={{ fontSize: '0.65rem' }}>{emp.department}</span>
-                    <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>{emp.designation || emp.role}</span>
-                    {emp.role && emp.role !== 'Employee' && (
-                      <span className="badge badge-success" style={{ fontSize: '0.65rem', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.2)' }}>{emp.role}</span>
-                    )}
-                  </div>
-
-                  <div className="number-font" style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                    {emp.salary}
-                  </div>
-
-                  {/* Action row */}
-                  <div 
-                    style={{ 
-                      display: 'flex', 
-                      gap: 12, 
-                      width: '100%', 
-                      borderTop: '1px solid var(--color-border)', 
-                      paddingTop: 12,
-                      justifyContent: 'center'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button 
+            {/* Employee Cards Grid with internal scroll */}
+            <div style={{ maxHeight: '650px', overflowY: 'auto', paddingRight: '8px', paddingBottom: '16px' }} className="premium-scrollbar">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+                {filteredEmployees.map((emp) => {
+                  if (!emp) return null;
+                  return (
+                    <div 
+                      key={emp.id} 
+                      className="premium-card" 
+                      style={{ 
+                        padding: 20, 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        textAlign: 'center',
+                        gap: 14,
+                        cursor: 'pointer',
+                        position: 'relative'
+                      }}
                       onClick={() => { setSelectedProfile(emp); setViewMode('profile'); }}
-                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 4 }}
-                      title="View Profile"
                     >
-                      <User size={15} />
-                    </button>
-                    <button 
-                      onClick={() => handleStartEdit(emp)}
-                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 4 }}
-                      title="Edit"
-                    >
-                      <Edit3 size={15} />
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteEmployee(emp.id)}
-                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: 4 }}
-                      title="Delete"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
+                      {/* Status Badge */}
+                      <span className={`badge ${emp.status === 'Active' ? 'badge-success' : emp.status === 'On Leave' ? 'badge-warning' : 'badge-danger'}`} style={{ position: 'absolute', top: 12, right: 12, fontSize: '0.65rem' }}>
+                        {emp.status}
+                      </span>
 
-                </div>
-              ))}
-              
-              {filteredEmployees.length === 0 && (
-                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 0', color: 'var(--color-text-tertiary)' }}>
-                  No employees matching filters or search queries.
-                </div>
-              )}
+                      {/* Avatar */}
+                      <img 
+                        src={emp.avatar} 
+                        alt={emp.name} 
+                        style={{ width: 72, height: 72, borderRadius: 18, objectFit: 'cover', marginTop: 10 }} 
+                      />
+
+                      {/* Info */}
+                      <div>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 800 }}>{emp.name}</h4>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{emp.email}</p>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <span className="badge badge-info" style={{ fontSize: '0.65rem' }}>{emp.department}</span>
+                        <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>{emp.designation || emp.role}</span>
+                        {emp.role && emp.role !== 'Employee' && (
+                          <span className="badge badge-success" style={{ fontSize: '0.65rem', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.2)' }}>{emp.role}</span>
+                        )}
+                      </div>
+
+                      <div className="number-font" style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                        {emp.salary}
+                      </div>
+
+                      {/* Action row */}
+                      <div 
+                        style={{ 
+                          display: 'flex', 
+                          gap: 12, 
+                          width: '100%', 
+                          borderTop: '1px solid var(--color-border)', 
+                          paddingTop: 12,
+                          justifyContent: 'center'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button 
+                          onClick={() => { setSelectedProfile(emp); setViewMode('profile'); }}
+                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 4 }}
+                          title="View Profile"
+                        >
+                          <User size={15} />
+                        </button>
+                        <button 
+                          onClick={() => handleStartEdit(emp)}
+                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 4 }}
+                          title="Edit"
+                        >
+                          <Edit3 size={15} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteEmployee(emp.id)}
+                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: 4 }}
+                          title="Delete"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+
+                    </div>
+                  );
+                })}
+                
+                {filteredEmployees.length === 0 && (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 0', color: 'var(--color-text-tertiary)' }}>
+                    No employees matching filters or search queries.
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
