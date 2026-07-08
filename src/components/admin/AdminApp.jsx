@@ -231,7 +231,7 @@ export default function App({ onLogout }) {
   const renderActiveView = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardOverview employees={employees} notifications={notifications} setActiveTab={setActiveTab} />;
+        return <DashboardOverview employeesList={employees} notifications={notifications} setActiveTab={setActiveTab} />;
       case 'employees':
       case 'employee-profile':
         return <EmployeeManagement employees={employees} setEmployees={setEmployees} searchQuery={searchQuery} subTab={activeTab === 'employee-profile' ? 'profile' : 'directory'} setActiveTab={setActiveTab} />;
