@@ -123,7 +123,16 @@ router.delete('/companies/:id', auth(['Super Owner']), async (req, res) => {
 router.get('/tickets', auth(['Super Owner']), async (req, res) => {
   try {
     const tickets = await SupportTicket.findAll();
-    res.json(tickets);
+    const mapped = tickets.map(t => {
+      const data = t.toJSON ? t.toJSON() : t;
+      try {
+        data.messages = JSON.parse(data.messagesJson || '[]');
+      } catch (e) {
+        data.messages = [];
+      }
+      return data;
+    });
+    res.json(mapped);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
