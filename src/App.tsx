@@ -18,14 +18,27 @@ export default function App() {
       if (token) {
         const profile = await api.getProfile();
         setLoggedInEmail(profile.email);
-        if (profile.role === 'Super Owner') {
-          setView('superowner');
-        } else if (profile.role === 'Company Admin' || profile.role === 'HR') {
-          setView('admin');
-        } else if (profile.role === 'Manager') {
-          setView('manager');
+        const path = window.location.pathname;
+        const search = window.location.search;
+        const isSuperownerRoute = path === '/superowner' || search.includes('superowner');
+
+        if (isSuperownerRoute) {
+          if (profile.role === 'Super Owner') {
+            setView('superowner');
+          } else {
+            localStorage.removeItem('hrms_jwt_token');
+            setView('superowner-login');
+          }
         } else {
-          setView('employee');
+          if (profile.role === 'Super Owner') {
+            setView('superowner');
+          } else if (profile.role === 'Company Admin' || profile.role === 'HR') {
+            setView('admin');
+          } else if (profile.role === 'Manager') {
+            setView('manager');
+          } else {
+            setView('employee');
+          }
         }
       } else {
         const path = window.location.pathname;
