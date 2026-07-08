@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import LoginForm from './components/LoginForm';
+import SuperownerLogin from './components/SuperownerLogin';
 import EmployeeApp from './components/employee/EmployeeApp';
 import AdminApp from './components/admin/AdminApp';
 import ManagerApp from './components/manager/ManagerApp';
@@ -135,10 +136,14 @@ export default function App() {
 
       {/* Main card centered on screen */}
       <div className="w-full max-w-[480px] sm:max-w-[540px] md:max-w-3xl lg:max-w-[960px] h-auto relative z-10 flex items-center justify-center mx-auto">
-        <LoginForm 
-          onSuccessLogin={handleSuccessLogin} 
-          isSuperownerMode={view === 'superowner-login'} 
-        />
+        {view === 'superowner-login' ? (
+          <SuperownerLogin onSuccessLogin={handleSuccessLogin} />
+        ) : (
+          <LoginForm 
+            onSuccessLogin={handleSuccessLogin} 
+            isSuperownerMode={false} 
+          />
+        )}
       </div>
     </main>
   );
