@@ -135,9 +135,11 @@ router.post('/change-password', auth(), async (req, res) => {
     const user = await Employee.findByPk(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!isMatch) {
-      return res.status(400).json({ error: 'Incorrect current password' });
+    if (currentPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isMatch) {
+        return res.status(400).json({ error: 'Incorrect current password' });
+      }
     }
 
     const salt = await bcrypt.genSalt(10);

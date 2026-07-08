@@ -20,7 +20,6 @@ export const SecurityTab: React.FC = () => {
   const { addToast, addLog, logs } = useDashboard();
 
   // Change Password State
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isSubmittingPass, setIsSubmittingPass] = useState(false);
@@ -37,10 +36,9 @@ export const SecurityTab: React.FC = () => {
     }
     setIsSubmittingPass(true);
     try {
-      await api.changePassword({ currentPassword, newPassword });
+      await api.changePassword({ newPassword });
       addToast('Password changed successfully!', 'success');
       addLog('Password Changed', 'Super Owner password updated successfully.', 'security');
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
     } catch (err: any) {
@@ -237,18 +235,7 @@ export const SecurityTab: React.FC = () => {
         </h3>
         <p className="text-xs text-slate-400 mb-6">Modify your Super Owner account password securely.</p>
         
-        <form onSubmit={handlePasswordSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div className="space-y-1">
-            <label className="text-[10px] uppercase font-semibold text-slate-405 block">Current Password</label>
-            <input
-              type="password"
-              required
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="glass-input w-full px-3.5 py-2 rounded-xl text-xs text-slate-200"
-              placeholder="••••••••"
-            />
-          </div>
+        <form onSubmit={handlePasswordSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div className="space-y-1">
             <label className="text-[10px] uppercase font-semibold text-slate-405 block">New Password</label>
             <input
