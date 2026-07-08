@@ -5,6 +5,7 @@ import {
   Trash2, Plus, CheckCircle2, History, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
+import { api } from '../../../services/api';
 
 interface ActiveSession {
   id: string;
@@ -17,6 +18,37 @@ interface ActiveSession {
 
 export const SecurityTab: React.FC = () => {
   const { addToast, addLog, logs } = useDashboard();
+
+  // Change Password State
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isSubmittingPass, setIsSubmittingPass] = useState(false);
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmNewPassword) {
+      alert('New password and confirm password do not match.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      alert('New password must be at least 6 characters long.');
+      return;
+    }
+    setIsSubmittingPass(true);
+    try {
+      await api.changePassword({ currentPassword, newPassword });
+      addToast('Password changed successfully!', 'success');
+      addLog('Password Changed', 'Super Owner password updated successfully.', 'security');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err: any) {
+      alert(err.message || 'Failed to update password');
+    } finally {
+      setIsSubmittingPass(false);
+    }
+  };
 
   // Security Toggles
   const [twoFactor, setTwoFactor] = useState(true);
@@ -195,6 +227,60 @@ export const SecurityTab: React.FC = () => {
             <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Firewall active and parsing</span>
           </div>
         </div>
+      </div>
+
+      {/* Change Password Card */}
+      <div className="glass-card p-6 rounded-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 h-40 w-40 bg-gradient-to-bl from-violet-500/10 to-transparent blur-3xl pointer-events-none"></div>
+        <h3 className="text-base font-semibold text-white mb-2 flex items-center gap-2">
+          <Key className="h-5 w-5 text-indigo-400" /> Change Password
+        </h3>
+        <p className="text-xs text-slate-400 mb-6">Modify your Super Owner account password securely.</p>
+        
+        <form onSubmit={handlePasswordSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase font-semibold text-slate-405 block">Current Password</label>
+            <input
+              type="password"
+              required
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="glass-input w-full px-3.5 py-2 rounded-xl text-xs text-slate-200"
+              placeholder="••••••••"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase font-semibold text-slate-405 block">New Password</label>
+            <input
+              type="password"
+              required
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="glass-input w-full px-3.5 py-2 rounded-xl text-xs text-slate-200"
+              placeholder="••••••••"
+            />
+          </div>
+          <div className="flex gap-2">
+            <div className="space-y-1 flex-1">
+              <label className="text-[10px] uppercase font-semibold text-slate-405 block">Confirm New Password</label>
+              <input
+                type="password"
+                required
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                className="glass-input w-full px-3.5 py-2 rounded-xl text-xs text-slate-200"
+                placeholder="••••••••"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isSubmittingPass}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50 text-white text-xs font-semibold shrink-0 transition h-[36px]"
+            >
+              {isSubmittingPass ? 'Updating...' : 'Update Password'}
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Device Sessions Management */}

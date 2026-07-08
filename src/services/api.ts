@@ -84,6 +84,8 @@ export const api = {
     localStorage.removeItem('hrms_jwt_token');
   },
 
+
+
   async getProfile() {
     const res = await fetch(`${API_URL}/auth/profile`, {
       method: 'GET',
