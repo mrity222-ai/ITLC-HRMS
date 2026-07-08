@@ -63,9 +63,8 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     manageDocs: true
   });
   
-  // Filters & Search logic
   const filteredEmployees = employees.filter(emp => {
-    const query = localSearch || searchQuery;
+    const query = localSearch || searchQuery || '';
     const matchesSearch = emp.name.toLowerCase().includes(query.toLowerCase()) || 
                           emp.email.toLowerCase().includes(query.toLowerCase()) ||
                           (emp.designation || emp.role).toLowerCase().includes(query.toLowerCase());

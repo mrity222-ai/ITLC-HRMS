@@ -234,13 +234,14 @@ export default function App({ onLogout }) {
         return <DashboardOverview employees={employees} notifications={notifications} setActiveTab={setActiveTab} />;
       case 'employees':
       case 'employee-profile':
-        return <EmployeeManagement employees={employees} setEmployees={setEmployees} subTab={activeTab === 'employee-profile' ? 'profile' : 'directory'} setActiveTab={setActiveTab} />;
+        return <EmployeeManagement employees={employees} setEmployees={setEmployees} searchQuery={searchQuery} subTab={activeTab === 'employee-profile' ? 'profile' : 'directory'} setActiveTab={setActiveTab} />;
       case 'departments':
         return <Departments setActiveTab={setActiveTab} />;
       case 'designations':
         return <Designations setActiveTab={setActiveTab} />;
       case 'organization':
         return <Organization employees={employees} setActiveTab={setActiveTab} />;
+      case 'attendance':
       case 'attendance-dashboard':
       case 'attendance-logs':
       case 'attendance-grid':
@@ -248,6 +249,7 @@ export default function App({ onLogout }) {
       case 'attendance-shift':
       case 'attendance-reports':
         return <Attendance subTab={activeTab.split('-')[1] || 'dashboard'} setActiveTab={setActiveTab} />;
+      case 'leave':
       case 'leave-dashboard':
       case 'leave-request':
       case 'leave-my':
@@ -255,6 +257,7 @@ export default function App({ onLogout }) {
       case 'leave-calendar':
       case 'leave-reports':
         return <LeaveManagement subTab={activeTab.split('-')[1] || 'dashboard'} setActiveTab={setActiveTab} />;
+      case 'payroll':
       case 'payroll-dashboard':
       case 'payroll-structures':
       case 'payroll-run':
@@ -263,6 +266,7 @@ export default function App({ onLogout }) {
       case 'payroll-reimbursements':
       case 'payroll-reports':
         return <Payroll employees={employees} subTab={activeTab.split('-')[1] || 'dashboard'} setActiveTab={setActiveTab} />;
+      case 'recruitment':
       case 'recruitment-dashboard':
       case 'recruitment-openings':
       case 'recruitment-candidates':
@@ -270,6 +274,7 @@ export default function App({ onLogout }) {
       case 'recruitment-offers':
       case 'recruitment-onboarding':
         return <Recruitment subTab={activeTab.split('-')[1] || 'dashboard'} setActiveTab={setActiveTab} />;
+      case 'performance':
       case 'performance-dashboard':
       case 'performance-goals':
       case 'performance-kpis':
@@ -282,6 +287,7 @@ export default function App({ onLogout }) {
         return <Expenses setActiveTab={setActiveTab} />;
       case 'support':
         return <SupportTickets setActiveTab={setActiveTab} />;
+      case 'assets':
       case 'assets-inventory':
       case 'assets-allocate':
       case 'assets-requests':

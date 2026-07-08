@@ -126,17 +126,17 @@ function DashboardContent({ onLogout }: { onLogout?: () => void }) {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
             <div>
               <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tight">
-                {activeTab === "dashboard" ? profile.fullName : getModuleTitle()}
+                {activeTab === "dashboard" ? profile?.fullName : getModuleTitle()}
               </h1>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {activeTab === "dashboard" ? `Employee ID: ${profile.id}` : "ITLC HRMS Self Service Portal"}
+                {activeTab === "dashboard" ? `Employee ID: ${profile?.id}` : "ITLC HRMS Self Service Portal"}
               </p>
             </div>
             
             {/* Direct Clock status in header */}
             <div className="flex items-center gap-2 self-start sm:self-center">
               <div className="text-[10px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/25 px-3 py-1.5 rounded-xl uppercase tracking-wider select-none">
-                Role: <strong className="font-extrabold text-sky-800 dark:text-sky-300">{profile.designation}</strong>
+                Role: <strong className="font-extrabold text-sky-800 dark:text-sky-300">{profile?.designation}</strong>
               </div>
               {onLogout && (
                 <button

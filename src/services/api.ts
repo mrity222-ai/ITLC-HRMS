@@ -1,6 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' 
-  ? `http://${window.location.hostname}:5000/api` 
-  : 'http://localhost:5000/api');
+const API_URL = import.meta.env.VITE_API_URL || 'https://gold-stork-993357.hostingersite.com/api';
 
 // Helper to get request headers with token
 const getHeaders = (isMultipart = false) => {
