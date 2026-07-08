@@ -32,6 +32,47 @@ import {
   Legend,
 } from "recharts";
 
+const compressImage = (base64Str: string, maxWidth = 800, maxHeight = 800): Promise<string> => {
+  return new Promise((resolve) => {
+    if (!base64Str.startsWith('data:image/')) {
+      resolve(base64Str);
+      return;
+    }
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      } else {
+        resolve(base64Str);
+      }
+    };
+    img.onerror = () => {
+      resolve(base64Str);
+    };
+  });
+};
+
 export const LeaveManagement: React.FC = () => {
   const { leaveBalances, leaveRequests, applyLeave, cancelLeave, activeSubTab: globalSubTab, setActiveSubTab: setGlobalSubTab } = useHRMS();
 
@@ -189,9 +230,10 @@ export const LeaveManagement: React.FC = () => {
     if (file) {
       setAttachmentName(file.name);
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         if (typeof reader.result === 'string') {
-          setAttachmentData(reader.result);
+          const compressed = await compressImage(reader.result);
+          setAttachmentData(compressed);
         }
       };
       reader.readAsDataURL(file);

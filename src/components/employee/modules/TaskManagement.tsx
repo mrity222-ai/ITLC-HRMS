@@ -8,6 +8,47 @@ import {
 } from "lucide-react";
 import { api } from "../../../services/api";
 
+const compressImage = (base64Str: string, maxWidth = 800, maxHeight = 800): Promise<string> => {
+  return new Promise((resolve) => {
+    if (!base64Str.startsWith('data:image/')) {
+      resolve(base64Str);
+      return;
+    }
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      } else {
+        resolve(base64Str);
+      }
+    };
+    img.onerror = () => {
+      resolve(base64Str);
+    };
+  });
+};
+
 export const TaskManagement: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,9 +226,9 @@ export const TaskManagement: React.FC = () => {
                         reader.onloadend = async () => {
                           if (typeof reader.result === 'string') {
                             try {
-                              const base64Data = reader.result;
-                              await api.updateEmployeeTask(task.id, { attachments: base64Data });
-                              setTasks(prev => prev.map(t => t.id === task.id ? { ...t, attachments: base64Data } : t));
+                              const compressed = await compressImage(reader.result);
+                              await api.updateEmployeeTask(task.id, { attachments: compressed });
+                              setTasks(prev => prev.map(t => t.id === task.id ? { ...t, attachments: compressed } : t));
                               alert("Task photo uploaded successfully!");
                             } catch (err) {
                               alert("Failed to upload task photo");

@@ -143,6 +143,47 @@ const DEFAULT_DOCUMENTS: ProfileDoc[] = [
   }
 ];
 
+const compressImage = (base64Str: string, maxWidth = 800, maxHeight = 800): Promise<string> => {
+  return new Promise((resolve) => {
+    if (!base64Str.startsWith('data:image/')) {
+      resolve(base64Str);
+      return;
+    }
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      } else {
+        resolve(base64Str);
+      }
+    };
+    img.onerror = () => {
+      resolve(base64Str);
+    };
+  });
+};
+
 export const MyProfile: React.FC = () => {
   const { profile, updateProfile, changePassword, documents, activeSubTab: globalSubTab, setActiveSubTab: setGlobalSubTab, addNotification } = useHRMS();
 
@@ -322,10 +363,10 @@ export const MyProfile: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         if (typeof reader.result === "string") {
-          const base64Data = reader.result;
-          updateProfile({ photo: base64Data });
+          const compressed = await compressImage(reader.result);
+          updateProfile({ photo: compressed });
           
           // Also sync with the Documents list
           const updated = documentsVault.map((doc) => {
@@ -334,8 +375,8 @@ export const MyProfile: React.FC = () => {
                 ...doc,
                 status: "Uploaded" as const,
                 uploadedDate: new Date().toISOString().split("T")[0],
-                fileType: file.type || "image/png",
-                fileData: base64Data,
+                fileType: "image/jpeg",
+                fileData: compressed,
                 fileName: file.name,
               };
             }
@@ -362,9 +403,9 @@ export const MyProfile: React.FC = () => {
     // Simulate loader state
     setTimeout(() => {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         if (typeof reader.result === "string") {
-          const base64Data = reader.result;
+          const compressed = await compressImage(reader.result);
           const todayStr = new Date().toISOString().split("T")[0];
           const updated = documentsVault.map((doc) => {
             if (doc.id === docId) {
@@ -372,8 +413,8 @@ export const MyProfile: React.FC = () => {
                 ...doc,
                 status: "Uploaded" as const,
                 uploadedDate: todayStr,
-                fileType: file.type || (file.name.endsWith(".pdf") ? "application/pdf" : "image/jpeg"),
-                fileData: base64Data,
+                fileType: file.type.startsWith("image/") ? "image/jpeg" : file.type || (file.name.endsWith(".pdf") ? "application/pdf" : "image/jpeg"),
+                fileData: compressed,
                 fileName: file.name,
               };
             }
@@ -383,7 +424,7 @@ export const MyProfile: React.FC = () => {
 
           // If updating profile photo card, keep in sync with context profile photo
           if (docId === "profile-photo") {
-            updateProfile({ photo: base64Data });
+            updateProfile({ photo: compressed });
           }
         }
         setUploadingDocId(null);
