@@ -416,9 +416,6 @@ export const AttendanceManagement: React.FC = () => {
         </Card>
       )}
 
-        </Card>
-      )}
-
       {/* RENDER REGULARIZATION PANEL VIEW */}
       {activeSubTab === "att-regularize" && (
         <div className="space-y-6 animate-fadeIn">
