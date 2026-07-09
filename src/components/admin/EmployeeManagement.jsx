@@ -7,6 +7,323 @@ import {
   Key, User, Calendar, Briefcase, DollarSign, Award, Star, Clock, Laptop, Eye, EyeOff
 } from 'lucide-react';
 
+const AdminDocumentPreviewer = ({ doc, profile }) => {
+  if (!doc) return null;
+
+  // 1. User uploaded custom Image
+  if (doc.fileData && doc.fileData.startsWith("data:image")) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.02)', padding: 16, borderRadius: 12, border: '1px solid var(--color-border)', width: '100%', height: '100%' }}>
+        <img src={doc.fileData} alt={doc.name} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', borderRadius: 8, boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
+      </div>
+    );
+  }
+
+  // 2. User uploaded custom PDF
+  if (doc.fileData && doc.fileData.startsWith("data:application/pdf")) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 48, border: '2px dashed var(--color-border)', borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.01)', gap: 16, width: '100%', height: '100%', boxSizing: 'border-box' }}>
+        <FileText size={48} style={{ color: 'var(--color-primary)' }} />
+        <div style={{ textAlign: 'center' }}>
+          <h4 style={{ fontWeight: 'bold', margin: '0 0 4px 0' }}>{doc.fileName || "uploaded_document.pdf"}</h4>
+          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', margin: 0 }}>PDF Document Size: ~{(doc.fileData.length * 0.75 / 1024).toFixed(1)} KB</p>
+        </div>
+        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textAlign: 'center', maxWidth: 380, display: 'block' }}>
+          For security and compatibility, please click the <strong>Download Copy</strong> option to review the full PDF.
+        </span>
+      </div>
+    );
+  }
+
+  // 3. Fallback: Simulated Document templates if we have type / ID matching
+  const docType = doc.type || (doc.id ? doc.id.replace('profile-photo', 'photo').replace('bank-cheque', 'bank-cheque') : '');
+  
+  // Map fileName/name to docType if type is not present
+  let resolvedType = docType;
+  if (!resolvedType && doc.name) {
+    const n = doc.name.toLowerCase();
+    if (n.includes('photo')) resolvedType = 'photo';
+    else if (n.includes('aadhaar')) resolvedType = 'aadhaar';
+    else if (n.includes('pan')) resolvedType = 'pan';
+    else if (n.includes('experience')) resolvedType = 'exp-letter';
+    else if (n.includes('cheque') || n.includes('passbook')) resolvedType = 'bank-cheque';
+    else if (n.includes('offer')) resolvedType = 'offer-letter';
+    else if (n.includes('appointment')) resolvedType = 'appointment-letter';
+  }
+
+  switch (resolvedType) {
+    case "photo":
+      return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.02)', padding: 32, borderRadius: 12, border: '1px solid var(--color-border)', width: '100%', height: '100%', boxSizing: 'border-box' }}>
+          <div style={{ height: 160, width: 160, borderRadius: '50%', overflow: 'hidden', border: '4px solid rgba(79, 70, 229, 0.2)', backgroundColor: 'white', boxShadow: '0 10px 15px rgba(0,0,0,0.1)' }}>
+            {profile.photo || profile.avatar ? (
+              <img src={profile.photo || profile.avatar} alt={profile.name} style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.5rem', fontWeight: 900, color: 'var(--color-primary)' }}>
+                {(profile.name || '').split(" ").map((n) => n[0]).join("")}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+      
+    case "aadhaar":
+      return (
+        <div style={{ width: '100%', border: '2px solid #0284c7', backgroundColor: '#f0f9ff', padding: 16, borderRadius: 12, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', position: 'relative', color: '#1e293b', boxSizing: 'border-box', textAlign: 'left' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #38bdf8', paddingBottom: 8, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ height: 24, width: 24, backgroundColor: '#f59e0b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: 'white', fontWeight: 'bold' }}>印</div>
+              <div>
+                <h4 style={{ fontSize: 10, fontWeight: 900, color: '#0369a1', lineHeight: '1.2', margin: 0 }}>GOVERNMENT OF INDIA</h4>
+                <span style={{ fontSize: 7, color: '#64748b', display: 'block' }}>Unique Identification Authority of India</span>
+              </div>
+            </div>
+            <span style={{ fontSize: 9, fontWeight: 900, color: '#0369a1' }}>Aadhaar Card</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', border: '1px solid #bae6fd', backgroundColor: 'white', padding: 4, borderRadius: 8 }}>
+              <div style={{ height: 80, width: 64, backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 4 }}>
+                {profile.photo || profile.avatar ? (
+                  <img src={profile.photo || profile.avatar} alt="Aadhaar photo" style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <User size={30} style={{ color: '#94a3b8' }} />
+                )}
+              </div>
+              <span style={{ fontSize: 6, color: '#64748b', marginTop: 4, fontWeight: 'bold' }}>Verified Photo</span>
+            </div>
+
+            <div style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 4, lineHeight: 1.2 }}>
+              <div>Name: <strong style={{ fontWeight: 'bold' }}>{profile.name}</strong></div>
+              <div>DOB: <strong>{profile.dob || '1992-08-24'}</strong></div>
+              <div>Gender: <strong>{profile.gender || 'Male'}</strong></div>
+              <div style={{ fontSize: 9, color: '#64748b', paddingTop: 2, borderTop: '1px solid #e2e8f0' }}>
+                Address: <span style={{ display: 'block', marginTop: 2, color: '#334155', height: 32, overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.address || 'Not Provided'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ borderTop: '1px solid #38bdf8', marginTop: 12, paddingTop: 8, textAlign: 'center' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: 2, color: '#0c4a6e', fontFamily: 'monospace' }}>
+              3892 4829 8293
+            </div>
+            <div style={{ fontSize: 7, color: '#0369a1', fontWeight: 500, marginTop: 2 }}>
+              Aadhaar is a proof of identity, not of citizenship.
+            </div>
+          </div>
+        </div>
+      );
+
+    case "pan":
+      return (
+        <div style={{ width: '100%', border: '2px solid #059669', backgroundColor: '#f0fdf4', padding: 16, borderRadius: 12, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', color: '#1e293b', boxSizing: 'border-box', textAlign: 'left' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #34d399', paddingBottom: 8, marginBottom: 12 }}>
+            <div>
+              <h4 style={{ fontSize: 9, fontWeight: 900, color: '#047857', lineHeight: '1.2', margin: 0 }}>INCOME TAX DEPARTMENT</h4>
+              <span style={{ fontSize: 7, color: '#64748b', display: 'block' }}>GOVERNMENT OF INDIA</span>
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 900, color: '#047857' }}>PAN CARD</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 11, lineHeight: 1.2 }}>
+              <div>
+                <span style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold', display: 'block' }}>PERMANENT ACCOUNT NUMBER (PAN)</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: 12 }}>AAKPT8293D</span>
+              </div>
+              <div>
+                <span style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold', display: 'block' }}>NAME</span>
+                <span style={{ fontWeight: 'bold' }}>{(profile.name || '').toUpperCase()}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold', display: 'block' }}>DATE OF BIRTH</span>
+                <span style={{ fontWeight: 'bold' }}>{profile.dob || '1992-08-24'}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ height: 64, width: 50, backgroundColor: 'white', border: '1px solid #a7f3d0', padding: 2, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                {profile.photo || profile.avatar ? (
+                  <img src={profile.photo || profile.avatar} alt="PAN photo" style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <User size={24} style={{ color: '#cbd5e1' }} />
+                )}
+              </div>
+              <div style={{ border: '1px solid var(--color-border)', padding: 2, backgroundColor: 'white', width: '100%', borderRadius: 4, textAlign: 'center', fontSize: 6, fontStyle: 'italic', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {(profile.name || '').split(" ")[0]}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case "resume":
+      return (
+        <div style={{ width: '100%', height: '100%', backgroundColor: 'white', border: '1px solid var(--color-border)', padding: 24, borderRadius: 12, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', fontSize: 10, color: '#334155', lineHeight: '1.4', maxHeight: 330, overflowY: 'auto', boxSizing: 'border-box', textAlign: 'left' }}>
+          <div style={{ textAlign: 'center', paddingBottom: 12, borderBottom: '1px solid var(--color-border)', marginBottom: 12 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 900, margin: 0, color: 'var(--color-text-primary)' }}>{profile.name}</h2>
+            <p style={{ fontSize: 10, fontWeight: 'semibold', color: 'var(--color-primary)', margin: '2px 0 0 0' }}>{profile.designation || 'Software Engineer'}</p>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: 8, margin: '2px 0 0 0' }}>{profile.email} | {profile.phone} | {profile.address || 'USA'}</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div>
+              <h4 style={{ fontWeight: 'extrabold', textTransform: 'uppercase', fontSize: 8, color: 'var(--color-primary)', borderBottom: '1px solid var(--color-border)', paddingBottom: 2, margin: '0 0 6px 0' }}>Professional Experience</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+                <span>Software Engineer | ITLC Technologies</span>
+                <span>{profile.joiningDate || '2026-06-01'} - Present</span>
+              </div>
+              <p style={{ fontSize: 9, color: 'var(--color-text-secondary)', marginTop: 2, margin: 0 }}>
+                Responsible for coding, maintaining, and shipping features for Enterprise HRMS ESS dashboards. Specialized in React and Tailwind.
+              </p>
+            </div>
+            <div>
+              <h4 style={{ fontWeight: 'extrabold', textTransform: 'uppercase', fontSize: 8, color: 'var(--color-primary)', borderBottom: '1px solid var(--color-border)', paddingBottom: 2, margin: '0 0 6px 0' }}>Technical Skills</h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {["React", "TypeScript", "Tailwind CSS", "Node.js", "Git"].map((skill, i) => (
+                  <span key={i} style={{ padding: '1px 4px', backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: 4, fontSize: 8, border: '1px solid var(--color-border)' }}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case "exp-letter":
+      return (
+        <div style={{ width: '100%', backgroundColor: 'white', border: '1px solid var(--color-border)', padding: 24, borderRadius: 12, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', fontSize: 10, color: '#334155', lineHeight: '1.4', boxSizing: 'border-box', textAlign: 'left' }}>
+          <div style={{ textAlign: 'center', paddingBottom: 12, borderBottom: '1px solid var(--color-border)', marginBottom: 12 }}>
+            <h3 style={{ fontWeight: 'black', color: 'var(--color-primary)', fontSize: 12, margin: 0 }}>PREVCORP ENTERPRISES INC.</h3>
+            <p style={{ fontSize: 7, color: '#64748b', margin: '2px 0 0 0' }}>102 Business District, Techno Park, Phase 1</p>
+          </div>
+          <div style={{ textAlign: 'right', fontSize: 8, color: '#64748b' }}>Date: May 20, 2026</div>
+          <div style={{ textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 10, margin: '8px 0' }}>
+            TO WHOMSOEVER IT MAY CONCERN
+          </div>
+          <p style={{ margin: '0 0 8px 0' }}>
+            This is to certify that <strong>{profile.name}</strong> was employed with PrevCorp Enterprises Inc. as an Associate Software Engineer from <strong>January 15, 2024</strong> to <strong>May 10, 2026</strong>.
+          </p>
+          <p style={{ margin: '0 0 8px 0' }}>
+            Their conduct was excellent, and we wish them the absolute best in all their future endeavors.
+          </p>
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontWeight: 'bold' }}>Rajesh K. Mehta</div>
+            <div style={{ fontSize: 8, color: '#64748b' }}>Head of HR Operations, PrevCorp Enterprises</div>
+          </div>
+        </div>
+      );
+
+    case "bank-cheque":
+      return (
+        <div style={{ width: '100%', border: '2px dashed #10b981', backgroundColor: '#f0fdf4', padding: 16, borderRadius: 12, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', color: '#064e3b', position: 'relative', boxSizing: 'border-box', textAlign: 'left' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #a7f3d0', paddingBottom: 8 }}>
+            <div>
+              <h4 style={{ fontWeight: 'extrabold', margin: 0, fontSize: 10 }}>GLOBAL ENTERPRISE BANK</h4>
+              <span style={{ fontSize: 7, color: '#047857', fontFamily: 'monospace' }}>IFSC: GEB0000382</span>
+            </div>
+            <span style={{ fontSize: 8, color: '#047857', fontFamily: 'monospace' }}>DATE: DD / MM / YYYY</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: 14, fontWeight: '900', border: '1px solid #a7f3d0', borderRadius: 8, padding: 12, margin: '16px 0', position: 'relative', backgroundColor: 'rgba(255,255,255,0.6)' }}>
+            <div style={{ color: 'rgba(239,68,68,0.2)', fontSize: 24, fontWeight: 'bold', position: 'absolute', transform: 'rotate(12deg)', letterSpacing: 4 }}>
+              CANCELLED
+            </div>
+            <div style={{ tracking: 'wider', color: '#047857', fontSize: 12 }}>
+              A/C NO: 982930293023
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 7, color: '#047857', borderTop: '1px solid #a7f3d0', paddingTop: 8, fontFamily: 'monospace' }}>
+            <span>⑈ 9829382 ⑈ 982938293 ⑈ 003829 ⑈ 10</span>
+            <span style={{ fontStyle: 'italic' }}>Signature Not Required</span>
+          </div>
+        </div>
+      );
+
+    case "offer-letter":
+      return (
+        <div style={{ width: '100%', height: '100%', backgroundColor: 'white', border: '1px solid var(--color-border)', padding: 24, borderRadius: 12, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', fontSize: 10, color: '#334155', maxHeight: 330, overflowY: 'auto', boxSizing: 'border-box', textAlign: 'left' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '2px solid var(--color-border)', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ height: 20, width: 20, backgroundColor: 'var(--color-primary)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: 8 }}>ITLC</div>
+              <h4 style={{ fontWeight: 'bold', margin: 0, fontSize: 10 }}>ITLC TECHNOLOGIES</h4>
+            </div>
+            <span style={{ fontSize: 7, color: '#64748b' }}>Ref: ITLC/OFF/2026/082</span>
+          </div>
+          <div style={{ textAlign: 'right', fontSize: 7, color: '#64748b' }}>Date: May 15, 2026</div>
+          <p style={{ margin: '0 0 6px 0' }}>Dear {profile.name},</p>
+          <div style={{ textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: '1px solid var(--color-border)', paddingBottom: 2, margin: '8px 0' }}>Offer of Employment</div>
+          <p style={{ margin: '0 0 8px 0' }}>We are pleased to offer you employment with <strong>ITLC Technologies, Inc.</strong> in the position of <strong>{profile.designation || 'Software Engineer'}</strong>. Your employment is scheduled to commence on <strong>{profile.joiningDate || '2026-06-01'}</strong>.</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+            <div>
+              <div style={{ fontWeight: 'bold' }}>Sheela Nair</div>
+              <div style={{ fontSize: 8, color: '#64748b' }}>VP, HR Operations</div>
+            </div>
+            <div style={{ padding: '2px 6px', border: '1px dashed #10b981', backgroundColor: '#ecfdf5', color: '#10b981', borderRadius: 4, fontSize: 7, fontWeight: 'bold' }}>Digitally Accepted</div>
+          </div>
+        </div>
+      );
+
+    case "appointment-letter":
+      return (
+        <div style={{ width: '100%', height: '100%', backgroundColor: 'white', border: '1px solid var(--color-border)', padding: 24, borderRadius: 12, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', fontSize: 10, color: '#334155', maxHeight: 330, overflowY: 'auto', boxSizing: 'border-box', textAlign: 'left' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '2px solid var(--color-border)', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ height: 20, width: 20, backgroundColor: 'var(--color-primary)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: 8 }}>ITLC</div>
+              <h4 style={{ fontWeight: 'bold', margin: 0, fontSize: 10 }}>ITLC TECHNOLOGIES</h4>
+            </div>
+            <span style={{ fontSize: 7, color: '#64748b' }}>Ref: ITLC/APT/2026/082</span>
+          </div>
+          <p style={{ margin: '0 0 6px 0' }}>To, {profile.name},</p>
+          <div style={{ textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: '1px solid var(--color-border)', paddingBottom: 2, margin: '8px 0' }}>Letter of Appointment</div>
+          <p style={{ margin: '0 0 6px 0' }}>We are pleased to issue this Letter of Appointment detailing the terms and conditions of your service:</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingLeft: 8, margin: '8px 0' }}>
+            <div>1. <strong>Probation:</strong> 6 months.</div>
+            <div>2. <strong>Working Hours:</strong> 9:30 AM to 6:30 PM.</div>
+            <div>3. <strong>Termination:</strong> 30 days notice.</div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+            <div>
+              <div style={{ fontWeight: 'bold' }}>Sheela Nair</div>
+              <div style={{ fontSize: 8, color: '#64748b' }}>VP, HR Operations</div>
+            </div>
+            <div style={{ padding: '2px 6px', border: '1px dashed #10b981', backgroundColor: '#ecfdf5', color: '#10b981', borderRadius: 4, fontSize: 7, fontWeight: 'bold' }}>Digitally Signed</div>
+          </div>
+        </div>
+      );
+
+    default:
+      // Show default certificate / locked placeholder if no specific type is resolved
+      return (
+        <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+          <div style={{
+            position: 'absolute',
+            fontSize: '2.5rem',
+            fontWeight: 900,
+            color: 'rgba(16, 185, 129, 0.08)',
+            transform: 'rotate(-25deg)',
+            pointerEvents: 'none',
+            textTransform: 'uppercase',
+            letterSpacing: 4
+          }}>
+            Verified HR Admin
+          </div>
+          <div style={{ zIndex: 2 }}>
+            <ShieldCheck size={48} style={{ color: 'var(--color-success)', marginBottom: 12, marginLeft: 'auto', marginRight: 'auto' }} />
+            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 6px 0' }}>{(doc.name || 'Document').replace(/_/g, ' ').replace(/\.[^/.]+$/, "")}</h4>
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 6, maxWidth: 300, lineHeight: 1.4, marginLeft: 'auto', marginRight: 'auto' }}>
+              This official certificate is scanned, encrypted, and locked in the secure database. Audit verification completed by HR Super Admin.
+            </p>
+            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', display: 'block', marginTop: 10 }}>
+              SHA-256 Hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+            </span>
+          </div>
+        </div>
+      );
+  }
+};
+
 export default function EmployeeManagement({ employees, setEmployees, searchQuery, initialSelectedEmpId, subTab }) {
   const [deptFilter, setDeptFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -1163,14 +1480,50 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                             onChange={(e) => {
                               const file = e.target.files[0];
                               if (!file) return;
-                              const updatedDocs = [...(selectedProfile.documents || []), file.name];
-                              setSelectedProfile({ ...selectedProfile, documents: updatedDocs });
-                              setEmployees(employees.map(emp => 
-                                emp.id === selectedProfile.id 
-                                  ? { ...emp, documents: updatedDocs }
-                                  : emp
-                              ));
-                              alert(`Document "${file.name}" uploaded successfully!`);
+                              
+                              const reader = new FileReader();
+                              reader.onloadend = async () => {
+                                const base64Data = reader.result;
+                                const docId = file.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+                                const docName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+                                const newDoc = {
+                                  id: docId,
+                                  name: docName,
+                                  type: file.type.startsWith("image/") ? "photo" : (file.name.endsWith(".pdf") ? "resume" : "other"),
+                                  status: "Uploaded",
+                                  uploadedDate: new Date().toISOString().split('T')[0],
+                                  fileType: file.type,
+                                  fileData: base64Data,
+                                  fileName: file.name
+                                };
+
+                                // Ensure current documents are parsed correctly if they are strings or objects
+                                const currentDocs = Array.isArray(selectedProfile.documents) 
+                                  ? selectedProfile.documents.map(d => typeof d === 'string' ? { id: d.toLowerCase().replace(/[^a-z0-9]+/g, "-"), name: d.replace(/_/g, ' '), fileName: d, fileData: '' } : d) 
+                                  : [];
+                                
+                                const updatedDocs = [...currentDocs];
+                                const existingIdx = updatedDocs.findIndex(d => d && (d.fileName === file.name || d.id === docId));
+                                if (existingIdx > -1) {
+                                  updatedDocs[existingIdx] = newDoc;
+                                } else {
+                                  updatedDocs.push(newDoc);
+                                }
+
+                                try {
+                                  await api.updateEmployee(selectedProfile.id, { documents: updatedDocs });
+                                  setSelectedProfile({ ...selectedProfile, documents: updatedDocs });
+                                  setEmployees(employees.map(emp => 
+                                    emp.id === selectedProfile.id 
+                                      ? { ...emp, documents: updatedDocs }
+                                      : emp
+                                  ));
+                                  alert(`Document "${file.name}" uploaded successfully!`);
+                                } catch (err) {
+                                  alert("Failed to save uploaded document: " + err.message);
+                                }
+                              };
+                              reader.readAsDataURL(file);
                             }} 
                           />
                           <label htmlFor="doc-upload" className="premium-btn premium-btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem', cursor: 'pointer' }}>
@@ -1179,16 +1532,19 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 10 }}>
-                        {(selectedProfile.documents && selectedProfile.documents.length > 0 ? selectedProfile.documents : [
-                          { name: 'Profile Photo', fileData: '', fileName: 'Profile_Photo.jpg' },
-                          { name: 'Aadhaar Card', fileData: '', fileName: 'Aadhaar_Card.pdf' },
-                          { name: 'PAN Card', fileData: '', fileName: 'PAN_Card.pdf' },
-                          { name: 'Experience Letter', fileData: '', fileName: 'Experience_Letter.pdf' },
-                          { name: 'Bank Passbook', fileData: '', fileName: 'Bank_Passbook.pdf' },
-                          { name: 'Cancelled Cheque', fileData: '', fileName: 'Cancelled_Cheque.pdf' },
-                          { name: 'Offer Letter', fileData: '', fileName: 'Offer_Letter.pdf' },
-                          { name: 'Appointment Letter', fileData: '', fileName: 'Appointment_Letter.pdf' }
-                        ]).map((doc, idx) => {
+                        {(selectedProfile.documents && selectedProfile.documents.length > 0 
+                          ? selectedProfile.documents.map(d => typeof d === 'string' ? { id: d.toLowerCase().replace(/[^a-z0-9]+/g, "-"), name: d.replace(/_/g, ' '), fileName: d, fileData: '' } : d)
+                          : [
+                            { id: 'profile-photo', name: 'Profile Photo', fileData: '', fileName: 'Profile_Photo.jpg', type: 'photo' },
+                            { id: 'aadhaar', name: 'Aadhaar Card', fileData: '', fileName: 'Aadhaar_Card.pdf', type: 'aadhaar' },
+                            { id: 'pan', name: 'PAN Card', fileData: '', fileName: 'PAN_Card.pdf', type: 'pan' },
+                            { id: 'experience', name: 'Experience Letter', fileData: '', fileName: 'Experience_Letter.pdf', type: 'exp-letter' },
+                            { id: 'bank-passbook', name: 'Bank Passbook', fileData: '', fileName: 'Bank_Passbook.pdf', type: 'bank-cheque' },
+                            { id: 'cancelled-cheque', name: 'Cancelled Cheque', fileData: '', fileName: 'Cancelled_Cheque.pdf', type: 'bank-cheque' },
+                            { id: 'offer-letter', name: 'Offer Letter', fileData: '', fileName: 'Offer_Letter.pdf', type: 'offer-letter' },
+                            { id: 'appointment-letter', name: 'Appointment Letter', fileData: '', fileName: 'Appointment_Letter.pdf', type: 'appointment-letter' }
+                          ]
+                        ).map((doc, idx) => {
                           const docName = doc.name || (typeof doc === 'string' ? doc.replace(/_/g, ' ') : 'KYC Document');
                           return (
                             <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 12, border: '1px solid var(--color-border)', background: 'rgba(0,0,0,0.01)' }}>
@@ -1201,15 +1557,24 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                                   View
                                 </button>
                                 <button 
-                                  onClick={() => {
-                                    const updatedDocs = (selectedProfile.documents || []).filter(d => (d.id ? d.id !== doc.id : d !== doc));
-                                    setSelectedProfile({ ...selectedProfile, documents: updatedDocs });
-                                    setEmployees(employees.map(emp => 
-                                      emp.id === selectedProfile.id 
-                                        ? { ...emp, documents: updatedDocs }
-                                        : emp
-                                    ));
-                                    alert(`Document "${docName}" removed successfully!`);
+                                  onClick={async () => {
+                                    if (!window.confirm(`Are you sure you want to delete "${docName}"?`)) return;
+                                    const updatedDocs = (selectedProfile.documents || []).filter(d => {
+                                      const compareDoc = typeof d === 'string' ? { id: d.toLowerCase().replace(/[^a-z0-9]+/g, "-"), fileName: d } : d;
+                                      return compareDoc.id ? compareDoc.id !== doc.id : compareDoc.fileName !== doc.fileName;
+                                    });
+                                    try {
+                                      await api.updateEmployee(selectedProfile.id, { documents: updatedDocs });
+                                      setSelectedProfile({ ...selectedProfile, documents: updatedDocs });
+                                      setEmployees(employees.map(emp => 
+                                        emp.id === selectedProfile.id 
+                                          ? { ...emp, documents: updatedDocs }
+                                          : emp
+                                      ));
+                                      alert(`Document "${docName}" removed successfully!`);
+                                    } catch (err) {
+                                      alert("Failed to delete document: " + err.message);
+                                    }
                                   }} 
                                   style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-danger)', fontSize: '0.75rem', fontWeight: 700 }}
                                 >
@@ -1419,52 +1784,39 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                 textAlign: 'center',
                 overflow: 'hidden'
               }}>
-                {activeDocPreview.fileData ? (
-                  activeDocPreview.fileData.startsWith('data:image/') ? (
-                    <img src={activeDocPreview.fileData} alt="Document preview" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <iframe src={activeDocPreview.fileData} title="PDF Preview" style={{ width: '100%', height: '100%', border: 'none' }} />
-                  )
-                ) : (
-                  <>
-                    {/* Verified Watermark */}
-                    <div style={{
-                      position: 'absolute',
-                      fontSize: '3rem',
-                      fontWeight: 900,
-                      color: 'rgba(16, 185, 129, 0.08)',
-                      transform: 'rotate(-25deg)',
-                      pointerEvents: 'none',
-                      textTransform: 'uppercase',
-                      letterSpacing: 4
-                    }}>
-                      Verified HR Admin
-                    </div>
-
-                    <div style={{ zIndex: 2 }}>
-                      <ShieldCheck size={48} style={{ color: 'var(--color-success)', marginBottom: 12 }} />
-                      <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>{(activeDocPreview.name || (typeof activeDocPreview === 'string' ? activeDocPreview : 'Document')).replace(/_/g, ' ').replace(/\.[^/.]+$/, "")}</h4>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 6, maxWidth: 300, lineHeight: 1.4 }}>
-                        This official certificate is scanned, encrypted, and locked in the secure database. Audit verification completed by HR Super Admin.
-                      </p>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)', display: 'block', marginTop: 10 }}>
-                        SHA-256 Hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-                      </span>
-                    </div>
-                  </>
-                )}
+                <AdminDocumentPreviewer doc={activeDocPreview} profile={selectedProfile} />
               </div>
 
               <div style={{ display: 'flex', gap: 14 }}>
-                {activeDocPreview.fileData ? (
-                  <a href={activeDocPreview.fileData} download={activeDocPreview.fileName || 'document.png'} className="premium-btn premium-btn-secondary" style={{ flex: 1, justifyContent: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-                    Download Copy
-                  </a>
-                ) : (
-                  <button onClick={() => alert("Downloading digital copy...")} className="premium-btn premium-btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
-                    Download Copy
-                  </button>
-                )}
+                <button 
+                  onClick={() => {
+                    const doc = activeDocPreview;
+                    if (!doc) return;
+                    if (doc.fileData && !doc.fileData.startsWith("DEFAULT_") && doc.fileData.startsWith("data:")) {
+                      const link = document.createElement("a");
+                      link.href = doc.fileData;
+                      link.download = doc.fileName || `${(doc.name || 'document').toLowerCase().replace(/\s+/g, "_")}.png`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    } else {
+                      const simulatedText = `ITLC HRMS - SECURE DOCUMENT VAULT\n\nDocument Name: ${doc.name || 'Document'}\nEmployee Name: ${selectedProfile.name}\nEmployee ID: ${selectedProfile.id}\nVerification Date: ${doc.uploadedDate || '2026-06-01'}\nStatus: Verified by HR Operations\n\n* This is a simulated certificate validating the secure document presence in your profile sandbox.`;
+                      const blob = new Blob([simulatedText], { type: "text/plain" });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = `${(doc.name || 'document').toLowerCase().replace(/[^a-z0-9]+/g, "_")}_validated.txt`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(url);
+                    }
+                  }} 
+                  className="premium-btn premium-btn-secondary" 
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Download Copy
+                </button>
                 <button onClick={() => setActiveDocPreview(null)} className="premium-btn premium-btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
                   Close Preview
                 </button>
