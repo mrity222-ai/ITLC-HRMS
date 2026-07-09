@@ -122,4 +122,5 @@ app.use('/api/manager', require('./routes/manager'));
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`HRMS Backend Server listening on port ${PORT}`);
+  console.log("api connect successfully");
 });
