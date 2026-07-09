@@ -2,17 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Briefcase, UserCheck, Calendar, ArrowRight, UserPlus, FileText, Plus, Star } from 'lucide-react';
 
-const initialOpenings = [
-  { id: 1, title: 'Lead Frontend Engineer', department: 'Engineering', type: 'Full-time', candidates: 12, status: 'Active' },
-  { id: 2, title: 'Senior Product Designer', department: 'Design', type: 'Full-time', candidates: 8, status: 'Active' },
-  { id: 3, title: 'Growth Marketing Manager', department: 'Marketing', type: 'Contract', candidates: 5, status: 'Draft' },
-];
+const initialOpenings = [];
 
-const initialCandidates = [
-  { id: 101, name: 'Clara Oswald', role: 'Product Designer', stage: 'Interviewing', rating: '4.8/5', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80' },
-  { id: 102, name: 'Peter Capaldi', role: 'Frontend Engineer', stage: 'Applied', rating: '4.5/5', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80' },
-  { id: 103, name: 'Matt Smith', role: 'Frontend Engineer', stage: 'Offered', rating: '4.9/5', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80' },
-];
+const initialCandidates = [];
 
 export default function Recruitment({ subTab = 'dashboard' }) {
   const [openings, setOpenings] = useState(initialOpenings);

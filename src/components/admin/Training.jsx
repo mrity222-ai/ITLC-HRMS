@@ -2,16 +2,9 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Award, CheckCircle, Clock } from 'lucide-react';
 
-const courses = [
-  { id: 1, name: 'ISO 27001 Security Compliance', progress: 85, attendees: 42, duration: '4 Hours' },
-  { id: 2, name: 'Advanced React Architecture', progress: 60, attendees: 18, duration: '12 Hours' },
-  { id: 3, name: 'Strategic Leadership & Coaching', progress: 95, attendees: 10, duration: '8 Hours' },
-];
+const courses = [];
 
-const initialCertificates = [
-  { id: 'CERT-104', name: 'Sarah Jenkins', course: 'UX Design Essentials', date: 'June 20, 2026' },
-  { id: 'CERT-105', name: 'Marcus Vance', course: 'Kubernetes Admin', date: 'June 18, 2026' },
-];
+const initialCertificates = [];
 
 export default function Training() {
   const [certs, setCerts] = useState(initialCertificates);

@@ -39,13 +39,7 @@ function AnimatedCounter({ value, duration = 1000 }) {
   return <span className="number-font">{isCurrency && '$'}{count.toLocaleString()}{isPercent && '%'}</span>;
 }
 
-const initialDepartments = [
-  { id: 1, name: 'Engineering', code: 'DEPT-ENG', head: 'Marcus Vance', employees: 45, budget: 450000, status: 'Active', created: 'Jan 12, 2024' },
-  { id: 2, name: 'Design', code: 'DEPT-DSN', head: 'Sarah Jenkins', employees: 20, budget: 220000, status: 'Active', created: 'Feb 20, 2024' },
-  { id: 3, name: 'Marketing', code: 'DEPT-MKT', head: 'Sophia Patel', employees: 15, budget: 180000, status: 'Active', created: 'Mar 15, 2024' },
-  { id: 4, name: 'Sales', code: 'DEPT-SLS', head: 'Harvey Specter', employees: 12, budget: 150000, status: 'Active', created: 'May 02, 2024' },
-  { id: 5, name: 'HR', code: 'DEPT-HRM', head: 'Diana Prince', employees: 8, budget: 90000, status: 'Active', created: 'June 18, 2024' },
-];
+const initialDepartments = [];
 
 export default function Departments() {
   const [departments, setDepartments] = useState(initialDepartments);

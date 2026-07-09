@@ -2,16 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Target, TrendingUp, Award, Star, Settings, FileText, CheckCircle, Heart } from 'lucide-react';
 
-const mockGoals = [
-  { id: 1, title: 'Upgrade Core Infrastructure', target: 'Q3 Finish', progress: 75, status: 'On Track' },
-  { id: 2, title: 'Reduce Employee Churn < 4%', target: 'Annual Target', progress: 90, status: 'Exceeding' },
-  { id: 3, title: 'Deploy New HR Portal UI', target: 'July 31', progress: 40, status: 'Behind' },
-];
+const mockGoals = [];
 
-const mockFeedback = [
-  { id: 1, employee: 'Sarah Jenkins', reviewer: 'Marcus Vance', type: 'Peer Review', status: 'Completed', text: 'Sarah leads design sprints efficiently and has high technical empathy.' },
-  { id: 2, employee: 'Marcus Vance', reviewer: 'Kenji Sato', type: 'Manager Review', status: 'Completed', text: 'Marcus has excellent architectural oversight but needs to delegate task allocation.' },
-];
+const mockFeedback = [];
 
 export default function Performance({ employees, subTab = 'dashboard' }) {
   const [goals, setGoals] = useState(mockGoals);

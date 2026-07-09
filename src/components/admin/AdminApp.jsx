@@ -24,14 +24,7 @@ import Expenses from './Expenses';
 import SupportTickets from './SupportTickets';
 import { Bot, Sparkles, X, Send } from 'lucide-react';
 
-const initialEmployees = [
-  { id: 1, name: 'Sarah Jenkins', email: 'sarah.j@company.com', role: 'Senior UX Designer', department: 'Design', status: 'Active', phone: '+1 (555) 019-2834', salary: '$88,000', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80', documents: ['Profile_Photo.jpg', 'Aadhaar_Card.pdf', 'PAN_Card.pdf', 'Experience_Letter.pdf', 'Bank_Passbook.pdf', 'Cancelled_Cheque.pdf', 'Offer_Letter.pdf', 'Appointment_Letter.pdf'] },
-  { id: 2, name: 'Marcus Vance', email: 'marcus.v@company.com', role: 'Engineering Tech Lead', department: 'Engineering', status: 'Active', phone: '+1 (555) 014-9821', salary: '$145,000', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80', documents: ['Profile_Photo.jpg', 'Aadhaar_Card.pdf', 'PAN_Card.pdf', 'Experience_Letter.pdf', 'Bank_Passbook.pdf', 'Cancelled_Cheque.pdf', 'Offer_Letter.pdf', 'Appointment_Letter.pdf'] },
-  { id: 3, name: 'Sophia Patel', email: 'sophia.p@company.com', role: 'Growth Lead Analyst', department: 'Marketing', status: 'Active', phone: '+1 (555) 012-7489', salary: '$92,000', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80', documents: ['Profile_Photo.jpg', 'Aadhaar_Card.pdf', 'PAN_Card.pdf', 'Experience_Letter.pdf', 'Bank_Passbook.pdf', 'Cancelled_Cheque.pdf', 'Offer_Letter.pdf', 'Appointment_Letter.pdf'] },
-  { id: 4, name: 'Harvey Specter', email: 'harvey.s@company.com', role: 'Sales Partner', department: 'Sales', status: 'Active', phone: '+1 (555) 016-3242', salary: '$250,000', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80', documents: ['Profile_Photo.jpg', 'Aadhaar_Card.pdf', 'PAN_Card.pdf', 'Experience_Letter.pdf', 'Bank_Passbook.pdf', 'Cancelled_Cheque.pdf', 'Offer_Letter.pdf', 'Appointment_Letter.pdf'] },
-  { id: 5, name: 'Diana Prince', email: 'diana.p@company.com', role: 'HR Director', department: 'HR', status: 'Active', phone: '+1 (555) 011-8842', salary: '$115,000', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80', documents: ['Profile_Photo.jpg', 'Aadhaar_Card.pdf', 'PAN_Card.pdf', 'Experience_Letter.pdf', 'Bank_Passbook.pdf', 'Cancelled_Cheque.pdf', 'Offer_Letter.pdf', 'Appointment_Letter.pdf'] },
-  { id: 6, name: 'Bruce Wayne', email: 'bruce.w@company.com', role: 'Operations Director', department: 'Sales', status: 'On Leave', phone: '+1 (555) 017-7777', salary: '$190,000', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', documents: ['Profile_Photo.jpg', 'Aadhaar_Card.pdf', 'PAN_Card.pdf', 'Experience_Letter.pdf', 'Bank_Passbook.pdf', 'Cancelled_Cheque.pdf', 'Offer_Letter.pdf', 'Appointment_Letter.pdf'] },
-];
+const initialEmployees = [];
 
 const initialNotifications = [];
 

@@ -36,13 +36,7 @@ function AnimatedCounter({ value, duration = 1000 }) {
   return <span className="number-font">{isCurrency && '$'}{count.toLocaleString()}{isPercent && '%'}</span>;
 }
 
-const initialDesignations = [
-  { id: 1, title: 'Engineering Tech Lead', department: 'Engineering', level: 'L5 - Lead', count: 4, vacant: 1, salaryBand: '$130K - $160K', avgSalary: 145000, status: 'Active', created: 'Jan 10, 2024' },
-  { id: 2, title: 'Senior UX Designer', department: 'Design', level: 'L4 - Senior', count: 3, vacant: 0, salaryBand: '$85K - $110K', avgSalary: 97000, status: 'Active', created: 'Feb 15, 2024' },
-  { id: 3, title: 'Senior Frontend Developer', department: 'Engineering', level: 'L4 - Senior', count: 8, vacant: 2, salaryBand: '$90K - $125K', avgSalary: 107000, status: 'Active', created: 'Feb 20, 2024' },
-  { id: 4, title: 'VP of Marketing', department: 'Marketing', level: 'L8 - Executive', count: 1, vacant: 0, salaryBand: '$140K - $180K', avgSalary: 160000, status: 'Active', created: 'Mar 01, 2024' },
-  { id: 5, title: 'HR Host & Admin', department: 'HR', level: 'L2 - Junior', count: 2, vacant: 1, salaryBand: '$60K - $75K', avgSalary: 67000, status: 'Active', created: 'June 05, 2024' },
-];
+const initialDesignations = [];
 
 export default function Designations() {
   const [designations, setDesignations] = useState(initialDesignations);

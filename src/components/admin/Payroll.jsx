@@ -3,11 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CreditCard, DollarSign, Calculator, Download, Percent, FileText, CheckCircle, ShieldCheck } from 'lucide-react';
 import { api } from '../../services/api';
 
-const mockPayslipHistory = [
-  { id: 'PAY-892', date: 'June 30, 2026', amount: '$5,240', status: 'Disbursed' },
-  { id: 'PAY-781', date: 'May 31, 2026', amount: '$5,110', status: 'Disbursed' },
-  { id: 'PAY-625', date: 'April 30, 2026', amount: '$4,980', status: 'Disbursed' },
-];
+const mockPayslipHistory = [];
 
 export default function Payroll({ employees, subTab = 'dashboard', setActiveTab }) {
   const [selectedEmpId, setSelectedEmpId] = useState(employees[0]?.id || 1);

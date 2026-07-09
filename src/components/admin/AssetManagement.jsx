@@ -2,22 +2,11 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Laptop, Smartphone, CreditCard, Keyboard, X, Plus, Wrench, ShieldAlert, FileText, CheckCircle } from 'lucide-react';
 
-const initialAssets = [
-  { id: 'AST-901', name: 'MacBook Pro 16"', type: 'Laptop', user: 'Sarah Jenkins', date: 'Jan 10, 2026', status: 'Allocated' },
-  { id: 'AST-902', name: 'iPhone 15 Pro Max', type: 'Mobile Phone', user: 'Marcus Vance', date: 'Feb 15, 2026', status: 'Allocated' },
-  { id: 'AST-903', name: 'Dell UltraSharp 32"', type: 'Accessory', user: '-', date: '-', status: 'Available' },
-  { id: 'AST-904', name: 'Company RFID ID Card', type: 'ID Card', user: 'Sophia Patel', date: 'Mar 01, 2026', status: 'Allocated' },
-];
+const initialAssets = [];
 
-const mockRequests = [
-  { id: 1, name: 'Clara Oswald', type: 'Laptop', item: 'MacBook Pro M3 Max', reason: 'High load rendering tasks', status: 'Pending' },
-  { id: 2, name: 'David Tennant', type: 'Accessory', item: 'Apple Magic Keyboard', reason: 'Replacement for broken key', status: 'Approved' },
-];
+const mockRequests = [];
 
-const mockMaintenance = [
-  { id: 'MNT-12', asset: 'AST-901 (MacBook Pro)', issue: 'Battery swelling replacement', cost: '$190.00', status: 'Resolved' },
-  { id: 'MNT-15', asset: 'AST-903 (Dell Monitor)', issue: 'Backlight bleeding audit', cost: '-', status: 'In Repair' },
-];
+const mockMaintenance = [];
 
 export default function AssetManagement({ subTab = 'inventory' }) {
   const [assets, setAssets] = useState(initialAssets);
