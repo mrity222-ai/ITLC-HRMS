@@ -117,7 +117,11 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/employee', require('./routes/employee'));
 app.use('/api/superowner', require('./routes/superowner'));
-app.use('/api/manager', require('./routes/manager'));
+
+// Root endpoint to verify API status
+app.get('/', (req, res) => {
+  res.json({ status: 'success', message: 'HRMS Backend API is running successfully', connection: 'active' });
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
