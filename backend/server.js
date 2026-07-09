@@ -102,6 +102,14 @@ sequelize.sync({ force: false })
       // Column already exists, safe to ignore
     }
 
+    // Alter employees table with avatar column to LONGTEXT
+    try {
+      await sequelize.query("ALTER TABLE employees MODIFY COLUMN avatar LONGTEXT;");
+      console.log("Successfully altered employees table to modify avatar column to LONGTEXT");
+    } catch (err) {
+      console.log("Error altering avatar column:", err.message);
+    }
+
     // Alter leave_requests table with attachment column
     try {
       await sequelize.query("ALTER TABLE leave_requests ADD COLUMN attachment LONGTEXT;");
