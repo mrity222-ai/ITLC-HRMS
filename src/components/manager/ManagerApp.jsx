@@ -426,8 +426,17 @@ export default function ManagerApp({ onLogout }) {
               </AnimatePresence>
             </div>
 
-            <div className="text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-xl uppercase tracking-wider select-none">
-              Welcome, <strong className="font-extrabold">{managerProfile?.name || 'Manager'}</strong>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-primary/20 overflow-hidden flex items-center justify-center">
+                {managerProfile?.avatar ? (
+                  <img src={managerProfile.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs font-bold uppercase">{managerProfile?.name ? managerProfile.name[0] : 'M'}</span>
+                )}
+              </div>
+              <div className="text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-xl uppercase tracking-wider select-none">
+                Welcome, <strong className="font-extrabold">{managerProfile?.name || 'Manager'}</strong>
+              </div>
             </div>
           </div>
         </header>
@@ -1036,9 +1045,44 @@ export default function ManagerApp({ onLogout }) {
                   className="max-w-2xl mx-auto space-y-6 animate-fadeIn"
                 >
                   <Card className="p-6 flex flex-col items-center text-center gap-4 bg-card border border-border">
-                    <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-bold uppercase border border-primary/20">
-                      {managerProfile?.name ? managerProfile.name[0] : 'M'}
+                    <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center border border-primary/20 overflow-hidden relative">
+                      {managerProfile?.avatar ? (
+                        <img src={managerProfile.avatar} alt="Manager profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl font-bold uppercase">{managerProfile?.name ? managerProfile.name[0] : 'M'}</span>
+                      )}
                     </div>
+                    
+                    <div className="flex flex-col items-center gap-1">
+                      <input 
+                        type="file" 
+                        id="manager-avatar-upload" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = async () => {
+                              if (typeof reader.result === 'string') {
+                                try {
+                                  await api.updateProfile({ avatar: reader.result });
+                                  setManagerProfile(prev => ({ ...prev, avatar: reader.result }));
+                                  alert('Profile photo updated successfully!');
+                                } catch (err) {
+                                  alert('Failed to update profile photo: ' + err.message);
+                                }
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }} 
+                      />
+                      <label htmlFor="manager-avatar-upload" className="text-xs font-semibold text-primary hover:underline cursor-pointer">
+                        📷 Upload Photo
+                      </label>
+                    </div>
+
                     <div>
                       <h3 className="text-base font-bold text-foreground">{managerProfile?.name}</h3>
                       <span className="text-[10px] text-muted-foreground block">{managerProfile?.designation} - {managerProfile?.department}</span>

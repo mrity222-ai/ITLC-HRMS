@@ -23,6 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileSidebar }) => {
     setActiveTab,
     settings,
     updateSettings,
+    profile,
   } = useHRMS();
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -141,6 +142,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileSidebar }) => {
                 </button>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Profile Avatar */}
+        <div 
+          onClick={() => setActiveTab("profile")}
+          className="w-8 h-8 rounded-full bg-primary/10 border border-border overflow-hidden flex items-center justify-center cursor-pointer hover:scale-105 transition-transform shrink-0"
+          title="Go to My Profile"
+        >
+          {profile?.photo ? (
+            <img src={profile.photo} alt="User Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[10px] font-bold uppercase">{profile?.fullName ? profile.fullName[0] : 'E'}</span>
           )}
         </div>
 

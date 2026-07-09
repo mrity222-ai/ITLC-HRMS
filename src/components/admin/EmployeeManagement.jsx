@@ -757,11 +757,19 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                       </span>
 
                       {/* Avatar */}
-                      <img 
-                        src={emp.avatar} 
-                        alt={emp.name} 
-                        style={{ width: 72, height: 72, borderRadius: 18, objectFit: 'cover', marginTop: 10 }} 
-                      />
+                      <div style={{ width: 72, height: 72, borderRadius: '50%', border: '2px solid var(--color-border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10, backgroundColor: 'rgba(0,0,0,0.03)' }}>
+                        {emp.avatar ? (
+                          <img 
+                            src={emp.avatar} 
+                            alt={emp.name} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          />
+                        ) : (
+                          <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
+                            {emp.name ? emp.name[0] : 'E'}
+                          </span>
+                        )}
+                      </div>
 
                       {/* Info */}
                       <div>

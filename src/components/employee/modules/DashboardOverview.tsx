@@ -289,6 +289,13 @@ export const DashboardOverview: React.FC = () => {
         return (
           <div className="space-y-6">
             <div className="space-y-2.5 text-center py-2 flex flex-col items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 text-primary border border-border overflow-hidden flex items-center justify-center mb-1">
+                {profile.photo ? (
+                  <img src={profile.photo} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl font-bold uppercase">{profile.fullName ? profile.fullName[0] : 'E'}</span>
+                )}
+              </div>
               <h3 className="text-lg font-black text-foreground">Welcome, {profile.fullName}!</h3>
               <p className="text-xs font-mono font-bold text-muted-foreground">
                 Employee ID: {profile.id}
