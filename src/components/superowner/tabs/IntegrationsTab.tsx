@@ -32,7 +32,7 @@ export const IntegrationsTab: React.FC = () => {
   const [newWhUrl, setNewWhUrl] = useState('');
 
   // API Tokens
-  const [apiKey, setApiKey] = useState('sk_live_51Msz3aJ2sK8oP9s8z3A9z2x3w...8F7G');
+  const [apiKey, setApiKey] = useState('sk_live_placeholder_key_xxxx_xxxx');
   const [showKey, setShowKey] = useState(false);
 
   const toggleIntegration = (id: string, name: string, current: boolean) => {
