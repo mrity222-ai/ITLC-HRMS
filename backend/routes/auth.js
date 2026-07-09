@@ -224,7 +224,7 @@ router.get('/profile', auth(), async (req, res) => {
 router.put('/profile', auth(), async (req, res) => {
   const { name, phone, dob, gender, address, avatar, documents } = req.body;
   try {
-    const user = await Employee.findByPk(req.user.id);
+    const user = await Employee.findOne({ where: { id: req.user.id } });
     if (!user) {
       return res.status(404).json({ error: 'Profile not found' });
     }

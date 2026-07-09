@@ -23,7 +23,7 @@ router.get('/leaves', auth(['Employee', 'Manager', 'HR', 'Company Admin']), asyn
 router.post('/leaves', auth(['Employee', 'Manager', 'HR', 'Company Admin']), async (req, res) => {
   const { type, fromDate, toDate, reason, totalDays, attachment } = req.body;
   try {
-    const user = await Employee.findByPk(req.user.id);
+    const user = await Employee.findOne({ where: { id: req.user.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const newLeave = await LeaveRequest.create({
@@ -60,7 +60,7 @@ router.get('/expenses', auth(['Employee', 'Manager', 'HR', 'Company Admin']), as
 router.post('/expenses', auth(['Employee', 'Manager', 'HR', 'Company Admin']), async (req, res) => {
   const { date, category, amount, reason } = req.body;
   try {
-    const user = await Employee.findByPk(req.user.id);
+    const user = await Employee.findOne({ where: { id: req.user.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const newExpense = await ExpenseClaim.create({
@@ -94,7 +94,7 @@ router.get('/tickets', auth(['Employee', 'Manager', 'HR', 'Company Admin']), asy
 router.post('/tickets', auth(['Employee', 'Manager', 'HR', 'Company Admin']), async (req, res) => {
   const { subject, priority, description } = req.body;
   try {
-    const user = await Employee.findByPk(req.user.id);
+    const user = await Employee.findOne({ where: { id: req.user.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     let companyName = 'HRMS Workspace';
@@ -134,7 +134,7 @@ router.post('/tickets', auth(['Employee', 'Manager', 'HR', 'Company Admin']), as
 router.post('/change-password', auth(), async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   try {
-    const user = await Employee.findByPk(req.user.id);
+    const user = await Employee.findOne({ where: { id: req.user.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     if (currentPassword) {
@@ -170,7 +170,7 @@ router.get('/attendance', auth(['Employee', 'Manager', 'HR', 'Company Admin']), 
 router.post('/attendance/punch-in', auth(['Employee', 'Manager', 'HR', 'Company Admin']), async (req, res) => {
   const { date, checkIn, status } = req.body;
   try {
-    const user = await Employee.findByPk(req.user.id);
+    const user = await Employee.findOne({ where: { id: req.user.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     // Check if check-in already exists for this date
@@ -275,7 +275,7 @@ router.get('/corrections', auth(['Employee', 'Manager', 'HR', 'Company Admin']),
 router.post('/corrections', auth(['Employee', 'Manager', 'HR', 'Company Admin']), async (req, res) => {
   const { date, type, requestedCheckIn, requestedCheckOut, reason, attendanceId } = req.body;
   try {
-    const user = await Employee.findByPk(req.user.id);
+    const user = await Employee.findOne({ where: { id: req.user.id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const newRequest = await CorrectionRequest.create({

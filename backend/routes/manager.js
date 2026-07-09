@@ -91,7 +91,7 @@ router.put('/leaves/:id', managerAuth, async (req, res) => {
 // Get team members details
 router.get('/team', managerAuth, async (req, res) => {
   try {
-    const manager = await Employee.findByPk(req.user.id);
+    const manager = await Employee.findOne({ where: { id: req.user.id } });
     if (!manager) return res.status(404).json({ error: 'Manager profile not found' });
 
     const team = await Employee.findAll({
@@ -230,7 +230,7 @@ router.get('/tasks', managerAuth, async (req, res) => {
 router.post('/tasks', managerAuth, async (req, res) => {
   const { assignedTo, assignedToName, title, description, priority, deadline } = req.body;
   try {
-    const manager = await Employee.findByPk(req.user.id);
+    const manager = await Employee.findOne({ where: { id: req.user.id } });
     const task = await Task.create({
       id: `TSK${Math.floor(100000 + Math.random() * 900000)}`,
       companyId: req.user.companyId,
@@ -530,7 +530,7 @@ router.get('/announcements', managerAuth, async (req, res) => {
 router.post('/announcements', managerAuth, async (req, res) => {
   const { title, content, type, sendEmail, sendPush } = req.body;
   try {
-    const manager = await Employee.findByPk(req.user.id);
+    const manager = await Employee.findOne({ where: { id: req.user.id } });
     const ann = await Announcement.create({
       id: `ANN${Math.floor(100000 + Math.random() * 900000)}`,
       companyId: req.user.companyId,
