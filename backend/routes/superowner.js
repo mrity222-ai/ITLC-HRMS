@@ -89,7 +89,10 @@ router.post('/companies', auth(['Super Owner']), async (req, res) => {
       maxEmployees: maxEmployees ? Number(maxEmployees) : 100,
       storageLimit: storageLimit ? Number(storageLimit) : 50.0,
       storageUsed: 0.0,
-      status: status || 'trial'
+      status: status || 'trial',
+      lat: req.body.lat !== undefined ? req.body.lat : null,
+      lng: req.body.lng !== undefined ? req.body.lng : null,
+      radius: req.body.radius !== undefined ? Number(req.body.radius) : 500
     });
 
     // Create Admin Employee

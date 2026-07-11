@@ -12,6 +12,9 @@ export interface Company {
   createdDate: string;
   modulesEnabled: Record<string, boolean>;
   password?: string;
+  lat?: number | null;
+  lng?: number | null;
+  radius?: number;
 }
 
 export interface SubscriptionPlan {

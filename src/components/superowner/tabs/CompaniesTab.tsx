@@ -115,7 +115,10 @@ export const CompaniesTab: React.FC = () => {
     subscriptionPlanId: 'starter',
     storageUsed: 5.0,
     status: 'trial' as Company['status'],
-    customPassword: ''
+    customPassword: '',
+    lat: '',
+    lng: '',
+    radius: 500
   });
 
   // Filtered companies
@@ -147,7 +150,10 @@ export const CompaniesTab: React.FC = () => {
       subscriptionPlanId: 'free_trial',
       storageUsed: 1.0,
       status: 'trial',
-      customPassword: ''
+      customPassword: '',
+      lat: '',
+      lng: '',
+      radius: 500
     });
     setIsModalOpen(true);
   };
@@ -165,7 +171,10 @@ export const CompaniesTab: React.FC = () => {
       subscriptionPlanId: company.subscriptionPlanId,
       storageUsed: company.storageUsed,
       status: company.status,
-      customPassword: ''
+      customPassword: '',
+      lat: company.lat !== undefined && company.lat !== null ? company.lat.toString() : '',
+      lng: company.lng !== undefined && company.lng !== null ? company.lng.toString() : '',
+      radius: company.radius !== undefined && company.radius !== null ? company.radius : 500
     });
     setIsModalOpen(true);
   };
@@ -246,7 +255,10 @@ export const CompaniesTab: React.FC = () => {
           employeesCount: Number(formData.employeesCount),
           subscriptionPlanId: formData.subscriptionPlanId,
           storageUsed: Number(formData.storageUsed),
-          status: formData.status
+          status: formData.status,
+          lat: formData.lat === '' ? null : Number(formData.lat),
+          lng: formData.lng === '' ? null : Number(formData.lng),
+          radius: Number(formData.radius) || 500
         });
         setCompanies(prev => prev.map(c => c.id === selectedCompany.id ? updated : c));
         addToast(`${formData.name} updated successfully`, 'success');
@@ -266,7 +278,10 @@ export const CompaniesTab: React.FC = () => {
           subscriptionPlanId: formData.subscriptionPlanId,
           storageUsed: Number(formData.storageUsed),
           status: formData.status,
-          customPassword: formData.customPassword
+          customPassword: formData.customPassword,
+          lat: formData.lat === '' ? null : Number(formData.lat),
+          lng: formData.lng === '' ? null : Number(formData.lng),
+          radius: Number(formData.radius) || 500
         });
 
         setCompanies(prev => [...prev, result.company]);
@@ -1075,6 +1090,43 @@ export const CompaniesTab: React.FC = () => {
                       <option value="trial">Trial</option>
                       <option value="expired">Expired</option>
                     </select>
+                  </div>
+
+                  {/* Geofencing configuration */}
+                  <div className="space-y-1.5 col-span-2 border-t border-white/5 pt-3 mt-2">
+                    <h4 className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Geofence Attendance Setting</h4>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-slate-400 font-medium">Latitude</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={formData.lat}
+                      onChange={(e) => updateForm({ lat: e.target.value })}
+                      placeholder="e.g. 28.6139"
+                      className="glass-input w-full px-3.5 py-2 rounded-xl text-sm text-slate-200"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-slate-400 font-medium">Longitude</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={formData.lng}
+                      onChange={(e) => updateForm({ lng: e.target.value })}
+                      placeholder="e.g. 77.2090"
+                      className="glass-input w-full px-3.5 py-2 rounded-xl text-sm text-slate-200"
+                    />
+                  </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <label className="text-xs text-slate-400 font-medium">Radius (in meters)</label>
+                    <input
+                      type="number"
+                      value={formData.radius}
+                      onChange={(e) => updateForm({ radius: Number(e.target.value) })}
+                      placeholder="e.g. 500"
+                      className="glass-input w-full px-3.5 py-2 rounded-xl text-sm text-slate-200"
+                    />
                   </div>
 
                   {!selectedCompany && (
