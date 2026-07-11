@@ -528,15 +528,6 @@ export const api = {
     });
     return handleResponse(res);
   },
-
-  async getSuperOwnerTickets() {
-    const res = await fetch(`${API_URL}/superowner/tickets?t=${new Date().getTime()}`, {
-      method: 'GET',
-      headers: getHeaders()
-    });
-    return handleResponse(res);
-  },
-
   async deleteSuperOwnerUser(id: string) {
     const res = await fetch(`${API_URL}/superowner/users/${id}`, {
       method: 'DELETE',

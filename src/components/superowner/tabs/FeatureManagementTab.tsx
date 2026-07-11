@@ -5,7 +5,7 @@ import {
   HelpCircle, Eye, RefreshCw, Cpu, Smartphone, Lock
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
-import { api } from '../../services/api';
+import { api } from '../../../services/api';
 
 const MODULES_LIST = [
   { key: 'attendance', label: 'Attendance', desc: 'Clock-in/out registry logs' },
