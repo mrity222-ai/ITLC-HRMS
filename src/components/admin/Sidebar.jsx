@@ -251,6 +251,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
         padding: '12px 12px', // Reduce top/bottom padding to make it tighter
         display: 'flex',
         flexDirection: 'column',
+        justifyContent: 'flex-start', // Ensure items stay at the top without massive gaps
         gap: 2 // Reduce gap between items to 2px
       }}>
         {menuItems.map((item) => {
@@ -260,7 +261,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
             const isExpanded = expandedMenus[item.id];
             
             return (
-              <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'flex-start' }}>
                 <button
                   onClick={() => toggleMenu(item.id)}
                   className={`saas-sidebar-item ${isParentActive ? 'active' : ''}`}
