@@ -35,7 +35,7 @@ export const App: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
     impersonatedCompany, setImpersonatedCompany,
     addToast, addLog, companies, tickets,
     selectedCurrency, setSelectedCurrency,
-    isFormDirty, setIsFormDirty
+    isFormDirty, setIsFormDirty, settings
   } = useDashboard();
 
   const [pendingTab, setPendingTab] = useState<string | null>(null);
@@ -297,8 +297,8 @@ export const App: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
              </div>
              {(isMobile || sidebarOpen) && (
                <div>
-                 <span className="font-bold text-white tracking-wide block leading-none text-lg">SUPEROWNER</span>
-                 <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-0.5 block">HRMS SAAS</span>
+                 <span className="font-bold text-white tracking-wide block leading-none text-lg">{settings.platformName.toUpperCase()}</span>
+                 <span className="text-[10px] font-medium text-slate-400 mt-1 block tracking-widest uppercase">Admin Operations</span>
                </div>
              )}
            </div>
