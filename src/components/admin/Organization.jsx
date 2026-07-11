@@ -40,8 +40,12 @@ function AnimatedCounter({ value, duration = 1000, currencySymbol = '$' }) {
   return <span className="number-font">{isCurrency && currencySymbol}{count.toLocaleString()}{isPercent && '%'}</span>;
 }
 
-
-
+const initialBranches = [
+  { id: 1, name: 'New York HQ', country: 'United States', address: '120 Broadway, Manhattan, NY', manager: 'Marcus Vance', count: 420, phone: '+1 (555) 019-2834', type: 'Headquarters', status: 'Active' },
+  { id: 2, name: 'London Tech Hub', country: 'United Kingdom', address: '80 Old St, London EC1V', manager: 'Clara Oswald', count: 280, phone: '+44 (20) 7946 0958', type: 'Tech Centre', status: 'Active' },
+  { id: 3, name: 'Tokyo Office', country: 'Japan', address: 'Chiyoda City, Tokyo 100-0005', manager: 'Kenji Sato', count: 120, phone: '+81 (3) 5555-0142', type: 'Regional Hub', status: 'Active' },
+  { id: 4, name: 'Mumbai Ops Hub', country: 'India', address: 'Bandra Kurla Complex, Mumbai', manager: 'Priya Sharma', count: 428, phone: '+91 (22) 5557-9812', type: 'Operations', status: 'Active' },
+];
 
 // --- Recursive Org Node Component ---
 function OrgNode({ member }) {
@@ -121,21 +125,23 @@ export default function Organization({ employees = [], setActiveTab, currency = 
     }
   })();
   const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [viewMode, setViewMode] = useState('overview'); // 'overview', 'chart', 'working-info'
 
   useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const data = await api.getBranches();
+        setBranches(data);
+      } catch (err) {
+        console.error('Failed to load branches', err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchBranches();
   }, []);
-
-  const fetchBranches = async () => {
-    try {
-      const data = await api.getBranches();
-      setBranches(data || []);
-    } catch (err) {
-      console.error('Error fetching branches', err);
-    }
-  };
 
   // Form states
   const [newName, setNewName] = useState('');
@@ -146,37 +152,23 @@ export default function Organization({ employees = [], setActiveTab, currency = 
   const handleAddBranch = async (e) => {
     e.preventDefault();
     if (!newName || !newManager) return;
-    const newBr = {
-      name: newName,
-      country: newCountry,
-      address: '',
-      manager: newManager,
-      count: 0,
-      phone: '',
-      type: newType,
-      status: 'Active'
-    };
     try {
-      await api.createBranch(newBr);
-      fetchBranches();
+      const newBr = await api.createBranch({
+        name: newName,
+        country: newCountry,
+        address: 'Main Commercial Ring Road',
+        manager: newManager,
+        count: 0,
+        phone: '+1 (555) 000-1122',
+        type: newType,
+        status: 'Active'
+      });
+      setBranches([...branches, newBr]);
       setNewName('');
-      setNewCountry('United States');
       setNewManager('');
-      setNewType('Branch Office');
       setShowAddForm(false);
     } catch (err) {
-      alert(err.message || 'Error saving branch');
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (confirm("Close branch permanently? All associated personnel records will become orphaned.")) {
-      try {
-        await api.deleteBranch(id);
-        fetchBranches();
-      } catch (err) {
-        alert(err.message || 'Error deleting branch');
-      }
+      alert(err.message || 'Failed to add branch');
     }
   };
 

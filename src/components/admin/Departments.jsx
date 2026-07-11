@@ -53,23 +53,11 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
     }
   })();
   const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit', 'transfer', 'assign-head'
   
   const [editingDept, setEditingDept] = useState(null);
   const [selectedDept, setSelectedDept] = useState(null);
-
-  useEffect(() => {
-    fetchDepartments();
-  }, []);
-
-  const fetchDepartments = async () => {
-    try {
-      const data = await api.getDepartments();
-      setDepartments(data || []);
-    } catch (err) {
-      console.error('Error fetching departments', err);
-    }
-  };
 
   // Form states
   const [name, setName] = useState('');
@@ -77,6 +65,20 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
   const [head, setHead] = useState('');
   const [budget, setBudget] = useState('');
   const [status, setStatus] = useState('Active');
+  
+  useEffect(() => {
+    const fetchDeps = async () => {
+      try {
+        const data = await api.getDepartments();
+        setDepartments(data);
+      } catch (err) {
+        console.error('Failed to load departments', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDeps();
+  }, []);
   
   // Transfer state
   const [transferTarget, setTransferTarget] = useState('');
@@ -98,23 +100,16 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
 
     try {
       if (viewMode === 'edit') {
-        const payload = { name, code, head, budget: Number(budget), status };
-        await api.updateDepartment(editingDept.id, payload);
+        const updated = await api.updateDepartment(editingDept.id, { name, code, head, budget: Number(budget), status });
+        setDepartments(departments.map(d => d.id === editingDept.id ? updated : d));
       } else {
-        const newD = {
-          name,
-          code,
-          head,
-          budget: Number(budget) || 0,
-          status
-        };
-        await api.createDepartment(newD);
+        const newD = await api.createDepartment({ name, code, head, budget: Number(budget), status });
+        setDepartments([...departments, newD]);
       }
-      fetchDepartments();
       resetForm();
       setViewMode('list');
     } catch (err) {
-      alert(err.message || 'Error saving department');
+      alert(err.message || 'Failed to save department');
     }
   };
 
@@ -122,9 +117,9 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
     if (confirm("Purge department and reallocate budget allocations?")) {
       try {
         await api.deleteDepartment(id);
-        fetchDepartments();
+        setDepartments(departments.filter(d => d.id !== id));
       } catch (err) {
-        alert(err.message || 'Error deleting department');
+        alert(err.message || 'Failed to delete');
       }
     }
   };

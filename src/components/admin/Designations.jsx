@@ -50,22 +50,10 @@ export default function Designations({ setActiveTab, currency = 'USD' }) {
     }
   })();
   const [designations, setDesignations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit'
   
   const [editingDesg, setEditingDesg] = useState(null);
-
-  useEffect(() => {
-    fetchDesignations();
-  }, []);
-
-  const fetchDesignations = async () => {
-    try {
-      const data = await api.getDesignations();
-      setDesignations(data || []);
-    } catch (err) {
-      console.error('Error fetching designations', err);
-    }
-  };
 
   // Form states
   const [title, setTitle] = useState('');
@@ -74,6 +62,20 @@ export default function Designations({ setActiveTab, currency = 'USD' }) {
   const [salaryBand, setSalaryBand] = useState('₹80K - ₹100K');
   const [avgSalary, setAvgSalary] = useState('90000');
   const [status, setStatus] = useState('Active');
+
+  useEffect(() => {
+    const fetchDesgs = async () => {
+      try {
+        const data = await api.getDesignations();
+        setDesignations(data);
+      } catch (err) {
+        console.error('Failed to load designations', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDesgs();
+  }, []);
 
   const startEdit = (desg) => {
     setEditingDesg(desg);
@@ -92,23 +94,16 @@ export default function Designations({ setActiveTab, currency = 'USD' }) {
 
     try {
       if (viewMode === 'edit') {
-        const payload = { title, department: dept, level, salaryBand, status };
-        await api.updateDesignation(editingDesg.id, payload);
+        const updated = await api.updateDesignation(editingDesg.id, { title, department: dept, level, salaryBand, avgSalary: Number(avgSalary), status });
+        setDesignations(designations.map(d => d.id === editingDesg.id ? updated : d));
       } else {
-        const newD = {
-          title,
-          department: dept,
-          level,
-          salaryBand,
-          status
-        };
-        await api.createDesignation(newD);
+        const newD = await api.createDesignation({ title, department: dept, level, salaryBand, avgSalary: Number(avgSalary), status });
+        setDesignations([...designations, newD]);
       }
-      fetchDesignations();
       resetForm();
       setViewMode('list');
     } catch (err) {
-      alert(err.message || 'Error saving designation');
+      alert(err.message || 'Failed to save designation');
     }
   };
 
@@ -116,9 +111,9 @@ export default function Designations({ setActiveTab, currency = 'USD' }) {
     if (confirm("Delete designation? All active associated employee profiles must be re-categorized.")) {
       try {
         await api.deleteDesignation(id);
-        fetchDesignations();
+        setDesignations(designations.filter(d => d.id !== id));
       } catch (err) {
-        alert(err.message || 'Error deleting designation');
+        alert(err.message || 'Failed to delete');
       }
     }
   };
