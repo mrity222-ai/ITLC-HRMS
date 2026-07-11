@@ -171,7 +171,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
 
   return (
     <aside
-      className={`fixed md:sticky z-50 md:z-30 flex flex-col overflow-hidden transition-all duration-300 bg-[var(--sidebar-bg)] border-r border-slate-200/80 h-screen inset-y-0 left-0 w-[260px] ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 ${collapsed ? 'md:w-20' : 'md:w-[280px]'} shrink-0`}
+      className={`fixed md:sticky z-50 md:z-30 flex flex-col overflow-hidden transition-all duration-300 bg-[var(--sidebar-bg)] border-r border-slate-200/80 h-screen inset-y-0 left-0 w-[260px] ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 ${collapsed ? 'md:w-20' : 'md:w-[260px]'} shrink-0`}
     >
       {/* Sidebar Header */}
       <div style={{ 
