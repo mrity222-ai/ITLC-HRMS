@@ -5,6 +5,7 @@ import {
   HelpCircle, Eye, RefreshCw, Cpu, Smartphone, Lock
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
+import { api } from '../../services/api';
 
 const MODULES_LIST = [
   { key: 'attendance', label: 'Attendance', desc: 'Clock-in/out registry logs' },
@@ -99,43 +100,64 @@ export const FeatureManagementTab: React.FC = () => {
 
   const activeCompany = companies.find(c => c.id === selectedCompanyId);
 
-  const handleToggleModule = (companyId: string, moduleKey: string, moduleLabel: string, currentValue: boolean) => {
-    setCompanies(prev => prev.map(c => {
-      if (c.id === companyId) {
-        return {
-          ...c,
-          modulesEnabled: {
-            ...c.modulesEnabled,
-            [moduleKey]: !currentValue
-          }
-        };
-      }
-      return c;
-    }));
+  const handleToggleModule = async (companyId: string, moduleKey: string, moduleLabel: string, currentValue: boolean) => {
+    const comp = companies.find(c => c.id === companyId);
+    if (!comp) return;
+    
+    const newModulesEnabled = {
+      ...comp.modulesEnabled,
+      [moduleKey]: !currentValue
+    };
 
-    const status = !currentValue ? 'enabled' : 'disabled';
-    addToast(`"${moduleLabel}" ${status} for company`, !currentValue ? 'success' : 'warning');
-    addLog('Module Toggled', `Feature module "${moduleLabel}" set to ${status} for company ID ${companyId}.`, 'feature');
+    try {
+      await api.updateCompany(companyId, { modulesEnabled: newModulesEnabled });
+      
+      setCompanies(prev => prev.map(c => {
+        if (c.id === companyId) {
+          return {
+            ...c,
+            modulesEnabled: newModulesEnabled
+          };
+        }
+        return c;
+      }));
+
+      const status = !currentValue ? 'enabled' : 'disabled';
+      addToast(`"${moduleLabel}" ${status} for company`, !currentValue ? 'success' : 'warning');
+      addLog('Module Toggled', `Feature module "${moduleLabel}" set to ${status} for company ID ${companyId}.`, 'feature');
+    } catch (err: any) {
+      addToast(err.message || 'Failed to update feature module', 'error');
+    }
   };
 
-  const handleBulkEnable = (companyId: string, companyName: string, enable: boolean) => {
-    setCompanies(prev => prev.map(c => {
-      if (c.id === companyId) {
-        const bulkModules: Record<string, boolean> = {};
-        MODULES_LIST.forEach(m => {
-          bulkModules[m.key] = enable;
-        });
-        return {
-          ...c,
-          modulesEnabled: bulkModules
-        };
-      }
-      return c;
-    }));
+  const handleBulkEnable = async (companyId: string, companyName: string, enable: boolean) => {
+    const comp = companies.find(c => c.id === companyId);
+    if (!comp) return;
 
-    const statusText = enable ? 'Enabled' : 'Disabled';
-    addToast(`${statusText} all modules for ${companyName}`, enable ? 'success' : 'warning');
-    addLog('Bulk Modules Change', `${statusText} all modular software features for ${companyName}.`, 'feature');
+    const bulkModules: Record<string, boolean> = {};
+    MODULES_LIST.forEach(m => {
+      bulkModules[m.key] = enable;
+    });
+
+    try {
+      await api.updateCompany(companyId, { modulesEnabled: bulkModules });
+
+      setCompanies(prev => prev.map(c => {
+        if (c.id === companyId) {
+          return {
+            ...c,
+            modulesEnabled: bulkModules
+          };
+        }
+        return c;
+      }));
+
+      const statusText = enable ? 'Enabled' : 'Disabled';
+      addToast(`${statusText} all modules for ${companyName}`, enable ? 'success' : 'warning');
+      addLog('Bulk Modules Change', `${statusText} all modular software features for ${companyName}.`, 'feature');
+    } catch (err: any) {
+      addToast(err.message || 'Failed to update modules', 'error');
+    }
   };
 
   return (

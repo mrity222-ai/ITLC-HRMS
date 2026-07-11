@@ -41,6 +41,7 @@ export default function App({ onLogout }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [featureFlags, setFeatureFlags] = useState({});
 
   const handleMarkNotificationRead = (id) => {
     const readIds = JSON.parse(localStorage.getItem("hrms_admin_read_notification_ids") || "[]");
@@ -88,6 +89,7 @@ export default function App({ onLogout }) {
           companyName: prof.companyName || 'Antigravity',
           currency: comp?.currency || 'USD'
         });
+        setFeatureFlags(comp?.modulesEnabled || {});
         
         const list = await api.getEmployees();
         setEmployees(list);
@@ -335,6 +337,7 @@ export default function App({ onLogout }) {
         mobileOpen={mobileSidebarOpen}
         setMobileOpen={setMobileSidebarOpen}
         companyName={profile.companyName}
+        featureFlags={featureFlags}
       />
 
       {/* Main Panel Wrapper */}

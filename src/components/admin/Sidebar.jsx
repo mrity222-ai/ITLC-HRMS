@@ -124,7 +124,7 @@ const menuItems = [
   { id: 'support', label: 'Support', icon: HeartHandshake },
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, handleLogout, mobileOpen, setMobileOpen, companyName }) {
+export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, handleLogout, mobileOpen, setMobileOpen, companyName, featureFlags = {} }) {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [isMobile, setIsMobile] = useState(false);
 
@@ -136,9 +136,15 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
     return () => media.removeEventListener('change', listener);
   }, []);
 
+  const visibleMenuItems = menuItems.filter(item => {
+    if (['dashboard', 'people', 'reports', 'notifications', 'settings', 'security', 'support'].includes(item.id)) return true;
+    if (featureFlags[item.id] === false) return false;
+    return true;
+  });
+
   // Auto expand when active tab falls under a collapsible menu parent
   useEffect(() => {
-    const parentMenu = menuItems.find(item => 
+    const parentMenu = visibleMenuItems.find(item => 
       item.subItems && item.subItems.some(sub => sub.id === activeTab)
     );
     if (parentMenu) {
@@ -254,7 +260,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
         flexDirection: 'column',
         gap: 4
       }}>
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           // Render sub-items accordion
           if (item.subItems) {
             const isParentActive = item.subItems.some(sub => sub.id === activeTab);
