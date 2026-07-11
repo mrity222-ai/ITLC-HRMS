@@ -127,11 +127,18 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     paypalEnabled: true,
   });
 
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('superowner_currency') || 'USD';
+    }
+    return 'USD';
+  });
 
   useEffect(() => {
-    setSelectedCurrency(settings.currency);
-  }, [settings.currency]);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('superowner_currency', selectedCurrency);
+    }
+  }, [selectedCurrency]);
 
   const formatAmount = (amountInUSD: number) => {
     const details = CURRENCY_DETAILS[selectedCurrency] || CURRENCY_DETAILS.USD;
