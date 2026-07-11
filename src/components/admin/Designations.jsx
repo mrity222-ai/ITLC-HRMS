@@ -102,7 +102,7 @@ export default function Designations() {
     setTitle('');
     setDept('Engineering');
     setLevel('L4 - Senior');
-    setSalaryBand('$80K - $100K');
+    setSalaryBand('₹80K - ₹100K');
     setAvgSalary('90000');
     setStatus('Active');
     setEditingDesg(null);

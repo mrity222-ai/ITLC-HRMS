@@ -126,7 +126,7 @@ export default function App({ onLogout }) {
           generated.push({
             id,
             title: "Expense Claim Approval",
-            message: `${e.employeeName || 'An employee'} requested $${e.amount} reimbursement.`,
+            message: `${e.employeeName || 'An employee'} requested ₹${e.amount} reimbursement.`,
             time: "New",
             type: "info",
             badgeColor: "#EF4444",
