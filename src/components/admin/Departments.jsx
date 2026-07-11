@@ -35,8 +35,8 @@ function AnimatedCounter({ value, duration = 1000 }) {
   }, [value, duration]);
 
   const isPercent = value.toString().includes('%');
-  const isCurrency = value.toString().includes('$');
-  return <span className="number-font">{isCurrency && '$'}{count.toLocaleString()}{isPercent && '%'}</span>;
+  const isCurrency = value.toString().includes('$') || value.toString().includes('₹');
+  return <span className="number-font">{isCurrency && '₹'}{count.toLocaleString()}{isPercent && '%'}</span>;
 }
 
 const initialDepartments = [];

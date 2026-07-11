@@ -69,6 +69,8 @@ export const AttendanceManagement: React.FC = () => {
   }, [isClockedIn, isBreakActive, breakStartTime]);
 
   const displayBreakSeconds = totalBreakSecondsToday + activeBreakSeg;
+  const todayDateStr = new Date().toISOString().split("T")[0];
+  const todayRecord = attendanceHistory?.find(r => r.date === todayDateStr);
 
   // Calendar setup - June 2026
   // June 2026 starts on a Monday (Index 1: Mon, 2: Tue... 0: Sun)
@@ -226,7 +228,7 @@ export const AttendanceManagement: React.FC = () => {
             </div>
 
             {/* Mini punch log */}
-            {isClockedIn && clockInTime && (
+            {isClockedIn && clockInTime ? (
               <div className="text-[11px] text-muted-foreground flex gap-4 pt-2 border-t border-border">
                 <span>
                   Shift Started: <strong className="text-foreground">{new Date(clockInTime).toLocaleTimeString()}</strong>
@@ -237,7 +239,19 @@ export const AttendanceManagement: React.FC = () => {
                   </span>
                 )}
               </div>
-            )}
+            ) : todayRecord ? (
+              <div className="text-[11px] text-muted-foreground flex gap-4 pt-2 border-t border-border">
+                <span>
+                  Shift In: <strong className="text-foreground">{todayRecord.checkIn}</strong>
+                </span>
+                <span>
+                  Shift Out: <strong className="text-foreground">{todayRecord.checkOut}</strong>
+                </span>
+                <span>
+                  Status: <strong className="text-foreground">{todayRecord.status}</strong>
+                </span>
+              </div>
+            ) : null}
           </Card>
 
           {/* Shift Timers Card */}
@@ -250,14 +264,14 @@ export const AttendanceManagement: React.FC = () => {
               <div>
                 <span className="text-[10px] text-muted-foreground uppercase font-bold block">Accumulated Work Hours</span>
                 <div className="text-3xl font-extrabold text-foreground font-mono mt-1">
-                  {formatSeconds(todayWorkSeconds)}
+                  {isClockedIn ? formatSeconds(todayWorkSeconds) : (todayRecord?.workHours || "00:00:00")}
                 </div>
               </div>
 
               <div>
                 <span className="text-[10px] text-muted-foreground uppercase font-bold block">Break Duration</span>
                 <div className="text-xl font-extrabold text-muted-foreground font-mono mt-1">
-                  {formatSeconds(displayBreakSeconds)}
+                  {isClockedIn ? formatSeconds(displayBreakSeconds) : (todayRecord?.breakDuration || "00:00:00")}
                 </div>
               </div>
             </div>

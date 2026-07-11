@@ -32,8 +32,8 @@ function AnimatedCounter({ value, duration = 1000 }) {
   }, [value, duration]);
 
   const isPercent = value.toString().includes('%');
-  const isCurrency = value.toString().includes('$');
-  return <span className="number-font">{isCurrency && '$'}{count.toLocaleString()}{isPercent && '%'}</span>;
+  const isCurrency = value.toString().includes('$') || value.toString().includes('₹');
+  return <span className="number-font">{isCurrency && '₹'}{count.toLocaleString()}{isPercent && '%'}</span>;
 }
 
 const initialDesignations = [];
@@ -48,7 +48,7 @@ export default function Designations() {
   const [title, setTitle] = useState('');
   const [dept, setDept] = useState('Engineering');
   const [level, setLevel] = useState('L4 - Senior');
-  const [salaryBand, setSalaryBand] = useState('$80K - $100K');
+  const [salaryBand, setSalaryBand] = useState('₹80K - ₹100K');
   const [avgSalary, setAvgSalary] = useState('90000');
   const [status, setStatus] = useState('Active');
 

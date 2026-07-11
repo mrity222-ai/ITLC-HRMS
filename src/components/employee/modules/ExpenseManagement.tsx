@@ -59,7 +59,7 @@ export const ExpenseManagement: React.FC = () => {
     .reduce((acc, curr) => acc + curr.amount, 0);
 
   const formatCurrency = (amt: number) => {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amt);
+    return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amt);
   };
 
   const statusCards = [
@@ -198,9 +198,9 @@ export const ExpenseManagement: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">Claim Amount ($ USD)</label>
+            <label className="text-xs font-medium text-muted-foreground">Claim Amount (₹ INR)</label>
             <div className="relative">
-              <span className="absolute left-3 top-2 text-sm text-muted-foreground font-semibold">$</span>
+              <span className="absolute left-3 top-2 text-sm text-muted-foreground font-semibold">₹</span>
               <input
                 type="number"
                 step="0.01"

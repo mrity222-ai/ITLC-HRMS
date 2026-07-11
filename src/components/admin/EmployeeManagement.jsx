@@ -434,7 +434,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
         role: newRole,
         systemRole: newSystemRole,
         department: showCustomDeptInput ? newCustomDept : newDept,
-        salary: `$${newSalary || '75,000'}`,
+        salary: `₹${newSalary || '75,000'}`,
         phone: newPhone || '+1 (555) 019-2834',
         reportingManager: newManager,
         avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 900000)}?w=150&auto=format&fit=crop&q=80`,
@@ -464,7 +464,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     setNewDept(emp.department);
     setNewStatus(emp.status);
     setNewPhone(emp.phone || '');
-    setNewSalary(emp.salary ? emp.salary.replace('$', '').replace(/,/g, '') : '');
+    setNewSalary(emp.salary ? emp.salary.replace('$', '').replace('₹', '').replace(/,/g, '') : '');
     setNewDob(emp.dob || '1992-08-24');
     setNewGender(emp.gender || 'Male');
     setNewAddress(emp.address || '482 Silver Lake Blvd, Los Angeles, CA 90026');
@@ -494,7 +494,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
         department: showCustomDeptInput ? newCustomDept : newDept, 
         status: newStatus, 
         phone: newPhone, 
-        salary: `$${Number(newSalary).toLocaleString()}`,
+        salary: `₹${Number(newSalary).toLocaleString()}`,
         dob: newDob,
         gender: newGender,
         address: newAddress,

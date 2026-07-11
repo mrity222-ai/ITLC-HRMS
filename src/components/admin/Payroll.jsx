@@ -48,7 +48,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
   const payoutRatio = attendance.length === 0 ? 1.0 : Math.min(1.0, activeDays / totalWorkingDays);
 
   const baseSalary = (selectedEmp && typeof selectedEmp.salary === 'string') 
-    ? parseFloat(selectedEmp.salary.replace('$', '').replace(/,/g, '')) / 12 
+    ? parseFloat(selectedEmp.salary.replace('$', '').replace('₹', '').replace(/,/g, '')) / 12 
     : (selectedEmp && typeof selectedEmp.salary === 'number')
     ? selectedEmp.salary / 12
     : 5000;
@@ -64,7 +64,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
   };
 
   const handleRunBulkPayroll = () => {
-    alert(`Bulk payroll processing initialized! $${(240000).toLocaleString()} net salary disbursed across ${employees.length} employee accounts.`);
+    alert(`Bulk payroll processing initialized! ₹${(240000).toLocaleString()} net salary disbursed across ${employees.length} employee accounts.`);
   };
 
   return (
@@ -180,7 +180,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, borderBottom: '1px solid var(--color-border)', paddingBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                   <span style={{ color: 'var(--color-text-secondary)' }}>Basic Base Salary (Monthly):</span>
-                  <span className="number-font" style={{ fontWeight: 600 }}>${Math.round(baseSalary).toLocaleString()}</span>
+                  <span className="number-font" style={{ fontWeight: 600 }}>₹{Math.round(baseSalary).toLocaleString()}</span>
                 </div>
                 {attendance.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-bg-secondary)', padding: 8, borderRadius: 8, fontSize: '0.75rem' }}>
@@ -200,23 +200,23 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', borderTop: '1px solid var(--color-border)', paddingTop: 8 }}>
                   <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>Adjusted Base Salary:</span>
-                  <span className="number-font" style={{ fontWeight: 600 }}>${Math.round(adjustedBaseSalary).toLocaleString()}</span>
+                  <span className="number-font" style={{ fontWeight: 600 }}>₹{Math.round(adjustedBaseSalary).toLocaleString()}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                   <span style={{ color: 'var(--color-text-secondary)' }}>Performance Bonus:</span>
-                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+${bonus}</span>
+                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+₹{bonus}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                   <span style={{ color: 'var(--color-text-secondary)' }}>Provident Fund (PF 12%):</span>
-                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-${pf}</span>
+                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-₹{pf}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                   <span style={{ color: 'var(--color-text-secondary)' }}>State Insurance (ESI 1.75%):</span>
-                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-${esi}</span>
+                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-₹{esi}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                   <span style={{ color: 'var(--color-text-secondary)' }}>Tax Deductions (TDS 15%):</span>
-                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-${tax}</span>
+                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-₹{tax}</span>
                 </div>
               </div>
 
@@ -226,7 +226,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
                   <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Direct bank wire payment</p>
                 </div>
                 <h4 className="number-font" style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                  ${netPay.toLocaleString()}
+                  ₹{netPay.toLocaleString()}
                 </h4>
               </div>
             </div>
@@ -309,7 +309,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
             <div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 8 }}>Initialize Monthly Payroll Run</h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--color-text-tertiary)', maxWidth: 450, margin: '0 auto', lineHeight: 1.5 }}>
-                Disburse compensation across all active bank wires. Total aggregate volume estimation is **$240K** for this cycle.
+                Disburse compensation across all active bank wires. Total aggregate volume estimation is **₹240K** for this cycle.
               </p>
             </div>
 

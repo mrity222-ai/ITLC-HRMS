@@ -359,7 +359,18 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
         // Load Attendance History
         try {
           const attList = await api.getEmployeeAttendance();
-          if (attList && attList.length > 0) {
+          if (Array.isArray(attList)) {
+            setAttendanceHistory(attList);
+            const todayDate = new Date().toISOString().split("T")[0];
+            const todayRec = attList.find(r => r.date === todayDate);
+            if (todayRec && todayRec.checkIn && !todayRec.checkOut) {
+              setIsClockedIn(true);
+              const [h, m, s] = todayRec.checkIn.split(':').map(Number);
+              const tDate = new Date();
+              tDate.setHours(h, m, s, 0);
+              setClockInTime(tDate.getTime());
+            }
+          } else if (attList && attList.length > 0) {
             setAttendanceHistory(attList);
           }
         } catch (e) {

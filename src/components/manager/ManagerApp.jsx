@@ -5,7 +5,7 @@ import {
   CreditCard, HardDrive, MessageSquare, FileText, Megaphone, Bell, 
   User, Settings as SettingsIcon, LogOut, CheckCircle2, XCircle, 
   AlertCircle, Plus, Calendar, Mail, Phone, ShieldCheck, MapPin, Eye, 
-  UserCheck, ThumbsUp, AlertTriangle, Download, Info, Menu, Video, ChevronRight
+  UserCheck, ThumbsUp, AlertTriangle, Download, Info, Menu, Video, ChevronRight, Play
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -30,6 +30,13 @@ export default function ManagerApp({ onLogout }) {
   const [meetings, setMeetings] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   
+  // Manager personal attendance states
+  const [ownLogs, setOwnLogs] = useState([]);
+  const [punchedIn, setPunchedIn] = useState(false);
+  const [punchTime, setPunchTime] = useState(null);
+  const [workDuration, setWorkDuration] = useState('00:00:00');
+  const [attSubTab, setAttSubTab] = useState('my-attendance'); // 'my-attendance', 'team-logs', 'corrections'
+
   const [loading, setLoading] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -58,7 +65,7 @@ export default function ManagerApp({ onLogout }) {
   // Load live data
   const loadLiveManagerPortal = async () => {
     try {
-      const [profile, team, leaveList, attList, corrList, taskList, perfList, expList, assetList, meetList, annList] = await Promise.all([
+      const [profile, team, leaveList, attList, corrList, taskList, perfList, expList, assetList, meetList, annList, personalData] = await Promise.all([
         api.getProfile(),
         api.getManagerTeam(),
         api.getManagerLeaves(),
@@ -69,7 +76,8 @@ export default function ManagerApp({ onLogout }) {
         api.getManagerExpenses(),
         api.getManagerAssets(),
         api.getManagerMeetings(),
-        api.getManagerAnnouncements()
+        api.getManagerAnnouncements(),
+        api.getEmployeeAttendance()
       ]);
 
       setManagerProfile(profile);
@@ -83,6 +91,7 @@ export default function ManagerApp({ onLogout }) {
       setAssets(assetList || []);
       setMeetings(meetList || []);
       setAnnouncements(annList || []);
+      setOwnLogs(personalData || []);
     } catch (err) {
       console.error("Error loading manager portal live records:", err);
     } finally {
@@ -95,6 +104,83 @@ export default function ManagerApp({ onLogout }) {
     const interval = setInterval(loadLiveManagerPortal, 8000);
     return () => clearInterval(interval);
   }, []);
+
+  const todayDate = new Date().toISOString().split('T')[0];
+  const todayOwnRecord = ownLogs.find(r => r.date === todayDate);
+
+  useEffect(() => {
+    if (todayOwnRecord) {
+      if (todayOwnRecord.checkIn && !todayOwnRecord.checkOut) {
+        setPunchedIn(true);
+        const [h, m, s] = todayOwnRecord.checkIn.split(':').map(Number);
+        const tDate = new Date();
+        tDate.setHours(h, m, s, 0);
+        setPunchTime(tDate);
+      } else {
+        setPunchedIn(false);
+        setPunchTime(null);
+      }
+    } else {
+      setPunchedIn(false);
+      setPunchTime(null);
+    }
+  }, [ownLogs]);
+
+  useEffect(() => {
+    let interval;
+    if (punchedIn && punchTime) {
+      interval = setInterval(() => {
+        const diff = Date.now() - punchTime.getTime();
+        const hrs = Math.floor(diff / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        setWorkDuration(`${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`);
+      }, 1000);
+    } else {
+      setWorkDuration('00:00:00');
+    }
+    return () => clearInterval(interval);
+  }, [punchedIn, punchTime]);
+
+  const handlePunch = async () => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+    
+    if (!punchedIn) {
+      try {
+        const record = await api.punchIn({
+          date: dateStr,
+          checkIn: timeStr,
+          status: 'Present'
+        });
+        setOwnLogs(prev => [record, ...prev]);
+        alert("Attendance Marked Successfully");
+      } catch (err) {
+        alert("Failed to punch in: " + err.message);
+      }
+    } else {
+      const elapsedTotal = Math.floor((now.getTime() - punchTime.getTime()) / 1000);
+      const hrs = Math.floor(elapsedTotal / 3600);
+      const mins = Math.floor((elapsedTotal % 3600) / 60);
+      const secs = elapsedTotal % 60;
+      const workStr = `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+      
+      try {
+        const record = await api.punchOut({
+          date: dateStr,
+          checkOut: timeStr,
+          breakDuration: '00:00:00',
+          workHours: workStr,
+          status: 'Present'
+        });
+        setOwnLogs(prev => prev.map(r => r.date === dateStr ? record : r));
+        alert("Punch Out Successful");
+      } catch (err) {
+        alert("Failed to punch out: " + err.message);
+      }
+    }
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -612,70 +698,229 @@ export default function ManagerApp({ onLogout }) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
+                  className="space-y-6 animate-fadeIn"
                 >
-                  <div>
-                    <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Attendance Correction Requests</h3>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Approve or reject missing punches and overtime requests</p>
+                  {/* Header SubTabs navigation */}
+                  <div className="flex justify-between items-center pb-2 border-b border-border">
+                    <div>
+                      <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Attendance Console</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Manage personal logins and team check-in requests</p>
+                    </div>
+                    
+                    <div className="flex bg-secondary/50 p-0.5 rounded-lg border border-border space-x-1 shrink-0">
+                      {[
+                        { id: 'my-attendance', label: 'My Attendance' },
+                        { id: 'team-logs', label: 'Team Logs' },
+                        { id: 'corrections', label: 'Correction Requests' }
+                      ].map(tab => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setAttSubTab(tab.id)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap cursor-pointer transition-all",
+                            attSubTab === tab.id
+                              ? "bg-card text-foreground shadow-xs font-bold"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <Card className="p-0 overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm border-collapse">
-                        <thead>
-                          <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
-                            <th className="p-3">Employee</th>
-                            <th className="p-3">Date</th>
-                            <th className="p-3">Request Type</th>
-                            <th className="p-3">Requested In</th>
-                            <th className="p-3">Requested Out</th>
-                            <th className="p-3">Reason</th>
-                            <th className="p-3">Status</th>
-                            <th className="p-3 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {corrections.length === 0 ? (
-                            <tr>
-                              <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                                No attendance correction logs requested.
-                              </td>
-                            </tr>
+                  {/* 1. MY ATTENDANCE TAB */}
+                  {attSubTab === 'my-attendance' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
+                      {/* Punch Card */}
+                      <Card className="lg:col-span-2 flex flex-col justify-between p-6 space-y-6 bg-card border border-border">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="text-sm font-bold text-foreground">Punch In / Out Control</h4>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Register daily shift entries below</p>
+                          </div>
+                          <Badge variant={punchedIn ? "success" : "neutral"} className="text-[10px]">
+                            {punchedIn ? "Shift In Progress" : todayOwnRecord ? "Shift Completed" : "Checked Out"}
+                          </Badge>
+                        </div>
+
+                        <div className="flex flex-col items-center justify-center py-6 gap-4 text-center">
+                          <div className={cn(
+                            "w-14 h-14 rounded-full flex items-center justify-center transition-all",
+                            punchedIn ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-primary/10 text-primary border border-primary/20"
+                          )}>
+                            <Clock size={28} />
+                          </div>
+
+                          <div>
+                            <h3 className="text-sm font-extrabold text-foreground">
+                              {punchedIn ? 'You are Clocked In' : todayOwnRecord ? 'Shift Completed' : 'Not Clocked In'}
+                            </h3>
+                            <p className="text-[11px] text-muted-foreground mt-1">
+                              {punchedIn ? `Punched in: ${punchTime?.toLocaleTimeString()}` : todayOwnRecord ? `Shift In: ${todayOwnRecord.checkIn} | Out: ${todayOwnRecord.checkOut}` : 'Ready to begin your workday?'}
+                            </p>
+                          </div>
+
+                          {(punchedIn || todayOwnRecord) && (
+                            <div className="text-3xl font-extrabold text-foreground font-mono mt-2 tracking-tight">
+                              {punchedIn ? workDuration : todayOwnRecord?.workHours}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="w-full">
+                          <Button
+                            onClick={handlePunch}
+                            icon={punchedIn ? <LogOut className="h-4.5 w-4.5 text-white" /> : <Play className="h-4.5 w-4.5 text-white" />}
+                            className={cn(
+                              "w-full h-12 text-xs font-bold transition-all shrink-0 rounded-xl cursor-pointer text-white",
+                              punchedIn ? "btn-punch-out text-white bg-rose-600 hover:bg-rose-700" : "btn-punch-in text-white bg-emerald-600 hover:bg-emerald-700"
+                            )}
+                          >
+                            {punchedIn ? 'Punch Out' : 'Punch In'}
+                          </Button>
+                        </div>
+                      </Card>
+
+                      {/* Personal Calendar Logs Card */}
+                      <Card className="p-6 space-y-4 bg-card border border-border">
+                        <div>
+                          <h4 className="text-xs font-black text-foreground uppercase tracking-wider pb-2 border-b border-border">Personal Logs History</h4>
+                        </div>
+                        
+                        <div className="overflow-y-auto space-y-2 max-h-72 pr-1">
+                          {ownLogs.length === 0 ? (
+                            <div className="text-center py-10 text-muted-foreground text-[11px]">
+                              No login history found.
+                            </div>
                           ) : (
-                            corrections.map(req => (
-                              <tr key={req.id} className="hover:bg-secondary/25 transition-colors">
-                                <td className="p-3 font-semibold text-foreground">{req.employeeName}</td>
-                                <td className="p-3 font-mono">{req.date}</td>
-                                <td className="p-3"><Badge variant="info">{req.type}</Badge></td>
-                                <td className="p-3 font-mono">{req.requestedCheckIn || 'N/A'}</td>
-                                <td className="p-3 font-mono">{req.requestedCheckOut || 'N/A'}</td>
-                                <td className="p-3">{req.reason}</td>
-                                <td className="p-3">
-                                  <Badge variant={req.status === 'Approved' ? 'success' : req.status === 'Pending' ? 'warning' : 'danger'}>
-                                    {req.status}
+                            ownLogs.map((log, idx) => (
+                              <div key={idx} className="p-2.5 rounded-xl border border-border bg-secondary/15 flex justify-between items-center text-xs">
+                                <div>
+                                  <div className="font-bold text-foreground">{log.date}</div>
+                                  <div className="text-[9px] text-muted-foreground mt-0.5 flex gap-2">
+                                    <span>In: {log.checkIn || '--'}</span>
+                                    <span>Out: {log.checkOut || '--'}</span>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-semibold text-foreground font-mono">{log.workHours || '00:00:00'}</div>
+                                  <Badge variant={log.status === 'Present' || log.status === 'On Time' ? 'success' : 'warning'} className="text-[9px] mt-0.5">
+                                    {log.status || 'Present'}
                                   </Badge>
-                                </td>
-                                <td className="p-3 text-right">
-                                  {req.status === 'Pending' ? (
-                                    <div className="flex gap-1.5 justify-end">
-                                      <Button size="sm" variant="primary" onClick={() => handleCorrectionRequest(req.id, 'Approved', 'Approved')}>
-                                        Approve
-                                      </Button>
-                                      <Button size="sm" variant="danger" onClick={() => handleCorrectionRequest(req.id, 'Rejected', 'Rejected')}>
-                                        Reject
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <span className="text-[10px] text-muted-foreground">Processed</span>
-                                  )}
-                                </td>
-                              </tr>
+                                </div>
+                              </div>
                             ))
                           )}
-                        </tbody>
-                      </table>
+                        </div>
+                      </Card>
                     </div>
-                  </Card>
+                  )}
+
+                  {/* 2. TEAM ATTENDANCE LOGS TAB */}
+                  {attSubTab === 'team-logs' && (
+                    <Card className="p-0 overflow-hidden border border-border">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm border-collapse">
+                          <thead>
+                            <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
+                              <th className="p-3">Employee Name</th>
+                              <th className="p-3">Date</th>
+                              <th className="p-3">Punch In</th>
+                              <th className="p-3">Punch Out</th>
+                              <th className="p-3">Work Hours</th>
+                              <th className="p-3">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {attendance.length === 0 ? (
+                              <tr>
+                                <td colSpan={6} className="p-8 text-center text-muted-foreground text-xs">
+                                  No team attendance records logged.
+                                </td>
+                              </tr>
+                            ) : (
+                              attendance.map((log, index) => (
+                                <tr key={log.id || index} className="hover:bg-secondary/25 transition-colors text-xs">
+                                  <td className="p-3 font-semibold text-foreground">{log.employeeName}</td>
+                                  <td className="p-3 font-mono">{log.date}</td>
+                                  <td className="p-3 font-mono text-emerald-500">{log.checkIn || '--:--:--'}</td>
+                                  <td className="p-3 font-mono text-rose-500">{log.checkOut || '--:--:--'}</td>
+                                  <td className="p-3 font-mono font-semibold">{log.workHours || '00:00:00'}</td>
+                                  <td className="p-3">
+                                    <Badge variant={log.status === 'Present' || log.status === 'On Time' ? 'success' : log.status === 'Late' ? 'warning' : 'danger'}>
+                                      {log.status || 'Present'}
+                                    </Badge>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* 3. CORRECTION REQUESTS TAB */}
+                  {attSubTab === 'corrections' && (
+                    <Card className="p-0 overflow-hidden border border-border">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm border-collapse">
+                          <thead>
+                            <tr className="border-b border-border text-muted-foreground uppercase font-bold text-[9px] tracking-wider bg-secondary/35">
+                              <th className="p-3">Employee</th>
+                              <th className="p-3">Date</th>
+                              <th className="p-3">Request Type</th>
+                              <th className="p-3">Requested In</th>
+                              <th className="p-3">Requested Out</th>
+                              <th className="p-3">Reason</th>
+                              <th className="p-3">Status</th>
+                              <th className="p-3 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border text-xs">
+                            {corrections.length === 0 ? (
+                              <tr>
+                                <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                                  No attendance correction logs requested.
+                                </td>
+                              </tr>
+                            ) : (
+                              corrections.map(req => (
+                                <tr key={req.id} className="hover:bg-secondary/25 transition-colors">
+                                  <td className="p-3 font-semibold text-foreground">{req.employeeName}</td>
+                                  <td className="p-3 font-mono">{req.date}</td>
+                                  <td className="p-3"><Badge variant="info">{req.type}</Badge></td>
+                                  <td className="p-3 font-mono">{req.requestedCheckIn || 'N/A'}</td>
+                                  <td className="p-3 font-mono">{req.requestedCheckOut || 'N/A'}</td>
+                                  <td className="p-3">{req.reason}</td>
+                                  <td className="p-3">
+                                    <Badge variant={req.status === 'Approved' ? 'success' : req.status === 'Pending' ? 'warning' : 'danger'}>
+                                      {req.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    {req.status === 'Pending' ? (
+                                      <div className="flex gap-1.5 justify-end">
+                                        <Button size="sm" variant="primary" onClick={() => handleCorrectionRequest(req.id, 'Approved', 'Approved')}>
+                                          Approve
+                                        </Button>
+                                        <Button size="sm" variant="danger" onClick={() => handleCorrectionRequest(req.id, 'Rejected', 'Rejected')}>
+                                          Reject
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[10px] text-muted-foreground">Processed</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  )}
                 </motion.div>
               )}
 

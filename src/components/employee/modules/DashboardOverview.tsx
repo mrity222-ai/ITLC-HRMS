@@ -53,7 +53,11 @@ export const DashboardOverview: React.FC = () => {
     courses,
     notifications,
     payslips,
+    attendanceHistory,
   } = useHRMS();
+
+  const todayDateStr = new Date().toISOString().split("T")[0];
+  const todayRecord = attendanceHistory?.find((r: any) => r.date === todayDateStr);
 
   const [mounted, setMounted] = useState(false);
 
@@ -313,13 +317,17 @@ export const DashboardOverview: React.FC = () => {
                 Shift Duration Today
               </span>
               <div className="text-3xl font-extrabold text-foreground font-mono leading-none tracking-tight">
-                {isClockedIn ? formatTimer(todayWorkSeconds) : "00:00:00"}
+                {isClockedIn ? formatTimer(todayWorkSeconds) : (todayRecord?.workHours || "00:00:00")}
               </div>
-              {isClockedIn && clockInTime && (
+              {isClockedIn && clockInTime ? (
                 <span className="text-[9px] text-muted-foreground block mt-0.5">
                   Shift started at {new Date(clockInTime).toLocaleTimeString()}
                 </span>
-              )}
+              ) : todayRecord ? (
+                <span className="text-[9px] text-muted-foreground block mt-0.5">
+                  Shift In: {todayRecord.checkIn} | Out: {todayRecord.checkOut}
+                </span>
+              ) : null}
             </div>
 
             <div className="w-full">

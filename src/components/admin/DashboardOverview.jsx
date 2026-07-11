@@ -43,12 +43,12 @@ function AnimatedCounter({ value, duration = 1000 }) {
   }, [value, duration]);
 
   const isPercent = value.toString().includes('%');
-  const isCurrency = value.toString().includes('$');
+  const isCurrency = value.toString().includes('$') || value.toString().includes('₹');
   const formatted = count.toLocaleString();
   
   return (
     <span className="number-font">
-      {isCurrency && '$'}{formatted}{isPercent && '%'}
+      {isCurrency && '₹'}{formatted}{isPercent && '%'}
     </span>
   );
 }
@@ -159,7 +159,7 @@ export default function DashboardOverview({ employeesList = [], setActiveTab, no
     { label: 'Departments', value: uniqueDepts, desc: 'Operational blocks', change: `${uniqueDepts} total`, positive: true, sparkline: sparklineData.depts, color: '#8B5CF6', icon: Building2 },
     { label: 'Branches', value: '1', desc: 'Global sites', change: 'Active', positive: true, sparkline: sparklineData.branches, color: '#2563EB', icon: MapPin },
     { label: 'Open Positions', value: '2', desc: 'Recruiting postings', change: 'Active', positive: true, sparkline: sparklineData.positions, color: '#F59E0B', icon: Briefcase },
-    { label: 'Monthly Payroll', value: `$${monthlyPayroll.toLocaleString()}`, desc: 'Compensation disbursals', change: 'Active', positive: true, sparkline: sparklineData.payroll, color: '#EC4899', icon: Wallet },
+    { label: 'Monthly Payroll', value: `₹${monthlyPayroll.toLocaleString()}`, desc: 'Compensation disbursals', change: 'Active', positive: true, sparkline: sparklineData.payroll, color: '#EC4899', icon: Wallet },
   ];
 
   return (
@@ -328,7 +328,7 @@ export default function DashboardOverview({ employeesList = [], setActiveTab, no
                 <YAxis tick={{ fontSize: 12, fill: 'var(--color-text-tertiary)' }} axisLine={false} tickLine={false} />
                 <Tooltip 
                   contentStyle={{ background: 'var(--glass-bg)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 12 }}
-                  formatter={(value, name) => [`$${value}K`, name]}
+                  formatter={(value, name) => [`₹${value}K`, name]}
                 />
                 <Bar dataKey="Net" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Net Payroll">
                   {payrollTrendData.map((entry, index) => (

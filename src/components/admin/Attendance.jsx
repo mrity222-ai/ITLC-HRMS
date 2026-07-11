@@ -35,16 +35,24 @@ import { api } from '../../services/api';
 export default function Attendance({ subTab = 'dashboard' }) {
   const [punchedIn, setPunchedIn] = useState(false);
   const [punchTime, setPunchTime] = useState(null);
-  const [workDuration, setWorkDuration] = useState('0h 0m 0s');
+  const [workDuration, setWorkDuration] = useState('00:00:00');
   const [logs, setLogs] = useState([]);
+  const [ownLogs, setOwnLogs] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const todayDate = new Date().toISOString().split('T')[0];
+  const todayOwnRecord = ownLogs.find(r => r.date === todayDate);
 
   useEffect(() => {
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        const data = await api.getAdminAttendance();
+        const [data, personalData] = await Promise.all([
+          api.getAdminAttendance(),
+          api.getEmployeeAttendance()
+        ]);
         setLogs(data || []);
+        setOwnLogs(personalData || []);
       } catch (err) {
         console.error("Failed to fetch admin attendance logs:", err);
       } finally {
@@ -53,6 +61,24 @@ export default function Attendance({ subTab = 'dashboard' }) {
     };
     fetchLogs();
   }, [subTab]);
+
+  useEffect(() => {
+    if (todayOwnRecord) {
+      if (todayOwnRecord.checkIn && !todayOwnRecord.checkOut) {
+        setPunchedIn(true);
+        const [h, m, s] = todayOwnRecord.checkIn.split(':').map(Number);
+        const tDate = new Date();
+        tDate.setHours(h, m, s, 0);
+        setPunchTime(tDate);
+      } else {
+        setPunchedIn(false);
+        setPunchTime(null);
+      }
+    } else {
+      setPunchedIn(false);
+      setPunchTime(null);
+    }
+  }, [ownLogs]);
   
   useEffect(() => {
     let interval;
@@ -62,28 +88,55 @@ export default function Attendance({ subTab = 'dashboard' }) {
         const hrs = Math.floor(diff / 3600000);
         const mins = Math.floor((diff % 3600000) / 60000);
         const secs = Math.floor((diff % 60000) / 1000);
-        setWorkDuration(`${hrs}h ${mins}m ${secs}s`);
+        setWorkDuration(`${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`);
       }, 1000);
     } else {
-      setWorkDuration('0h 0m 0s');
+      setWorkDuration('00:00:00');
     }
     return () => clearInterval(interval);
   }, [punchedIn, punchTime]);
 
-  const todayDate = new Date().toISOString().split('T')[0];
   const todayLogs = logs.filter(l => l.date === todayDate);
   const totalPresentToday = todayLogs.filter(l => l.status === 'Present' || l.status === 'Late').length;
   const lateToday = todayLogs.filter(l => l.status === 'Late').length;
 
-  const handlePunch = () => {
+  const handlePunch = async () => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+    
     if (!punchedIn) {
-      setPunchedIn(true);
-      setPunchTime(new Date());
-      alert("Attendance Marked Successfully");
+      try {
+        const record = await api.punchIn({
+          date: dateStr,
+          checkIn: timeStr,
+          status: 'Present'
+        });
+        setOwnLogs(prev => [record, ...prev]);
+        alert("Attendance Marked Successfully");
+      } catch (err) {
+        alert("Failed to punch in: " + err.message);
+      }
     } else {
-      setPunchedIn(false);
-      alert("Punch Out Successful");
-      setPunchTime(null);
+      const elapsedTotal = Math.floor((now.getTime() - punchTime.getTime()) / 1000);
+      const hrs = Math.floor(elapsedTotal / 3600);
+      const mins = Math.floor((elapsedTotal % 3600) / 60);
+      const secs = elapsedTotal % 60;
+      const workStr = `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+      
+      try {
+        const record = await api.punchOut({
+          date: dateStr,
+          checkOut: timeStr,
+          breakDuration: '00:00:00',
+          workHours: workStr,
+          status: 'Present'
+        });
+        setOwnLogs(prev => prev.map(r => r.date === dateStr ? record : r));
+        alert("Punch Out Successful");
+      } catch (err) {
+        alert("Failed to punch out: " + err.message);
+      }
     }
   };
 
@@ -138,16 +191,16 @@ export default function Attendance({ subTab = 'dashboard' }) {
 
                 <div>
                   <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
-                    {punchedIn ? 'You are Punched In' : 'Not Clocked In'}
+                    {punchedIn ? 'You are Punched In' : todayOwnRecord ? 'Shift Completed' : 'Not Clocked In'}
                   </h3>
                   <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
-                    {punchedIn ? `Started at ${punchTime.toLocaleTimeString()}` : 'Ready to begin your workday?'}
+                    {punchedIn ? `Started at ${punchTime.toLocaleTimeString()}` : todayOwnRecord ? `Punched in: ${todayOwnRecord.checkIn} | Out: ${todayOwnRecord.checkOut}` : 'Ready to begin your workday?'}
                   </p>
                 </div>
 
-                {punchedIn && (
+                {(punchedIn || todayOwnRecord) && (
                   <div className="number-font" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                    {workDuration}
+                    {punchedIn ? workDuration : todayOwnRecord.workHours}
                   </div>
                 )}
 
@@ -327,23 +380,37 @@ export default function Attendance({ subTab = 'dashboard' }) {
               <table className="premium-table">
                 <thead>
                   <tr>
-                    <th>Day</th>
+                    <th>Date</th>
                     <th>Log Time</th>
+                    <th>Work Hours</th>
                     <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {mockCalendarDays.map((day, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontWeight: 600 }}>July {day.day}</td>
-                      <td className="number-font" style={{ fontSize: '0.8rem' }}>{day.time}</td>
-                      <td>
-                        <span className={`badge ${day.status === 'Present' ? 'badge-success' : day.status === 'Late' ? 'badge-warning' : 'badge-danger'}`}>
-                          {day.status}
-                        </span>
+                  {ownLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', padding: 20 }} className="text-muted-foreground">
+                        No personal logs recorded yet.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    ownLogs.map((log, idx) => (
+                      <tr key={log.id || idx}>
+                        <td style={{ fontWeight: 600 }}>{log.date}</td>
+                        <td className="number-font" style={{ fontSize: '0.8rem' }}>
+                          In: {log.checkIn || '--'} | Out: {log.checkOut || '--'}
+                        </td>
+                        <td className="number-font" style={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                          {log.workHours || '00:00:00'}
+                        </td>
+                        <td>
+                          <span className={`badge ${log.status === 'Present' || log.status === 'On Time' ? 'badge-success' : log.status === 'Late' ? 'badge-warning' : 'badge-danger'}`}>
+                            {log.status || 'Present'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
