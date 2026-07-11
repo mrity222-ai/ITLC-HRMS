@@ -1177,12 +1177,12 @@ h1, h2, h3, h4, h5, h6, p, span, a, td, th {
 }
 
 /* =========================================================
-   RIGHT-SIDE MAIN PANEL CONTENT TYPOGRAPHY SCALE DOWN (15-20%)
+   RIGHT-SIDE MAIN PANEL CONTENT TYPOGRAPHY SCALE DOWN (50%)
    ========================================================= */
-main :not(header):not(header *) h1 { font-size: 1.5rem !important; }
-main :not(header):not(header *) h2 { font-size: 1.25rem !important; }
-main :not(header):not(header *) h3 { font-size: 1.1rem !important; }
-main :not(header):not(header *) h4 { font-size: 0.95rem !important; }
+main :not(header):not(header *) h1 { font-size: 1.0rem !important; }
+main :not(header):not(header *) h2 { font-size: 0.85rem !important; }
+main :not(header):not(header *) h3 { font-size: 0.75rem !important; }
+main :not(header):not(header *) h4 { font-size: 0.65rem !important; }
 
 main :not(header):not(header *) p,
 main :not(header):not(header *) label,
@@ -1192,17 +1192,18 @@ main :not(header):not(header *) input,
 main :not(header):not(header *) select,
 main :not(header):not(header *) textarea,
 main :not(header):not(header *) button:not(aside button):not(.sidebar button) {
-  font-size: 12.5px !important;
+  font-size: 9px !important;
 }
 
-main :not(header):not(header *) .text-xs { font-size: 10px !important; }
-main :not(header):not(header *) .text-sm { font-size: 12px !important; }
-main :not(header):not(header *) .text-base { font-size: 13.5px !important; }
-main :not(header):not(header *) .text-lg { font-size: 15px !important; }
-main :not(header):not(header *) .text-xl { font-size: 17px !important; }
-main :not(header):not(header *) .text-2xl { font-size: 20px !important; }
-main :not(header):not(header *) .text-3xl { font-size: 24px !important; }
-main :not(header):not(header *) .text-4xl { font-size: 28px !important; }
-main :not(header):not(header *) .text-5xl { font-size: 32px !important; }
+main :not(header):not(header *) .text-xs { font-size: 6px !important; }
+main :not(header):not(header *) .text-sm { font-size: 7px !important; }
+main :not(header):not(header *) .text-base { font-size: 8.5px !important; }
+main :not(header):not(header *) .text-lg { font-size: 9.5px !important; }
+main :not(header):not(header *) .text-xl { font-size: 10.5px !important; }
+main :not(header):not(header *) .text-2xl { font-size: 12px !important; }
+main :not(header):not(header *) .text-3xl { font-size: 15px !important; }
+main :not(header):not(header *) .text-4xl { font-size: 18px !important; }
+main :not(header):not(header *) .text-5xl { font-size: 24px !important; }
+
 
 
