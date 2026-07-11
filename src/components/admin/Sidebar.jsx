@@ -137,11 +137,9 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
   }, []);
 
   const visibleMenuItems = menuItems.filter(item => {
-    // Core menus that are always visible
     if (['dashboard', 'people', 'reports', 'notifications', 'settings', 'security', 'support'].includes(item.id)) return true;
-    
-    // For all other modules, only show if explicitly enabled by superowner
-    return featureFlags[item.id] === true;
+    if (featureFlags[item.id] === false) return false;
+    return true;
   });
 
   // Auto expand when active tab falls under a collapsible menu parent
