@@ -1143,7 +1143,7 @@ export const CompaniesTab: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex justify-end gap-2 border-t border-white/5 pt-4 mt-2">
+                <div className="sticky bottom-[-1.5rem] -mx-6 -mb-6 px-6 py-4 bg-slate-900/95 backdrop-blur-md border-t border-white/10 flex justify-end gap-2 z-20">
                   <button
                     type="button"
                     onClick={() => { setIsModalOpen(false); setIsFormDirty(false); }}
