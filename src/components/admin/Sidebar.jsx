@@ -245,13 +245,13 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
       </div>
 
       {/* Navigation Menu */}
-      <div style={{ 
+      <nav style={{ 
         flex: 1, 
         overflowY: 'auto', 
-        padding: '16px 12px',
+        padding: '12px 12px', // Reduce top/bottom padding to make it tighter
         display: 'flex',
         flexDirection: 'column',
-        gap: 4
+        gap: 2 // Reduce gap between items to 2px
       }}>
         {menuItems.map((item) => {
           // Render sub-items accordion
@@ -397,7 +397,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
             </button>
           );
         })}
-      </div>
+      </nav>
 
       {/* Logout Footer Button */}
       <div style={{ 

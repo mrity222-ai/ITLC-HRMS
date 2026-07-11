@@ -527,9 +527,9 @@ aside,
 }
 
 /* Navigation items inside sidebar */
-aside button, 
-.sidebar button, 
-[class*="sidebar"] button {
+aside nav button, 
+.sidebar nav button, 
+[class*="sidebar"] nav button {
   color: #64748B !important;
   background: transparent !important;
   border-left: 3px solid transparent !important;
@@ -537,38 +537,61 @@ aside button,
   font-weight: 500 !important; /* Font Weight: 500 */
   font-size: 15px !important; /* Font Size: 15px */
   transition: all 0.2s ease !important;
-  padding: 10px 12px !important;
-  margin: 2px 8px !important;
+  padding: 8px 12px !important; /* Tighter padding */
+  margin: 1px 8px !important; /* Tighter margin */
   width: calc(100% - 16px) !important;
   display: flex !important;
   align-items: center !important;
   gap: 12px !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
 }
 
-aside button svg,
-.sidebar button svg,
-[class*="sidebar"] button svg {
+aside nav button span,
+.sidebar nav button span,
+[class*="sidebar"] nav button span {
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+}
+
+aside nav button svg,
+.sidebar nav button svg,
+[class*="sidebar"] nav button svg {
   width: 20px !important; /* Icon Size: 20px */
   height: 20px !important;
   color: inherit !important;
+  flex-shrink: 0 !important;
+}
+
+/* Sub-items specific overrides */
+aside nav button.saas-sidebar-subitem,
+.sidebar nav button.saas-sidebar-subitem,
+[class*="sidebar"] nav button.saas-sidebar-subitem {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 6px 12px !important;
+  width: calc(100% - 8px) !important;
+  margin: 1px 4px !important;
 }
 
 /* Hover state: light blue background */
-aside button:hover, 
-.sidebar button:hover, 
-[class*="sidebar"] button:hover {
+aside nav button:hover, 
+.sidebar nav button:hover, 
+[class*="sidebar"] nav button:hover {
   color: #1E1B4B !important;
   background-color: #F0F9FF !important; /* light blue background */
   border-radius: 8px !important;
 }
 
 /* Active Item state: Background #EEF2FF, Border Left 3px solid #4F46E5, Text Color #4F46E5 */
-aside button.active,
-.sidebar button.active,
-[class*="sidebar"] button.active,
-aside button:has([layoutId="activeTabPill"]),
-aside button:has([layoutId="active-sidebar-pill"]),
-aside button:has([layoutId="active-nav-bg"]) {
+aside nav button.active,
+.sidebar nav button.active,
+[class*="sidebar"] nav button.active,
+aside nav button:has([layoutId="activeTabPill"]),
+aside nav button:has([layoutId="active-sidebar-pill"]),
+aside nav button:has([layoutId="active-nav-bg"]) {
   background-color: #EEF2FF !important;
   border-left: 3px solid #4F46E5 !important;
   color: #4F46E5 !important;
