@@ -193,19 +193,32 @@ export default function DashboardOverview({ employeesList = [], setActiveTab, no
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                height: 175,
+                height: 180,
                 position: 'relative',
-                borderTop: `4px solid ${kpi.color}`,
-                borderRadius: '20px',
-                background: 'var(--glass-bg)',
-                backdropFilter: 'blur(20px)'
+                borderRadius: '24px',
+                border: '1px solid #E2E8F0',
+                background: '#FFFFFF',
+                boxShadow: '0 8px 30px rgba(15, 23, 42, 0.04)',
+                overflow: 'hidden'
               }}
+              whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(15, 23, 42, 0.08)' }}
             >
+              {/* Top Accent Gradient Bar */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: 'linear-gradient(90deg, #7C3AED, #EC4899)',
+                borderRadius: '24px 24px 0 0'
+              }} />
+
               {/* Header inside card */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 4 }}>
                 <div>
-                  <span className="premium-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>{kpi.label}</span>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{kpi.desc}</p>
+                  <span className="premium-label" style={{ fontSize: '15px', fontWeight: 500, color: '#334155' }}>{kpi.label}</span>
+                  <p style={{ fontSize: '13px', color: '#94A3B8', marginTop: 2, fontWeight: 400 }}>{kpi.desc}</p>
                 </div>
                 <div style={{
                   width: 38,
@@ -224,14 +237,14 @@ export default function DashboardOverview({ employeesList = [], setActiveTab, no
               {/* Number and Sparkline row */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14 }}>
                 <div>
-                  <h4 style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--color-text-primary)' }}>
+                  <h4 style={{ fontSize: '40px', fontWeight: 700, letterSpacing: '-0.03em', color: '#0F172A', lineHeight: 1 }}>
                     <AnimatedCounter value={kpi.value} />
                   </h4>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
                     <span className="badge badge-success" style={{ fontSize: '0.7rem', padding: '2px 6px', background: `${kpi.color}10`, color: kpi.color }}>
                       {kpi.change}
                     </span>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>vs last month</span>
+                    <span style={{ fontSize: '0.65rem', color: '#94A3B8' }}>vs last month</span>
                   </div>
                 </div>
 

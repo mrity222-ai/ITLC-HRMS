@@ -41,13 +41,14 @@ export default function Header({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '16px 24px',
-      background: 'var(--glass-bg)',
+      padding: '0 24px',
+      height: '90px',
+      background: 'rgba(255, 255, 255, 0.75)',
       backdropFilter: 'blur(20px)',
       WebkitBackdropFilter: 'blur(20px)',
-      border: '1px solid var(--color-border)',
-      borderRadius: 20,
-      boxShadow: 'var(--glass-shadow)',
+      border: '1px solid rgba(226, 232, 240, 0.8)',
+      borderRadius: '28px',
+      boxShadow: '0 10px 30px rgba(15, 23, 42, 0.05)',
       marginBottom: 24,
       position: 'relative',
       zIndex: 40
@@ -78,13 +79,13 @@ export default function Header({
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           style={{ 
-            fontSize: isMobile ? '18px' : '28px', 
-            fontWeight: 800,
+            fontSize: isMobile ? '24px' : '44px', 
+            fontWeight: 700,
             textTransform: 'capitalize',
-            background: 'linear-gradient(90deg, #4F46E5 0%, #06B6D4 100%)',
+            background: 'linear-gradient(90deg, #7C3AED 0%, #EC4899 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            minWidth: isMobile ? 'auto' : 140,
+            minWidth: isMobile ? 'auto' : 200,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -99,15 +100,15 @@ export default function Header({
           <div style={{ 
             position: 'relative', 
             width: '100%', 
-            maxWidth: 260,
+            maxWidth: 280,
             minWidth: 140,
             display: 'flex',
             alignItems: 'center',
             flex: 1
           }}>
-            <Search size={16} style={{ 
+            <Search size={18} style={{ 
               position: 'absolute', 
-              left: 14, 
+              left: 16, 
               color: 'var(--color-text-tertiary)',
               pointerEvents: 'none'
             }} />
@@ -118,18 +119,19 @@ export default function Header({
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 width: '100%',
-                padding: '10px 16px 10px 40px',
-                borderRadius: 12,
+                height: '48px',
+                padding: '0 16px 0 44px',
+                borderRadius: '12px',
                 border: '1px solid rgba(226, 232, 240, 0.8)',
                 background: 'rgba(255, 255, 255, 0.8)',
-                fontSize: '0.85rem',
+                fontSize: '14px',
                 color: 'var(--color-text-primary)',
                 transition: 'all 0.2s ease',
                 outline: 'none',
               }}
               onFocus={(e) => {
-                e.target.style.borderColor = 'var(--color-primary)';
-                e.target.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.15)';
+                e.target.style.borderColor = '#7C3AED';
+                e.target.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.15)';
                 e.target.style.background = 'white';
               }}
               onBlur={(e) => {
@@ -156,7 +158,8 @@ export default function Header({
             gap: 8,
             background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)',
             border: '1px solid rgba(79, 70, 229, 0.2)',
-            padding: isMobile ? '8px' : '8px 14px',
+            padding: isMobile ? '0 12px' : '0 18px',
+            height: '48px',
             borderRadius: 12,
             color: 'var(--color-primary)',
             fontSize: '0.85rem',
@@ -165,7 +168,7 @@ export default function Header({
             boxShadow: '0 4px 15px rgba(79, 70, 229, 0.05)'
           }}
         >
-          <Bot size={16} />
+          <Bot size={18} />
           {!isMobile && <span>Ask AI</span>}
           {!isMobile && <Sparkles size={12} style={{ color: 'var(--color-accent)' }} />}
         </motion.button>
@@ -175,9 +178,9 @@ export default function Header({
           <button 
             onClick={() => setShowQuickActions(!showQuickActions)}
             className="premium-btn premium-btn-secondary"
-            style={{ padding: isMobile ? '8px' : '8px 14px', display: 'flex', gap: 6, alignItems: 'center' }}
+            style={{ height: '48px', padding: isMobile ? '0 12px' : '0 18px', display: 'flex', gap: 6, alignItems: 'center', borderRadius: 12 }}
           >
-            <PlusCircle size={16} />
+            <PlusCircle size={18} />
             {!isMobile && <span>Actions</span>}
             <ChevronDown size={14} />
           </button>
@@ -238,9 +241,9 @@ export default function Header({
           <button 
             onClick={() => { setShowNotifications(!showNotifications); setShowMessages(false); setShowProfileMenu(false); }}
             style={{
-              width: 38,
-              height: 38,
-              borderRadius: 10,
+              width: 44,
+              height: 44,
+              borderRadius: 12,
               border: '1px solid rgba(226, 232, 240, 0.8)',
               background: 'white',
               display: 'flex',
@@ -342,9 +345,9 @@ export default function Header({
           <button 
             onClick={() => { setShowMessages(!showMessages); setShowNotifications(false); setShowProfileMenu(false); }}
             style={{
-              width: 38,
-              height: 38,
-              borderRadius: 10,
+              width: 44,
+              height: 44,
+              borderRadius: 12,
               border: '1px solid rgba(226, 232, 240, 0.8)',
               background: 'white',
               display: 'flex',
@@ -414,9 +417,9 @@ export default function Header({
         <button
           onClick={() => setDarkMode(!darkMode)}
           style={{
-            width: 38,
-            height: 38,
-            borderRadius: 10,
+            width: 44,
+            height: 44,
+            borderRadius: 12,
             border: '1px solid rgba(226, 232, 240, 0.8)',
             background: 'white',
             display: 'flex',

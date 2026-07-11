@@ -187,12 +187,12 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12 }}
           >
             <div style={{
               width: 36,
               height: 36,
-              borderRadius: 10,
+              borderRadius: 8,
               background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
               display: 'flex',
               alignItems: 'center',
@@ -200,13 +200,12 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
               color: 'white',
               fontWeight: 800,
               fontSize: 18,
-              boxShadow: '0 4px 10px rgba(79, 70, 229, 0.3)'
             }}>
               {companyName ? companyName[0].toUpperCase() : 'A'}
             </div>
-            <div>
-              <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em', background: 'linear-gradient(90deg, #0F172A 0%, #475569 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{companyName || 'Antigravity'}</span>
-              <div style={{ fontSize: 9, color: 'var(--color-accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: -2 }}>HRMS Enterprise</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <span style={{ fontWeight: 700, fontSize: '18px', color: '#0F172A', lineHeight: '1.2' }}>{companyName || 'Antigravity'}</span>
+              <span style={{ fontSize: '12px', color: '#94A3B8', fontWeight: 500 }}>HRMS Enterprise</span>
             </div>
           </motion.div>
         )}
@@ -264,26 +263,27 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
               <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <button
                   onClick={() => toggleMenu(item.id)}
+                  className={`saas-sidebar-item ${isParentActive ? 'active' : ''}`}
                   style={{
                     position: 'relative',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '12px 14px',
-                    borderRadius: 12,
+                    padding: '10px 12px',
+                    borderRadius: 8,
                     border: 'none',
                     background: 'transparent',
                     cursor: 'pointer',
                     textAlign: 'left',
                     width: '100%',
-                    color: isParentActive ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                    fontWeight: 600,
-                    fontSize: '16px',
+                    color: isParentActive ? '#4F46E5' : '#64748B',
+                    fontWeight: 500,
+                    fontSize: '15px',
                     outline: 'none'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <item.icon size={18} style={{ color: isParentActive ? 'var(--color-primary)' : 'var(--color-text-secondary)', flexShrink: 0 }} />
+                    <item.icon size={20} style={{ color: isParentActive ? '#4F46E5' : '#64748B', flexShrink: 0 }} />
                     {!collapsed && (
                       <motion.span
                         initial={{ opacity: 0 }}
@@ -296,7 +296,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
                   </div>
                   {!collapsed && (
                     <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} style={{ display: 'flex', alignItems: 'center' }}>
-                      <ChevronDown size={14} style={{ color: 'var(--color-text-tertiary)' }} />
+                      <ChevronDown size={14} style={{ color: '#94A3B8' }} />
                     </motion.div>
                   )}
                 </button>
@@ -312,7 +312,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
                       style={{
                         paddingLeft: 12,
                         marginLeft: 22,
-                        borderLeft: '1px solid var(--color-border)',
+                        borderLeft: '1px solid #E2E8F0',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 2,
@@ -325,17 +325,18 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
                           <button
                             key={sub.id}
                             onClick={() => handleItemClick(sub.id)}
+                            className={`saas-sidebar-subitem ${isSubActive ? 'active' : ''}`}
                             style={{
                               padding: '8px 12px',
-                              borderRadius: 8,
+                              borderRadius: 6,
                               border: 'none',
-                              background: isSubActive ? 'var(--color-primary-light)' : 'transparent',
+                              background: isSubActive ? '#EEF2FF' : 'transparent',
                               cursor: 'pointer',
                               textAlign: 'left',
                               width: '100%',
-                              color: isSubActive ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                              fontWeight: isSubActive ? 700 : 500,
-                              fontSize: '14px',
+                              color: isSubActive ? '#4F46E5' : '#64748B',
+                              fontWeight: isSubActive ? 600 : 500,
+                              fontSize: '13px',
                               outline: 'none',
                               transition: 'all 0.15s ease'
                             }}
@@ -358,43 +359,28 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
             <button
               key={item.id}
               onClick={() => handleItemClick(item.id)}
+              className={`saas-sidebar-item ${isActive ? 'active' : ''}`}
               style={{
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                padding: '12px 14px',
-                borderRadius: 12,
+                padding: '10px 12px',
+                borderRadius: 8,
                 border: 'none',
-                background: 'transparent',
+                background: isActive ? '#EEF2FF' : 'transparent',
                 cursor: 'pointer',
                 textAlign: 'left',
                 width: '100%',
-                color: isActive ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                fontWeight: 600,
-                fontSize: '16px',
-                transition: 'color 0.2s ease',
+                color: isActive ? '#4F46E5' : '#64748B',
+                fontWeight: 500,
+                fontSize: '15px',
+                transition: 'all 0.2s ease',
                 outline: 'none'
               }}
             >
-              {/* Active Tab Glow / Pill Indicator */}
-              {isActive && (
-                <motion.div
-                  layoutId="activeTabPill"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: 12,
-                    background: 'linear-gradient(90deg, rgba(79, 70, 229, 0.08) 0%, rgba(6, 182, 212, 0.04) 100%)',
-                    borderLeft: '3px solid var(--color-primary)',
-                    zIndex: -1
-                  }}
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                />
-              )}
-              
-              <Icon size={18} style={{ 
-                color: isActive ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+              <Icon size={20} style={{ 
+                color: isActive ? '#4F46E5' : '#64748B',
                 flexShrink: 0
               }} />
               

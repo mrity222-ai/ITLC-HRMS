@@ -463,14 +463,14 @@ a:hover, .link:hover {
 .dashboard-theme .glass-card,
 .dashboard-theme .premium-card {
   position: relative !important;
-  background-color: var(--color-card) !important;
-  background: var(--color-card) !important;
-  border-top: none !important; /* Replaced by gradient */
-  border-left: 1px solid var(--color-border) !important;
-  border-right: 1px solid var(--color-border) !important;
-  border-bottom: 1px solid var(--color-border) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08) !important;
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  border-top: none !important;
+  border-left: 1px solid #E2E8F0 !important;
+  border-right: 1px solid #E2E8F0 !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  border-radius: 24px !important; /* Border Radius: 24px */
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04) !important; /* Shadows */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   overflow: hidden !important;
@@ -487,40 +487,33 @@ a:hover, .link:hover {
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  height: 4px !important;
-  background: linear-gradient(90deg, #4F46E5 0%, #2563EB 50%, #06B6D4 100%) !important;
+  height: 4px !important; /* Accent gradient bar at top */
+  background: linear-gradient(90deg, #7C3AED 0%, #EC4899 100%) !important; /* from #7C3AED to #EC4899 */
   z-index: 10 !important;
 }
 
 .dark .dashboard-theme [class*="card"]::before,
 .dark .dashboard-theme .glass-card::before,
 .dark .dashboard-theme .premium-card::before {
-  background: linear-gradient(90deg, #6366F1 0%, #3B82F6 50%, #06B6D4 100%) !important;
+  background: linear-gradient(90deg, #7C3AED 0%, #EC4899 100%) !important;
 }
 
 /* Hover Lift & Rainbow Glow */
 .dashboard-theme [class*="card"]:hover,
 .dashboard-theme .glass-card:hover,
 .dashboard-theme .premium-card:hover {
-  transform: translateY(-6px) scale(1.01) !important;
-  box-shadow: 0 20px 40px rgba(79, 70, 229, 0.14), 0 0 15px rgba(6, 182, 212, 0.08) !important;
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08) !important;
   border-color: #CBD5E1 !important;
-}
-
-.dark .dashboard-theme [class*="card"]:hover,
-.dark .dashboard-theme .glass-card:hover,
-.dark .dashboard-theme .premium-card:hover {
-  border-color: #334155 !important;
-  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.25), 0 0 15px rgba(6, 182, 212, 0.2) !important;
 }
 
 /* 2. SIDEBAR RESTORATION */
 aside, 
 .sidebar, 
 [class*="sidebar"] {
-  background-color: var(--sidebar-bg) !important;
-  background: var(--sidebar-bg) !important;
-  border-right: var(--sidebar-border) !important;
+  background-color: #FFFFFF !important; /* White background */
+  background: #FFFFFF !important;
+  border-right: 1px solid #E2E8F0 !important;
   border-top: none !important;
   border-left: none !important;
   border-bottom: none !important;
@@ -530,63 +523,79 @@ aside,
   top: 0 !important;
   height: 100vh !important;
   z-index: 45 !important;
+  width: 260px !important; /* Width: 260px */
 }
 
 /* Navigation items inside sidebar */
 aside button, 
 .sidebar button, 
 [class*="sidebar"] button {
-  color: #000000 !important; /* Premium Black Sidebar text */
+  color: #64748B !important;
   background: transparent !important;
-  border-left: 4px solid transparent !important;
-  border-radius: 0px !important;
-  font-weight: 600 !important;
+  border-left: 3px solid transparent !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important; /* Font Weight: 500 */
+  font-size: 15px !important; /* Font Size: 15px */
   transition: all 0.2s ease !important;
+  padding: 10px 12px !important;
+  margin: 2px 8px !important;
+  width: calc(100% - 16px) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
 }
 
-.dark aside button, 
-.dark .sidebar button, 
-.dark [class*="sidebar"] button {
-  color: #F8FAFC !important;
+aside button svg,
+.sidebar button svg,
+[class*="sidebar"] button svg {
+  width: 20px !important; /* Icon Size: 20px */
+  height: 20px !important;
+  color: inherit !important;
 }
 
-/* Hover state */
+/* Hover state: light blue background */
 aside button:hover, 
 .sidebar button:hover, 
 [class*="sidebar"] button:hover {
-  color: var(--color-primary) !important;
-  background-color: var(--table-tr-hover) !important;
+  color: #1E1B4B !important;
+  background-color: #F0F9FF !important; /* light blue background */
+  border-radius: 8px !important;
 }
 
-/* Active Indicator Rainbow Gradient */
+/* Active Item state: Background #EEF2FF, Border Left 3px solid #4F46E5, Text Color #4F46E5 */
+aside button.active,
+.sidebar button.active,
+[class*="sidebar"] button.active,
+aside button:has([layoutId="activeTabPill"]),
+aside button:has([layoutId="active-sidebar-pill"]),
+aside button:has([layoutId="active-nav-bg"]) {
+  background-color: #EEF2FF !important;
+  border-left: 3px solid #4F46E5 !important;
+  color: #4F46E5 !important;
+  font-weight: 600 !important;
+}
+
 [layoutId="activeTabPill"],
 [layoutId="active-sidebar-pill"],
 [layoutId="active-nav-bg"] {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%) !important;
-  border-left: 4px solid var(--color-primary) !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
+  background: transparent !important;
+  border-left: none !important;
   border-radius: 0px !important;
-}
-
-.dark [layoutId="activeTabPill"],
-.dark [layoutId="active-sidebar-pill"],
-.dark [layoutId="active-nav-bg"] {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18) 0%, rgba(34, 211, 238, 0.1) 100%) !important;
-  border-left: 4px solid var(--color-primary) !important;
 }
 
 /* 3. HEADER RESTORATION */
 header,
 .header,
 [class*="header"] {
-  background-color: var(--color-card) !important;
-  background: var(--color-card) !important;
-  border-bottom: 1px solid var(--color-border) !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03) !important;
-  position: sticky !important;
-  top: 0 !important;
+  background-color: rgba(255, 255, 255, 0.75) !important; /* White Glass Card */
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  border-radius: 28px !important; /* Border Radius: 28px */
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05) !important;
+  position: relative !important;
+  height: 90px !important; /* Height: 90px */
   z-index: 40 !important;
 }
 
