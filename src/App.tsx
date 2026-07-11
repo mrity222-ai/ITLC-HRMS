@@ -26,18 +26,18 @@ export default function App() {
         const isSuperownerRoute = path === '/superowner' || search.includes('superowner');
 
         if (isSuperownerRoute) {
-          if (profile.role === 'Super Owner') {
+          if (profileData.role === 'Super Owner') {
             setView('superowner');
           } else {
             localStorage.removeItem('hrms_jwt_token');
             setView('superowner-login');
           }
         } else {
-          if (profile.role === 'Super Owner') {
+          if (profileData.role === 'Super Owner') {
             setView('superowner');
-          } else if (profile.role === 'Company Admin' || profile.role === 'HR') {
+          } else if (profileData.role === 'Company Admin' || profileData.role === 'HR') {
             setView('admin');
-          } else if (profile.role === 'Manager') {
+          } else if (profileData.role === 'Manager') {
             setView('manager');
           } else {
             setView('employee');
