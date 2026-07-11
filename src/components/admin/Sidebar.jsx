@@ -144,6 +144,12 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
     return featureFlags[item.id] === true;
   });
 
+  useEffect(() => {
+    console.log("=== SIDEBAR DIAGNOSTICS ===");
+    console.log("RECEIVED FEATURE FLAGS:", featureFlags);
+    console.log("VISIBLE MENU ITEMS:", visibleMenuItems.map(m => m.id));
+  }, [featureFlags]);
+
   // Auto expand when active tab falls under a collapsible menu parent
   useEffect(() => {
     const parentMenu = visibleMenuItems.find(item => 
