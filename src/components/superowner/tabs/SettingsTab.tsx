@@ -151,6 +151,16 @@ export const SettingsTab: React.FC = () => {
                   {formData.maintenanceMode ? 'ENABLED' : 'DISABLED'}
                 </button>
               </div>
+
+              {/* Platform Preferences Save Button */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-lg shadow-indigo-600/30"
+                >
+                  Save Platform Preferences
+                </button>
+              </div>
             </div>
           </div>
 

@@ -114,7 +114,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [showCommandPalette, setShowCommandPalette] = useState<boolean>(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isFormDirty, setIsFormDirty] = useState<boolean>(false);
-  const [settings, setSettings] = useState<Settings>({
+  const defaultSettings: Settings = {
     platformName: 'SUPEROWNER HRMS',
     currency: 'USD',
     timezone: 'UTC-5',
@@ -125,7 +125,23 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     stripeEnabled: true,
     razorpayEnabled: true,
     paypalEnabled: true,
+  };
+
+  const [settings, setSettings] = useState<Settings>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('superowner_settings');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) {}
+      }
+    }
+    return defaultSettings;
   });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('superowner_settings', JSON.stringify(settings));
+    }
+  }, [settings]);
 
   const [selectedCurrency, setSelectedCurrency] = useState<string>(() => {
     if (typeof window !== 'undefined') {
