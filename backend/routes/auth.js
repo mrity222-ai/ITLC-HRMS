@@ -143,6 +143,17 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // Check Company Status
+    if (user.companyId && user.role !== 'Super Owner') {
+      const company = await Company.findByPk(user.companyId);
+      if (company && company.status === 'expired') {
+        return res.status(403).json({ error: 'Your company subscription has expired. Please contact superowner to renew.' });
+      }
+      if (company && company.status === 'suspended') {
+        return res.status(403).json({ error: 'Your company account has been suspended.' });
+      }
+    }
+
     // Sign JWT Token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, companyId: user.companyId },

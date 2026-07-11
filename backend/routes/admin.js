@@ -259,7 +259,7 @@ router.get('/company', auth(['Company Admin']), async (req, res) => {
 
 // Update Company profile
 router.put('/company', auth(['Company Admin']), async (req, res) => {
-  const { name, logo, phone, address, gst } = req.body;
+  const { name, logo, phone, address, gst, lat, lng, radius } = req.body;
   try {
     const company = await Company.findByPk(req.user.companyId);
     if (!company) return res.status(404).json({ error: 'Company not found' });
@@ -269,6 +269,9 @@ router.put('/company', auth(['Company Admin']), async (req, res) => {
     if (phone !== undefined) company.phone = phone;
     if (address !== undefined) company.address = address;
     if (gst !== undefined) company.gst = gst;
+    if (lat !== undefined) company.lat = lat;
+    if (lng !== undefined) company.lng = lng;
+    if (radius !== undefined) company.radius = radius;
 
     await company.save();
     res.json(company);

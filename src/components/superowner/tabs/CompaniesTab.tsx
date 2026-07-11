@@ -4,7 +4,7 @@ import {
   Search, Filter, Download, Plus, Edit2, ShieldAlert, 
   UserPlus, Check, X, ShieldCheck, Eye, Trash2, LogIn,
   Building, Mail, Phone, Calendar, HardDrive, Users,
-  ArrowLeft, Activity, ToggleLeft, User, Clock
+  ArrowLeft, Activity, ToggleLeft, User, Clock, XCircle
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { Company } from '../types';
@@ -209,6 +209,19 @@ export const CompaniesTab: React.FC = () => {
       if (detailsCompany?.id === id) setDetailsCompany(prev => prev ? { ...prev, status: 'active' } : null);
     } catch (err: any) {
       addToast(err.message || 'Activation failed', 'error');
+    }
+  };
+
+  // Expire / End Subscription
+  const handleExpire = async (id: string, name: string) => {
+    try {
+      const updated = await api.updateCompany(id, { status: 'expired' });
+      setCompanies(prev => prev.map(c => c.id === id ? updated : c));
+      addToast(`Subscription ended for ${name}`, 'warning');
+      addLog('Subscription Expired', `Company "${name}" status updated to Expired.`, 'company');
+      if (detailsCompany?.id === id) setDetailsCompany(prev => prev ? { ...prev, status: 'expired' } : null);
+    } catch (err: any) {
+      addToast(err.message || 'Action failed', 'error');
     }
   };
 
@@ -439,19 +452,27 @@ export const CompaniesTab: React.FC = () => {
                 <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Management Actions</h4>
                 
                 <div className="flex flex-col gap-2">
-                  {detailsCompany.status === 'active' ? (
-                    <button
-                      onClick={() => handleSuspend(detailsCompany.id, detailsCompany.name)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl bg-rose-600/10 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/20 transition"
-                    >
-                      <ShieldAlert className="h-4 w-4" /> Suspend Tenant Account
-                    </button>
+                  {detailsCompany.status === 'active' || detailsCompany.status === 'trial' ? (
+                    <>
+                      <button
+                        onClick={() => handleSuspend(detailsCompany.id, detailsCompany.name)}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl bg-rose-600/10 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/20 transition cursor-pointer"
+                      >
+                        <ShieldAlert className="h-4 w-4" /> Suspend Tenant Account
+                      </button>
+                      <button
+                        onClick={() => handleExpire(detailsCompany.id, detailsCompany.name)}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl bg-slate-600/10 hover:bg-slate-600 text-slate-300 hover:text-white border border-slate-500/20 transition cursor-pointer"
+                      >
+                        <XCircle className="h-4 w-4" /> End Subscription (Expire)
+                      </button>
+                    </>
                   ) : (
                     <button
                       onClick={() => handleActivate(detailsCompany.id, detailsCompany.name)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl bg-emerald-600/10 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/20 transition"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold rounded-xl bg-emerald-600/10 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/20 transition cursor-pointer"
                     >
-                      <ShieldCheck className="h-4 w-4" /> Activate Tenant Account
+                      <ShieldCheck className="h-4 w-4" /> Activate / Start Subscription
                     </button>
                   )}
                   
@@ -883,19 +904,28 @@ export const CompaniesTab: React.FC = () => {
                             </button>
 
                             {/* Status toggle */}
-                            {c.status === 'active' ? (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleSuspend(c.id, c.name); }}
-                                title="Suspend Company"
-                                className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-600 hover:text-white border border-white/10 text-slate-300 transition"
-                              >
-                                <ShieldAlert className="h-3.5 w-3.5" />
-                              </button>
+                            {c.status === 'active' || c.status === 'trial' ? (
+                              <>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleSuspend(c.id, c.name); }}
+                                  title="Suspend Company"
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-600 hover:text-white border border-white/10 text-slate-300 transition cursor-pointer"
+                                >
+                                  <ShieldAlert className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleExpire(c.id, c.name); }}
+                                  title="End Subscription (Expire)"
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-slate-600 hover:text-white border border-white/10 text-slate-300 transition cursor-pointer"
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                </button>
+                              </>
                             ) : (
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleActivate(c.id, c.name); }}
                                 title="Activate Company"
-                                className="p-1.5 rounded-lg bg-white/5 hover:bg-emerald-600 hover:text-white border border-white/10 text-slate-300 transition"
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-emerald-600 hover:text-white border border-white/10 text-slate-300 transition cursor-pointer"
                               >
                                 <ShieldCheck className="h-3.5 w-3.5" />
                               </button>

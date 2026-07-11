@@ -45,6 +45,8 @@ export default function Attendance({ subTab = 'dashboard' }) {
   const [ownLogs, setOwnLogs] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const [companyDetails, setCompanyDetails] = useState(null);
+
   const todayDate = new Date().toISOString().split('T')[0];
   const todayOwnRecord = ownLogs.find(r => r.date === todayDate);
 
@@ -52,12 +54,14 @@ export default function Attendance({ subTab = 'dashboard' }) {
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        const [data, personalData] = await Promise.all([
+        const [data, personalData, company] = await Promise.all([
           api.getAdminAttendance(),
-          api.getEmployeeAttendance()
+          api.getEmployeeAttendance(),
+          api.getAdminCompany()
         ]);
         setLogs(data || []);
         setOwnLogs(personalData || []);
+        setCompanyDetails(company || null);
       } catch (err) {
         console.error("Failed to fetch admin attendance logs:", err);
       } finally {
@@ -114,6 +118,15 @@ export default function Attendance({ subTab = 'dashboard' }) {
   const lateToday = todayLogs.filter(l => l.status === 'Late').length;
 
   const handlePunch = async () => {
+    if (companyDetails) {
+      try {
+        await checkGeofence(companyDetails);
+      } catch (err) {
+        alert("Geofence Restriction: " + err.message);
+        return;
+      }
+    }
+
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
@@ -513,4 +526,55 @@ export default function Attendance({ subTab = 'dashboard' }) {
 
     </div>
   );
+}
+
+// Geofence helper functions
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Earth radius in meters
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c; // in meters
+}
+
+function checkGeofence(companyDetails) {
+  return new Promise((resolve, reject) => {
+    if (!companyDetails || companyDetails.lat === null || companyDetails.lng === null || companyDetails.lat === undefined || companyDetails.lng === undefined) {
+      resolve(true);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported by your browser. Geofencing is enabled, so you cannot mark attendance without location access."));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const distance = calculateDistance(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          companyDetails.lat,
+          companyDetails.lng
+        );
+        const radiusLimit = companyDetails.radius || 500;
+        if (distance <= radiusLimit) {
+          resolve(true);
+        } else {
+          reject(new Error(`You are outside the permitted range. Your distance: ${Math.round(distance)}m, Allowed limit: ${radiusLimit}m.`));
+        }
+      },
+      (err) => {
+        reject(new Error("Unable to retrieve location: " + err.message + ". Location access is required to mark attendance."));
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
 }

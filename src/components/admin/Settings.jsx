@@ -54,6 +54,9 @@ export default function CompanySettings() {
   const [smsGateway, setSmsGateway] = useState('https://api.twilio.com/2010-04-01');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
+  const [radius, setRadius] = useState(500);
 
   // Admin Profile states
   const [adminName, setAdminName] = useState('');
@@ -71,6 +74,9 @@ export default function CompanySettings() {
           setAddress(details.address || '');
           setGst(details.gst || '');
           setCurrency(details.currency || 'USD');
+          setLat(details.lat !== undefined && details.lat !== null ? details.lat.toString() : '');
+          setLng(details.lng !== undefined && details.lng !== null ? details.lng.toString() : '');
+          setRadius(details.radius !== undefined && details.radius !== null ? details.radius : 500);
         }
       } catch (err) {
         console.error('Failed to load company details:', err);
@@ -99,7 +105,10 @@ export default function CompanySettings() {
         name: compName,
         phone,
         address,
-        gst
+        gst,
+        lat: lat === '' ? null : Number(lat),
+        lng: lng === '' ? null : Number(lng),
+        radius: radius === '' ? 500 : Number(radius)
       });
       setSuccess(true);
       
@@ -217,6 +226,71 @@ export default function CompanySettings() {
               placeholder="Entity address details"
             />
           </div>
+
+          <h3 style={{ fontSize: '0.85rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, borderTop: '1px solid rgba(226, 232, 240, 0.2)', paddingTop: 16 }}>
+            <MapPin size={16} style={{ color: 'var(--color-primary)' }} />
+            <span>Geofencing Attendance Restriction</span>
+          </h3>
+
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div className="premium-form-group" style={{ flex: 1 }}>
+              <label className="premium-label">Office Latitude</label>
+              <input 
+                type="number" 
+                step="any"
+                value={lat} 
+                onChange={(e) => setLat(e.target.value)} 
+                className="premium-input" 
+                placeholder="e.g. 28.6139"
+              />
+            </div>
+            <div className="premium-form-group" style={{ flex: 1 }}>
+              <label className="premium-label">Office Longitude</label>
+              <input 
+                type="number" 
+                step="any"
+                value={lng} 
+                onChange={(e) => setLng(e.target.value)} 
+                className="premium-input" 
+                placeholder="e.g. 77.2090"
+              />
+            </div>
+          </div>
+
+          <div className="premium-form-group">
+            <label className="premium-label">Permitted Radius (in meters)</label>
+            <input 
+              type="number" 
+              value={radius} 
+              onChange={(e) => setRadius(e.target.value === '' ? '' : Number(e.target.value))} 
+              className="premium-input" 
+              placeholder="e.g. 500"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    setLat(pos.coords.latitude.toString());
+                    setLng(pos.coords.longitude.toString());
+                    alert("Location captured successfully!");
+                  },
+                  (err) => {
+                    alert("Failed to capture location: " + err.message);
+                  }
+                );
+              } else {
+                alert("Geolocation is not supported by your browser.");
+              }
+            }}
+            className="btn btn-secondary cursor-pointer"
+            style={{ padding: '8px 12px', fontSize: '0.75rem', alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 8 }}
+          >
+            📍 Use My Current Location
+          </button>
         </div>
 
         {/* Admin Profile Settings */}

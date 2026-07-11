@@ -20,6 +20,11 @@ export interface EmployeeProfile {
   employmentType: string;
   companyName?: string;
   documents?: any[];
+  companyDetails?: {
+    lat?: number | null;
+    lng?: number | null;
+    radius?: number;
+  } | null;
 }
 
 export interface AttendanceRecord {
@@ -309,7 +314,8 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
           reportingManager: prof.reportingManager || "None",
           employmentType: "Full-Time Permanent",
           companyName: prof.companyName || "ITLC HRMS",
-          documents: prof.documents || []
+          documents: prof.documents || [],
+          companyDetails: prof.companyDetails || null
         });
 
         // Load Leaves
@@ -594,6 +600,15 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
 
   // Functions
   const clockIn = async () => {
+    if (profile.companyDetails) {
+      try {
+        await checkGeofence(profile.companyDetails);
+      } catch (err: any) {
+        alert("Geofence Restriction: " + err.message);
+        return;
+      }
+    }
+
     const now = new Date();
     const dateStr = now.toISOString().split("T")[0];
     const inTimeStr = now.toLocaleTimeString("en-US", { hour12: false });
@@ -634,6 +649,15 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
 
   const clockOut = async () => {
     if (!isClockedIn || clockInTime === null) return;
+
+    if (profile.companyDetails) {
+      try {
+        await checkGeofence(profile.companyDetails);
+      } catch (err: any) {
+        alert("Geofence Restriction: " + err.message);
+        return;
+      }
+    }
     
     // Stop break if active
     let finalBreakSecs = totalBreakSecondsToday;
@@ -1139,3 +1163,54 @@ export const HelpdeskTicket = {};
 export const Course = {};
 export const NotificationItem = {};
 export const UserSettings = {};
+
+// Geofence helper functions
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3; // Earth radius in meters
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c; // in meters
+}
+
+export function checkGeofence(companyDetails: { lat?: number | null; lng?: number | null; radius?: number } | null): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    if (!companyDetails || companyDetails.lat === null || companyDetails.lng === null || companyDetails.lat === undefined || companyDetails.lng === undefined) {
+      resolve(true);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported by your browser. Geofencing is enabled, so you cannot mark attendance without location access."));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const distance = calculateDistance(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          companyDetails.lat!,
+          companyDetails.lng!
+        );
+        const radiusLimit = companyDetails.radius || 500;
+        if (distance <= radiusLimit) {
+          resolve(true);
+        } else {
+          reject(new Error(`You are outside the permitted range. Your distance: ${Math.round(distance)}m, Allowed limit: ${radiusLimit}m.`));
+        }
+      },
+      (err) => {
+        reject(new Error("Unable to retrieve location: " + err.message + ". Location access is required to mark attendance."));
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+}

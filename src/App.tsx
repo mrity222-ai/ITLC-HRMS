@@ -12,13 +12,15 @@ export default function App() {
   const [view, setView] = useState<'login' | 'superowner-login' | 'employee' | 'admin' | 'superowner' | 'manager'>('login');
   const [loggedInEmail, setLoggedInEmail] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
 
   const loadProfile = async () => {
     try {
       const token = localStorage.getItem('hrms_jwt_token');
       if (token) {
-        const profile = await api.getProfile();
-        setLoggedInEmail(profile.email);
+        const profileData = await api.getProfile();
+        setProfile(profileData);
+        setLoggedInEmail(profileData.email);
         const path = window.location.pathname;
         const search = window.location.search;
         const isSuperownerRoute = path === '/superowner' || search.includes('superowner');
@@ -70,6 +72,7 @@ export default function App() {
   const handleLogout = async () => {
     await api.logout();
     setLoggedInEmail('');
+    setProfile(null);
     setView('login');
     loadProfile();
   };
@@ -79,6 +82,54 @@ export default function App() {
       <div className="h-screen w-full flex flex-col items-center justify-center bg-[#fafbfc] gap-4 font-sans">
         <div className="h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
         <span className="text-xs text-slate-500 font-bold tracking-wider uppercase">Loading HRMS Workspace...</span>
+      </div>
+    );
+  }
+
+  if (view !== 'superowner' && view !== 'superowner-login' && profile?.companyDetails?.status === 'expired') {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white font-sans p-6 text-center">
+        <div className="max-w-md space-y-6">
+          <div className="h-16 w-16 mx-auto bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center border border-rose-500/20">
+            <span className="text-2xl font-bold">!</span>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-extrabold tracking-tight">Subscription Expired</h2>
+            <p className="text-sm text-slate-400">
+              Your company's trial or subscription tier has expired. Please contact your company administrator or superowner to renew the plan.
+            </p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+          >
+            Logout / Switch Account
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (view !== 'superowner' && view !== 'superowner-login' && profile?.companyDetails?.status === 'suspended') {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white font-sans p-6 text-center">
+        <div className="max-w-md space-y-6">
+          <div className="h-16 w-16 mx-auto bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center border border-amber-500/20">
+            <span className="text-2xl font-bold">!</span>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-extrabold tracking-tight">Account Suspended</h2>
+            <p className="text-sm text-slate-400">
+              Your company account has been temporarily suspended. Please contact platform support.
+            </p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
+          >
+            Logout / Switch Account
+          </button>
+        </div>
       </div>
     );
   }

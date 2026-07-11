@@ -46,6 +46,20 @@ sequelize.sync({ force: false })
       // Column already exists, safe to ignore
     }
 
+    // Alter companies table for geofencing
+    try {
+      await sequelize.query("ALTER TABLE companies ADD COLUMN lat FLOAT NULL;");
+      console.log("Successfully altered companies table to add lat column");
+    } catch (err) {}
+    try {
+      await sequelize.query("ALTER TABLE companies ADD COLUMN lng FLOAT NULL;");
+      console.log("Successfully altered companies table to add lng column");
+    } catch (err) {}
+    try {
+      await sequelize.query("ALTER TABLE companies ADD COLUMN radius FLOAT DEFAULT 500;");
+      console.log("Successfully altered companies table to add radius column");
+    } catch (err) {}
+
     // Alter expense_claims table
     try {
       await sequelize.query("ALTER TABLE expense_claims ADD COLUMN company_id VARCHAR(255) DEFAULT '';");

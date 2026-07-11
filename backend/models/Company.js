@@ -20,6 +20,9 @@ const Company = sequelize.define('Company', {
   storageLimit: { type: DataTypes.FLOAT, field: 'storage_limit', defaultValue: 50.0 },
   storageUsed: { type: DataTypes.FLOAT, field: 'storage_used', defaultValue: 0.0 },
   status: { type: DataTypes.ENUM('active', 'suspended', 'trial', 'expired'), defaultValue: 'trial' },
+  lat: { type: DataTypes.FLOAT, allowNull: true },
+  lng: { type: DataTypes.FLOAT, allowNull: true },
+  radius: { type: DataTypes.FLOAT, defaultValue: 500.0 },
   createdDate: { type: DataTypes.STRING, field: 'created_date', defaultValue: () => new Date().toISOString().split('T')[0] }
 }, {
   tableName: 'companies',
