@@ -107,7 +107,7 @@ export const api = {
   // SUPER OWNER PLAN & TENANT APIs
   // ========================================================
   async getCompanies() {
-    const res = await fetch(`${API_URL}/superowner/companies`, {
+    const res = await fetch(`${API_URL}/superowner/companies?t=${new Date().getTime()}`, {
       method: 'GET',
       headers: getHeaders()
     });
@@ -522,7 +522,15 @@ export const api = {
   },
 
   async getSuperOwnerUsers() {
-    const res = await fetch(`${API_URL}/superowner/users`, {
+    const res = await fetch(`${API_URL}/superowner/users?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async getSuperOwnerTickets() {
+    const res = await fetch(`${API_URL}/superowner/tickets?t=${new Date().getTime()}`, {
       method: 'GET',
       headers: getHeaders()
     });

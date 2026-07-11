@@ -110,7 +110,8 @@ export const FeatureManagementTab: React.FC = () => {
     };
 
     try {
-      await api.updateCompany(companyId, { modulesEnabled: newModulesEnabled });
+      const updateRes = await api.updateCompany(companyId, { modulesEnabled: newModulesEnabled });
+      console.log("UPDATE RESPONSE FROM BACKEND:", updateRes);
       
       setCompanies(prev => prev.map(c => {
         if (c.id === companyId) {

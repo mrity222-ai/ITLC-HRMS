@@ -93,7 +93,23 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const loadData = async () => {
       try {
         const companyList = await api.getCompanies();
-        setCompanies(companyList);
+        
+        // FOOLPROOF PARSING FOR modulesEnabled
+        const fixedCompanies = companyList.map((c: any) => {
+          let mods = c.modulesEnabled;
+          if (typeof mods === 'string') {
+            try { mods = JSON.parse(mods); } catch (e) {}
+          }
+          if (typeof mods === 'string') {
+            try { mods = JSON.parse(mods); } catch (e) {} // Double parse for extra safety
+          }
+          if (!mods || typeof mods !== 'object') {
+            mods = {};
+          }
+          return { ...c, modulesEnabled: mods };
+        });
+
+        setCompanies(fixedCompanies);
         
         const ticketList = await api.getSuperOwnerTickets();
         setTickets(ticketList);
