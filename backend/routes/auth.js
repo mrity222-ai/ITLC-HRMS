@@ -145,12 +145,16 @@ router.post('/login', async (req, res) => {
 
     // Check Company Status
     if (user.companyId && user.role !== 'Super Owner') {
-      const company = await Company.findByPk(user.companyId);
-      if (company && company.status === 'expired') {
-        return res.status(403).json({ error: 'Your company subscription has expired. Please contact superowner to renew.' });
-      }
-      if (company && company.status === 'suspended') {
-        return res.status(403).json({ error: 'Your company account has been suspended.' });
+      try {
+        const company = await Company.findByPk(user.companyId);
+        if (company && company.status === 'expired') {
+          return res.status(403).json({ error: 'Your company subscription has expired. Please contact superowner to renew.' });
+        }
+        if (company && company.status === 'suspended') {
+          return res.status(403).json({ error: 'Your company account has been suspended.' });
+        }
+      } catch (err) {
+        console.error("Failed to check company status during login:", err.message);
       }
     }
 
@@ -187,11 +191,15 @@ router.get('/profile', auth(), async (req, res) => {
     let companyDetails = null;
     
     if (user.companyId) {
-      const company = await Company.findByPk(user.companyId);
-      if (company) {
-        companyName = company.name;
-        companyLogo = company.logo;
-        companyDetails = company;
+      try {
+        const company = await Company.findByPk(user.companyId);
+        if (company) {
+          companyName = company.name;
+          companyLogo = company.logo;
+          companyDetails = company;
+        }
+      } catch (err) {
+        console.error("Failed to load company details for profile:", err.message);
       }
     }
 

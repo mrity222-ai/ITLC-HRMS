@@ -52,10 +52,12 @@ export default function App() {
           setView('login');
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to load profile:", e);
+      alert("Failed to load profile: " + (e.message || "Unknown error"));
       localStorage.removeItem('hrms_jwt_token');
       setView('login');
+      window.location.reload();
     } finally {
       setIsLoading(false);
     }
