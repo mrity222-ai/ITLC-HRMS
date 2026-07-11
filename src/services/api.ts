@@ -170,7 +170,7 @@ export const api = {
   // COMPANY ADMIN / HR MANAGERS APIs
   // ========================================================
   async getAdminCompany() {
-    const res = await fetch(`${API_URL}/admin/company`, {
+    const res = await fetch(`${API_URL}/admin/company?t=${new Date().getTime()}`, {
       method: 'GET',
       headers: getHeaders()
     });

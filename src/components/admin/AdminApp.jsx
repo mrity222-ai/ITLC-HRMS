@@ -89,7 +89,17 @@ export default function App({ onLogout }) {
           companyName: prof.companyName || 'Antigravity',
           currency: comp?.currency || 'USD'
         });
-        setFeatureFlags(comp?.modulesEnabled || {});
+        let mods = comp?.modulesEnabled || {};
+        if (typeof mods === 'string') {
+          try { mods = JSON.parse(mods); } catch (e) {}
+        }
+        if (typeof mods === 'string') {
+          try { mods = JSON.parse(mods); } catch (e) {}
+        }
+        if (!mods || typeof mods !== 'object') {
+          mods = {};
+        }
+        setFeatureFlags(mods);
         
         const list = await api.getEmployees();
         setEmployees(list);
