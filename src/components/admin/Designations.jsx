@@ -4,7 +4,7 @@ import { Briefcase, Plus, Users, DollarSign, Search, Award, ShieldAlert, Edit3, 
 import { ResponsiveContainer, BarChart, Bar, Cell, Tooltip, XAxis, YAxis, CartesianGrid, AreaChart, Area } from 'recharts';
 
 // --- Helper: Animated Number Counter ---
-function AnimatedCounter({ value, duration = 1000 }) {
+function AnimatedCounter({ value, duration = 1000, currencySymbol = '$' }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     let start = 0;
@@ -32,13 +32,22 @@ function AnimatedCounter({ value, duration = 1000 }) {
   }, [value, duration]);
 
   const isPercent = value.toString().includes('%');
-  const isCurrency = value.toString().includes('$') || value.toString().includes('₹');
-  return <span className="number-font">{isCurrency && '₹'}{count.toLocaleString()}{isPercent && '%'}</span>;
+  const isCurrency = value.toString().includes('$') || value.toString().includes('₹') || value.toString().includes('€') || value.toString().includes('£') || value.toString().includes('¥');
+  return <span className="number-font">{isCurrency && currencySymbol}{count.toLocaleString()}{isPercent && '%'}</span>;
 }
 
 const initialDesignations = [];
 
-export default function Designations() {
+export default function Designations({ setActiveTab, currency = 'USD' }) {
+  const currencySymbol = (() => {
+    switch (currency) {
+      case 'INR': return '₹';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'JPY': return '¥';
+      default: return '$';
+    }
+  })();
   const [designations, setDesignations] = useState(initialDesignations);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit'
   
@@ -127,7 +136,7 @@ export default function Designations() {
               <div className="premium-card" style={{ padding: 18 }}>
                 <span className="premium-label" style={{ fontSize: '0.65rem' }}>Total Designations</span>
                 <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: 4 }}>
-                  <AnimatedCounter value={designations.length} />
+                  <AnimatedCounter value={designations.length} currencySymbol={currencySymbol} />
                 </h4>
               </div>
               <div className="premium-card" style={{ padding: 18 }}>

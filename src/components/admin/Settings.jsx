@@ -106,6 +106,7 @@ export default function CompanySettings() {
         phone,
         address,
         gst,
+        currency,
         lat: lat === '' ? null : Number(lat),
         lng: lng === '' ? null : Number(lng),
         radius: radius === '' ? 500 : Number(radius)
@@ -225,6 +226,21 @@ export default function CompanySettings() {
               rows={2}
               placeholder="Entity address details"
             />
+          </div>
+
+          <div className="premium-form-group">
+            <label className="premium-label">System Currency</label>
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="premium-input"
+            >
+              <option value="USD">USD ($)</option>
+              <option value="INR">INR (₹)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="JPY">JPY (¥)</option>
+            </select>
           </div>
 
           <h3 style={{ fontSize: '0.85rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, borderTop: '1px solid rgba(226, 232, 240, 0.2)', paddingTop: 16 }}>

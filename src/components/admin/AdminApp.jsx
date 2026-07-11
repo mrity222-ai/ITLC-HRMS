@@ -80,11 +80,13 @@ export default function App({ onLogout }) {
     const loadAdminData = async () => {
       try {
         const prof = await api.getProfile();
+        const comp = await api.getAdminCompany();
         setProfile({
           name: prof.name,
           role: prof.role,
           avatar: prof.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          companyName: prof.companyName || 'Antigravity'
+          companyName: prof.companyName || 'Antigravity',
+          currency: comp?.currency || 'USD'
         });
         
         const list = await api.getEmployees();
@@ -224,16 +226,16 @@ export default function App({ onLogout }) {
   const renderActiveView = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardOverview employeesList={employees} notifications={notifications} setActiveTab={setActiveTab} />;
+        return <DashboardOverview employeesList={employees} notifications={notifications} setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'employees':
       case 'employee-profile':
         return <EmployeeManagement employees={employees} setEmployees={setEmployees} searchQuery={searchQuery} subTab={activeTab === 'employee-profile' ? 'profile' : 'directory'} setActiveTab={setActiveTab} />;
       case 'departments':
-        return <Departments setActiveTab={setActiveTab} />;
+        return <Departments setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'designations':
-        return <Designations setActiveTab={setActiveTab} />;
+        return <Designations setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'organization':
-        return <Organization employees={employees} setActiveTab={setActiveTab} />;
+        return <Organization employees={employees} setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'attendance':
       case 'attendance-dashboard':
       case 'attendance-logs':
@@ -303,7 +305,7 @@ export default function App({ onLogout }) {
       case 'ai-assistant':
         return <AiFeatures setActiveTab={setActiveTab} />;
       default:
-        return <DashboardOverview employeesList={employees} notifications={notifications} setActiveTab={setActiveTab} />;
+        return <DashboardOverview employeesList={employees} notifications={notifications} setActiveTab={setActiveTab} currency={profile.currency} />;
     }
   };
 

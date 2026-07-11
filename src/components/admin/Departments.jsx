@@ -7,7 +7,7 @@ import {
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 // --- Helper: Animated Number Counter ---
-function AnimatedCounter({ value, duration = 1000 }) {
+function AnimatedCounter({ value, duration = 1000, currencySymbol = '$' }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     let start = 0;
@@ -35,13 +35,22 @@ function AnimatedCounter({ value, duration = 1000 }) {
   }, [value, duration]);
 
   const isPercent = value.toString().includes('%');
-  const isCurrency = value.toString().includes('$') || value.toString().includes('₹');
-  return <span className="number-font">{isCurrency && '₹'}{count.toLocaleString()}{isPercent && '%'}</span>;
+  const isCurrency = value.toString().includes('$') || value.toString().includes('₹') || value.toString().includes('€') || value.toString().includes('£') || value.toString().includes('¥');
+  return <span className="number-font">{isCurrency && currencySymbol}{count.toLocaleString()}{isPercent && '%'}</span>;
 }
 
 const initialDepartments = [];
 
-export default function Departments() {
+export default function Departments({ setActiveTab, currency = 'USD' }) {
+  const currencySymbol = (() => {
+    switch (currency) {
+      case 'INR': return '₹';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'JPY': return '¥';
+      default: return '$';
+    }
+  })();
   const [departments, setDepartments] = useState(initialDepartments);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit', 'transfer', 'assign-head'
   
@@ -167,7 +176,7 @@ export default function Departments() {
               <div className="premium-card" style={{ padding: 18 }}>
                 <span className="premium-label" style={{ fontSize: '0.65rem' }}>Avg Headcount</span>
                 <h4 style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: 4, color: 'var(--color-primary)' }}>
-                  <AnimatedCounter value={Math.round(departments.reduce((acc, d) => acc + d.employees, 0) / departments.length || 0)} />
+                  <AnimatedCounter value={Math.round(departments.reduce((acc, d) => acc + d.employees, 0) / departments.length || 0)} currencySymbol={currencySymbol} />
                 </h4>
               </div>
             </div>

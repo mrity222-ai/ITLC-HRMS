@@ -7,7 +7,7 @@ import {
 import { ResponsiveContainer, BarChart, Bar, Cell, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 // --- Helper: Animated Number Counter ---
-function AnimatedCounter({ value, duration = 1000 }) {
+function AnimatedCounter({ value, duration = 1000, currencySymbol = '$' }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     let start = 0;
@@ -35,8 +35,8 @@ function AnimatedCounter({ value, duration = 1000 }) {
   }, [value, duration]);
 
   const isPercent = value.toString().includes('%');
-  const isCurrency = value.toString().includes('$');
-  return <span className="number-font">{isCurrency && '$'}{count.toLocaleString()}{isPercent && '%'}</span>;
+  const isCurrency = value.toString().includes('$') || value.toString().includes('₹') || value.toString().includes('€') || value.toString().includes('£') || value.toString().includes('¥');
+  return <span className="number-font">{isCurrency && currencySymbol}{count.toLocaleString()}{isPercent && '%'}</span>;
 }
 
 const initialBranches = [
@@ -113,7 +113,16 @@ function OrgNode({ member }) {
   );
 }
 
-export default function Organization() {
+export default function Organization({ employees = [], setActiveTab, currency = 'USD' }) {
+  const currencySymbol = (() => {
+    switch (currency) {
+      case 'INR': return '₹';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'JPY': return '¥';
+      default: return '$';
+    }
+  })();
   const [branches, setBranches] = useState(initialBranches);
   const [showAddForm, setShowAddForm] = useState(false);
   const [viewMode, setViewMode] = useState('overview'); // 'overview', 'chart', 'working-info'
