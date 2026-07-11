@@ -991,7 +991,7 @@ export const CompaniesTab: React.FC = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs text-slate-400 font-medium">Company Name</label>
                     <input
@@ -1093,7 +1093,7 @@ export const CompaniesTab: React.FC = () => {
                   </div>
 
                   {/* Geofencing configuration */}
-                  <div className="space-y-1.5 col-span-2 border-t border-white/5 pt-3 mt-2">
+                  <div className="space-y-1.5 col-span-1 sm:col-span-2 border-t border-white/5 pt-3 mt-2">
                     <h4 className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Geofence Attendance Setting</h4>
                   </div>
                   <div className="space-y-1.5">
@@ -1118,7 +1118,7 @@ export const CompaniesTab: React.FC = () => {
                       className="glass-input w-full px-3.5 py-2 rounded-xl text-sm text-slate-200"
                     />
                   </div>
-                  <div className="space-y-1.5 col-span-2">
+                  <div className="space-y-1.5 col-span-1 sm:col-span-2">
                     <label className="text-xs text-slate-400 font-medium">Radius (in meters)</label>
                     <input
                       type="number"
@@ -1130,7 +1130,7 @@ export const CompaniesTab: React.FC = () => {
                   </div>
 
                   {!selectedCompany && (
-                    <div className="space-y-1.5 col-span-2">
+                    <div className="space-y-1.5 col-span-1 sm:col-span-2">
                       <label className="text-xs text-slate-400 font-medium">Custom Admin Password (Optional)</label>
                       <input
                         type="password"
