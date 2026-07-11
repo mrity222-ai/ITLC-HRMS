@@ -649,5 +649,107 @@ export const api = {
       body: JSON.stringify(data)
     });
     return handleResponse(res);
+  },
+
+  // ========================================================
+  // DEPARTMENTS APIs
+  // ========================================================
+  async getDepartments() {
+    const res = await fetch(`${API_URL}/admin/departments`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+  async createDepartment(data: any) {
+    const res = await fetch(`${API_URL}/admin/departments`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async updateDepartment(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/departments/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async deleteDepartment(id: string) {
+    const res = await fetch(`${API_URL}/admin/departments/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  // ========================================================
+  // DESIGNATIONS APIs
+  // ========================================================
+  async getDesignations() {
+    const res = await fetch(`${API_URL}/admin/designations`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+  async createDesignation(data: any) {
+    const res = await fetch(`${API_URL}/admin/designations`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async updateDesignation(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/designations/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async deleteDesignation(id: string) {
+    const res = await fetch(`${API_URL}/admin/designations/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  // ========================================================
+  // BRANCHES APIs
+  // ========================================================
+  async getBranches() {
+    const res = await fetch(`${API_URL}/admin/branches`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+  async createBranch(data: any) {
+    const res = await fetch(`${API_URL}/admin/branches`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async updateBranch(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/branches/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async deleteBranch(id: string) {
+    const res = await fetch(`${API_URL}/admin/branches/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
   }
 };

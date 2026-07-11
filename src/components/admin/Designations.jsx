@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Briefcase, Plus, Users, DollarSign, Search, Award, ShieldAlert, Edit3, Trash2, Download } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, Cell, Tooltip, XAxis, YAxis, CartesianGrid, AreaChart, Area } from 'recharts';
+import { api } from '../../services/api';
 
 // --- Helper: Animated Number Counter ---
 function AnimatedCounter({ value, duration = 1000, currencySymbol = '$' }) {
@@ -48,10 +49,23 @@ export default function Designations({ setActiveTab, currency = 'USD' }) {
       default: return '$';
     }
   })();
-  const [designations, setDesignations] = useState(initialDesignations);
+  const [designations, setDesignations] = useState([]);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit'
   
   const [editingDesg, setEditingDesg] = useState(null);
+
+  useEffect(() => {
+    fetchDesignations();
+  }, []);
+
+  const fetchDesignations = async () => {
+    try {
+      const data = await api.getDesignations();
+      setDesignations(data || []);
+    } catch (err) {
+      console.error('Error fetching designations', err);
+    }
+  };
 
   // Form states
   const [title, setTitle] = useState('');
@@ -72,38 +86,40 @@ export default function Designations({ setActiveTab, currency = 'USD' }) {
     setViewMode('edit');
   };
 
-  const handleCreateOrEdit = (e) => {
+  const handleCreateOrEdit = async (e) => {
     e.preventDefault();
     if (!title || !salaryBand) return;
 
-    if (viewMode === 'edit') {
-      setDesignations(designations.map(d => 
-        d.id === editingDesg.id 
-          ? { ...d, title, department: dept, level, salaryBand, avgSalary: Number(avgSalary), status }
-          : d
-      ));
-    } else {
-      const newD = {
-        id: designations.length + 1,
-        title,
-        department: dept,
-        level,
-        count: 0,
-        vacant: 1,
-        salaryBand,
-        avgSalary: Number(avgSalary) || 80000,
-        status,
-        created: 'Today'
-      };
-      setDesignations([...designations, newD]);
+    try {
+      if (viewMode === 'edit') {
+        const payload = { title, department: dept, level, salaryBand, status };
+        await api.updateDesignation(editingDesg.id, payload);
+      } else {
+        const newD = {
+          title,
+          department: dept,
+          level,
+          salaryBand,
+          status
+        };
+        await api.createDesignation(newD);
+      }
+      fetchDesignations();
+      resetForm();
+      setViewMode('list');
+    } catch (err) {
+      alert(err.message || 'Error saving designation');
     }
-    resetForm();
-    setViewMode('list');
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm("Delete designation? All active associated employee profiles must be re-categorized.")) {
-      setDesignations(designations.filter(d => d.id !== id));
+      try {
+        await api.deleteDesignation(id);
+        fetchDesignations();
+      } catch (err) {
+        alert(err.message || 'Error deleting designation');
+      }
     }
   };
 

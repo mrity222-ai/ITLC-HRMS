@@ -5,6 +5,7 @@ import {
   Upload, Landmark, ShieldAlert, Award, ArrowRightLeft, DollarSign
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { api } from '../../services/api';
 
 // --- Helper: Animated Number Counter ---
 function AnimatedCounter({ value, duration = 1000, currencySymbol = '$' }) {
@@ -51,11 +52,24 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
       default: return '$';
     }
   })();
-  const [departments, setDepartments] = useState(initialDepartments);
+  const [departments, setDepartments] = useState([]);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit', 'transfer', 'assign-head'
   
   const [editingDept, setEditingDept] = useState(null);
   const [selectedDept, setSelectedDept] = useState(null);
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      const data = await api.getDepartments();
+      setDepartments(data || []);
+    } catch (err) {
+      console.error('Error fetching departments', err);
+    }
+  };
 
   // Form states
   const [name, setName] = useState('');
@@ -78,36 +92,40 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
     setViewMode('edit');
   };
 
-  const handleCreateOrEdit = (e) => {
+  const handleCreateOrEdit = async (e) => {
     e.preventDefault();
     if (!name || !code || !head) return;
 
-    if (viewMode === 'edit') {
-      setDepartments(departments.map(d => 
-        d.id === editingDept.id 
-          ? { ...d, name, code, head, budget: Number(budget), status }
-          : d
-      ));
-    } else {
-      const newD = {
-        id: departments.length + 1,
-        name,
-        code,
-        head,
-        employees: 0,
-        budget: Number(budget) || 0,
-        status,
-        created: 'Today'
-      };
-      setDepartments([...departments, newD]);
+    try {
+      if (viewMode === 'edit') {
+        const payload = { name, code, head, budget: Number(budget), status };
+        await api.updateDepartment(editingDept.id, payload);
+      } else {
+        const newD = {
+          name,
+          code,
+          head,
+          budget: Number(budget) || 0,
+          status
+        };
+        await api.createDepartment(newD);
+      }
+      fetchDepartments();
+      resetForm();
+      setViewMode('list');
+    } catch (err) {
+      alert(err.message || 'Error saving department');
     }
-    resetForm();
-    setViewMode('list');
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm("Purge department and reallocate budget allocations?")) {
-      setDepartments(departments.filter(d => d.id !== id));
+      try {
+        await api.deleteDepartment(id);
+        fetchDepartments();
+      } catch (err) {
+        alert(err.message || 'Error deleting department');
+      }
     }
   };
 

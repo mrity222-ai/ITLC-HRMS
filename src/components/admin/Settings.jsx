@@ -57,6 +57,9 @@ export default function CompanySettings() {
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
   const [radius, setRadius] = useState(500);
+  const [workdayStart, setWorkdayStart] = useState('09:00');
+  const [workdayEnd, setWorkdayEnd] = useState('17:00');
+  const [branchHq, setBranchHq] = useState('');
 
   // Admin Profile states
   const [adminName, setAdminName] = useState('');
@@ -77,6 +80,11 @@ export default function CompanySettings() {
           setLat(details.lat !== undefined && details.lat !== null ? details.lat.toString() : '');
           setLng(details.lng !== undefined && details.lng !== null ? details.lng.toString() : '');
           setRadius(details.radius !== undefined && details.radius !== null ? details.radius : 500);
+          if (details.smtpServer) setSmtpServer(details.smtpServer);
+          if (details.smsGateway) setSmsGateway(details.smsGateway);
+          if (details.workdayStart) setWorkdayStart(details.workdayStart);
+          if (details.workdayEnd) setWorkdayEnd(details.workdayEnd);
+          if (details.branchHq) setBranchHq(details.branchHq);
         }
       } catch (err) {
         console.error('Failed to load company details:', err);
@@ -107,6 +115,11 @@ export default function CompanySettings() {
         address,
         gst,
         currency,
+        smtpServer,
+        smsGateway,
+        workdayStart,
+        workdayEnd,
+        branchHq,
         lat: lat === '' ? null : Number(lat),
         lng: lng === '' ? null : Number(lng),
         radius: radius === '' ? 500 : Number(radius)
@@ -424,6 +437,9 @@ export default function CompanySettings() {
               className="premium-input" 
             />
           </div>
+          <button type="submit" disabled={saving} className="premium-btn premium-btn-primary" style={{ padding: '8px 16px', alignSelf: 'flex-end', fontSize: '0.85rem' }}>
+            <span>Save Gateways</span>
+          </button>
         </div>
 
         {/* Working Hours settings */}
@@ -439,15 +455,15 @@ export default function CompanySettings() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, flex: 2 }}>
               <div className="premium-form-group">
                 <label className="premium-label">Standard Workday Start</label>
-                <input type="time" defaultValue="09:00" className="premium-input" />
+                <input type="time" value={workdayStart} onChange={(e) => setWorkdayStart(e.target.value)} className="premium-input" />
               </div>
               <div className="premium-form-group">
                 <label className="premium-label">Standard Workday End</label>
-                <input type="time" defaultValue="17:00" className="premium-input" />
+                <input type="time" value={workdayEnd} onChange={(e) => setWorkdayEnd(e.target.value)} className="premium-input" />
               </div>
               <div className="premium-form-group">
                 <label className="premium-label">Branch HQ Coordinates</label>
-                <input type="text" defaultValue="San Francisco, CA" className="premium-input" />
+                <input type="text" value={branchHq} onChange={(e) => setBranchHq(e.target.value)} placeholder="e.g. San Francisco, CA" className="premium-input" />
               </div>
             </div>
           </div>
