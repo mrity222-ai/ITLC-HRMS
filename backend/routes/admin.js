@@ -17,6 +17,7 @@ const Asset = require('../models/Asset');
 const PerformanceReview = require('../models/PerformanceReview');
 const JobOpening = require('../models/JobOpening');
 const TrainingProgram = require('../models/TrainingProgram');
+const Holiday = require('../models/Holiday');
 const Asset = require('../models/Asset');
 
 // Get all employees of logged-in admin's company
@@ -575,6 +576,33 @@ router.put('/trainings/:id', auth(['Company Admin', 'HR']), async (req, res) => 
     if (!training) return res.status(404).json({ error: 'Not found' });
     await training.update(req.body);
     res.json(training);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ----------------------------------------------------
+// HOLIDAYS
+// ----------------------------------------------------
+router.get('/holidays', auth(['Company Admin', 'HR', 'Manager']), async (req, res) => {
+  try {
+    const records = await Holiday.findAll({ where: { companyId: req.user.companyId } });
+    res.json(records);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/holidays', auth(['Company Admin', 'HR', 'Manager']), async (req, res) => {
+  try {
+    const hId = `HOL-${Math.floor(1000 + Math.random() * 9000)}`;
+    const record = await Holiday.create({ ...req.body, id: hId, companyId: req.user.companyId });
+    res.json(record);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/holidays/:id', auth(['Company Admin', 'HR', 'Manager']), async (req, res) => {
+  try {
+    const record = await Holiday.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!record) return res.status(404).json({ error: 'Not found' });
+    await record.destroy();
+    res.json({ message: 'Deleted successfully' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

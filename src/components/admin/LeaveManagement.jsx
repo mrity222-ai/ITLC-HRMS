@@ -15,11 +15,7 @@ const initialRequests = [
   { id: 3, name: 'Clara Oswald', type: 'Casual Leave', range: 'July 02 - July 02', days: 1, reason: 'Personal errand', status: 'Approved' },
 ];
 
-const holidays = [
-  { name: 'Independence Day', date: 'July 04, 2026', type: 'Public Holiday' },
-  { name: 'Labor Day', date: 'September 07, 2026', type: 'Public Holiday' },
-  { name: 'Thanksgiving', date: 'November 26, 2026', type: 'Public Holiday' },
-];
+const initialHolidays = [];
 
 import { api } from '../../services/api';
 import { useEffect } from 'react';
@@ -27,7 +23,11 @@ import { useEffect } from 'react';
 export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) {
   const [balances, setBalances] = useState(initialLeaveBalances);
   const [requests, setRequests] = useState([]);
+  const [holidays, setHolidays] = useState(initialHolidays);
   const [selectedLeaveDetails, setSelectedLeaveDetails] = useState(null);
+
+  const [newHolidayName, setNewHolidayName] = useState('');
+  const [newHolidayDate, setNewHolidayDate] = useState('');
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -56,6 +56,9 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
           attachment: req.attachment || ''
         }));
         setRequests(mapped);
+
+        const hols = await api.getAdminHolidays();
+        setHolidays(hols);
       } catch (err) {
         console.error(err);
       }
@@ -444,9 +447,42 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
             className="premium-card"
             style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}
           >
-            <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Holiday & Leave Calendar</h3>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Listed public holidays and bookings</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Holiday & Leave Calendar</h3>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Listed public holidays and bookings</span>
+              </div>
+            </div>
+
+            <div style={{ padding: 16, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', display: 'flex', gap: 12, alignItems: 'center' }}>
+              <input 
+                type="text" 
+                placeholder="Holiday/Festival Name" 
+                value={newHolidayName} 
+                onChange={e => setNewHolidayName(e.target.value)}
+                className="premium-input"
+                style={{ flex: 1 }}
+              />
+              <input 
+                type="date" 
+                value={newHolidayDate} 
+                onChange={e => setNewHolidayDate(e.target.value)}
+                className="premium-input"
+              />
+              <button 
+                onClick={async () => {
+                  if(!newHolidayName || !newHolidayDate) return;
+                  await api.createAdminHoliday({ name: newHolidayName, date: newHolidayDate, type: 'Public Holiday' });
+                  setNewHolidayName('');
+                  setNewHolidayDate('');
+                  const hols = await api.getAdminHolidays();
+                  setHolidays(hols);
+                }}
+                className="premium-btn premium-btn-primary" 
+                style={{ padding: '8px 16px' }}
+              >
+                Add Holiday
+              </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -470,9 +506,25 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
                       <span className="number-font" style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>{h.date}</span>
                     </div>
                   </div>
-                  <span className="badge badge-info">{h.type}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span className="badge badge-info">{h.type}</span>
+                    <button 
+                      onClick={async () => {
+                        await api.deleteAdminHoliday(h.id);
+                        const hols = await api.getAdminHolidays();
+                        setHolidays(hols);
+                      }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer' }}
+                      title="Delete Holiday"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
+              {holidays.length === 0 && (
+                <div style={{ textAlign: 'center', padding: 20, color: 'var(--color-text-tertiary)' }}>No holidays added yet.</div>
+              )}
             </div>
           </motion.div>
         )}

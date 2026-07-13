@@ -232,6 +232,30 @@ export const api = {
     return handleResponse(res);
   },
 
+  // ===== HOLIDAYS =====
+  async getAdminHolidays() {
+    const res = await fetch(`${API_URL}/admin/holidays?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+  async createAdminHoliday(data: any) {
+    const res = await fetch(`${API_URL}/admin/holidays`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async deleteAdminHoliday(id: string) {
+    const res = await fetch(`${API_URL}/admin/holidays/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   // ===== SUPEROWNER ENDPOINTS =====& TENANT APIs
   // ========================================================
   async getCompanies() {
