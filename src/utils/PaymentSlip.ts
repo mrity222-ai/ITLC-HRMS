@@ -1,4 +1,7 @@
 export const downloadPaymentSlip = (paymentDetails: any, companyDetails: any) => {
+  const symbols: { [key: string]: string } = { USD: '$', INR: '₹', EUR: '€', GBP: '£' };
+  const currencySymbol = symbols[paymentDetails.currency] || '$';
+
   const invoiceHtml = `
     <!DOCTYPE html>
     <html lang="en">
@@ -77,7 +80,7 @@ export const downloadPaymentSlip = (paymentDetails: any, companyDetails: any) =>
                 <div style="font-weight: 600;">SaaS Subscription Plan</div>
                 <div style="font-size: 13px; color: #64748b; margin-top: 4px;">Monthly billing cycle</div>
               </td>
-              <td style="text-align: right; font-weight: 600;">$${paymentDetails.amount}</td>
+              <td style="text-align: right; font-weight: 600;">${currencySymbol}${paymentDetails.amount}</td>
             </tr>
           </tbody>
         </table>
@@ -85,15 +88,15 @@ export const downloadPaymentSlip = (paymentDetails: any, companyDetails: any) =>
         <div class="totals">
           <div class="total-row">
             <span>Subtotal</span>
-            <span>$${paymentDetails.amount}</span>
+            <span>${currencySymbol}${paymentDetails.amount}</span>
           </div>
           <div class="total-row">
             <span>Tax (0%)</span>
-            <span>$0.00</span>
+            <span>${currencySymbol}0.00</span>
           </div>
           <div class="total-row grand-total">
             <span>Total Paid</span>
-            <span>$${paymentDetails.amount}</span>
+            <span>${currencySymbol}${paymentDetails.amount}</span>
           </div>
         </div>
         
