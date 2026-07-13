@@ -4,6 +4,7 @@ const Company = require('../models/Company');
 const Employee = require('../models/Employee');
 const SupportTicket = require('../models/SupportTicket');
 const Payment = require('../models/Payment');
+const SubscriptionPlan = require('../models/SubscriptionPlan');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 
@@ -386,6 +387,64 @@ router.put('/payments/:id', auth(['Super Owner']), async (req, res) => {
       await payment.save();
     }
     res.json(payment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Subscription Plan Routes ---
+
+router.get('/plans', auth(['Super Owner']), async (req, res) => {
+  try {
+    const plans = await SubscriptionPlan.findAll();
+    const parsedPlans = plans.map(p => {
+      const data = p.toJSON();
+      try { data.features = JSON.parse(data.features); } catch(e) {}
+      return data;
+    });
+    res.json(parsedPlans);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/plans', auth(['Super Owner']), async (req, res) => {
+  try {
+    const data = { ...req.body };
+    if (typeof data.features === 'object') {
+      data.features = JSON.stringify(data.features);
+    }
+    const newPlan = await SubscriptionPlan.create(data);
+    res.json(newPlan);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/plans/:id', auth(['Super Owner']), async (req, res) => {
+  try {
+    const plan = await SubscriptionPlan.findByPk(req.params.id);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    
+    const data = { ...req.body };
+    if (typeof data.features === 'object') {
+      data.features = JSON.stringify(data.features);
+    }
+    
+    await plan.update(data);
+    res.json(plan);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/plans/:id', auth(['Super Owner']), async (req, res) => {
+  try {
+    const plan = await SubscriptionPlan.findByPk(req.params.id);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    
+    await plan.destroy();
+    res.json({ success: true, message: 'Plan deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

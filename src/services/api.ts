@@ -140,6 +140,40 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getPlans() {
+    const res = await fetch(`${API_URL}/superowner/plans?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createPlan(data: any) {
+    const res = await fetch(`${API_URL}/superowner/plans`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async updatePlan(id: string, data: any) {
+    const res = await fetch(`${API_URL}/superowner/plans/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async deletePlan(id: string) {
+    const res = await fetch(`${API_URL}/superowner/plans/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerTickets() {
     const res = await fetch(`${API_URL}/superowner/tickets`, {
       method: 'GET',
@@ -188,6 +222,14 @@ export const api = {
   // ========================================================
   async getAdminCompany() {
     const res = await fetch(`${API_URL}/admin/company?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async getAdminPlans() {
+    const res = await fetch(`${API_URL}/admin/plans?t=${new Date().getTime()}`, {
       method: 'GET',
       headers: getHeaders()
     });

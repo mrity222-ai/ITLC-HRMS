@@ -27,14 +27,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
   const [currency, setCurrency] = useState(() => localStorage.getItem('admin_subscription_currency') || 'USD');
   const [gateway, setGateway] = useState('stripe'); // 'stripe' or 'razorpay'
 
-  // Load plans from localStorage (saved by Superowner) or fallback to INITIAL_PLANS
-  const [plans, setPlans] = useState(() => {
-    try {
-      const saved = localStorage.getItem('superowner_plans');
-      if (saved) return JSON.parse(saved);
-    } catch(e) {}
-    return INITIAL_PLANS;
-  });
+  const [plans, setPlans] = useState(INITIAL_PLANS);
 
   useEffect(() => {
     localStorage.setItem('admin_subscription_currency', currency);
@@ -48,6 +41,14 @@ export default function Subscription({ onSubscriptionUpdate }) {
       setProfile(prof);
       const emps = await api.getEmployees();
       setEmployeeCount(emps.length);
+      try {
+        const fetchedPlans = await api.getAdminPlans();
+        if (fetchedPlans && fetchedPlans.length > 0) {
+          setPlans(fetchedPlans);
+        }
+      } catch (err) {
+        console.error('Failed to load plans:', err);
+      }
     } catch (err) {
       console.error('Failed to load subscription info:', err);
     } finally {

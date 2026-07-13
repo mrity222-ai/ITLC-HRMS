@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { SubscriptionPlan } from '../types';
+import { api } from '../../../services/api';
 
 const getFeatureLabelAndStyle = (key: string, enabled: boolean) => {
   if (!enabled) {
@@ -141,51 +142,68 @@ export const SubscriptionsTab: React.FC = () => {
     setDeleteConfirmPlan({ id, name });
   };
 
-  const executeDelete = () => {
+  const executeDelete = async () => {
     if (!deleteConfirmPlan) return;
     const { id, name } = deleteConfirmPlan;
-    setPlans(prev => prev.filter(p => p.id !== id));
-    addToast(`Plan "${name}" deleted`, 'success');
-    addLog('Plan Deleted', `Subscription plan "${name}" was removed from billing options.`, 'subscription');
+    try {
+      await api.deletePlan(id);
+      setPlans(prev => prev.filter(p => p.id !== id));
+      addToast(`Plan "${name}" deleted`, 'success');
+      addLog('Plan Deleted', `Subscription plan "${name}" was removed from billing options.`, 'subscription');
+    } catch (e: any) {
+      addToast(e.message || 'Failed to delete plan', 'error');
+    }
     setDeleteConfirmPlan(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedPlan) {
-      // Edit
-      setPlans(prev => prev.map(p => p.id === selectedPlan.id ? {
-        ...p,
-        name: formData.name,
-        price: Number(formData.price),
-        billingCycle: formData.billingCycle,
-        trialDays: Number(formData.trialDays),
-        employeeLimit: Number(formData.employeeLimit),
-        storageLimit: Number(formData.storageLimit),
-        aiCreditsLimit: Number(formData.aiCreditsLimit),
-        features: formData.features
-      } : p));
-      addToast(`Plan "${formData.name}" updated`, 'success');
-      addLog('Plan Updated', `Plan details for "${formData.name}" modified.`, 'subscription');
-    } else {
-      // Create
-      const newPlan: SubscriptionPlan = {
-        id: formData.name.toLowerCase().replace(/\s+/g, '_'),
-        name: formData.name,
-        price: Number(formData.price),
-        billingCycle: formData.billingCycle,
-        trialDays: Number(formData.trialDays),
-        employeeLimit: Number(formData.employeeLimit),
-        storageLimit: Number(formData.storageLimit),
-        aiCreditsLimit: Number(formData.aiCreditsLimit),
-        features: formData.features
-      };
-      setPlans(prev => [...prev, newPlan]);
-      addToast(`Plan "${formData.name}" created`, 'success');
-      addLog('Plan Created', `New subscription plan "${formData.name}" registered.`, 'subscription');
+    try {
+      if (selectedPlan) {
+        // Edit
+        const updatedData = {
+          name: formData.name,
+          price: Number(formData.price),
+          billingCycle: formData.billingCycle,
+          trialDays: Number(formData.trialDays),
+          employeeLimit: Number(formData.employeeLimit),
+          storageLimit: Number(formData.storageLimit),
+          aiCreditsLimit: Number(formData.aiCreditsLimit),
+          features: formData.features
+        };
+        const updatedPlan = await api.updatePlan(selectedPlan.id, updatedData);
+        if (typeof updatedPlan.features === 'string') {
+          try { updatedPlan.features = JSON.parse(updatedPlan.features); } catch(e){}
+        }
+        setPlans(prev => prev.map(p => p.id === selectedPlan.id ? updatedPlan : p));
+        addToast(`Plan "${formData.name}" updated`, 'success');
+        addLog('Plan Updated', `Plan details for "${formData.name}" modified.`, 'subscription');
+      } else {
+        // Create
+        const newPlanData = {
+          id: formData.name.toLowerCase().replace(/\s+/g, '_'),
+          name: formData.name,
+          price: Number(formData.price),
+          billingCycle: formData.billingCycle,
+          trialDays: Number(formData.trialDays),
+          employeeLimit: Number(formData.employeeLimit),
+          storageLimit: Number(formData.storageLimit),
+          aiCreditsLimit: Number(formData.aiCreditsLimit),
+          features: formData.features
+        };
+        const newPlan = await api.createPlan(newPlanData);
+        if (typeof newPlan.features === 'string') {
+          try { newPlan.features = JSON.parse(newPlan.features); } catch(e){}
+        }
+        setPlans(prev => [...prev, newPlan]);
+        addToast(`Plan "${formData.name}" created`, 'success');
+        addLog('Plan Created', `New subscription plan "${formData.name}" registered.`, 'subscription');
+      }
+      setIsFormDirty(false);
+      setIsModalOpen(false);
+    } catch (err: any) {
+      addToast(err.message || 'Failed to save plan', 'error');
     }
-    setIsFormDirty(false);
-    setIsModalOpen(false);
   };
 
   const handleFeatureToggle = (featureKey: keyof typeof formData.features) => {

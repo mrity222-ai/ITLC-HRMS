@@ -11,6 +11,8 @@ const Department = require('../models/Department');
 const Designation = require('../models/Designation');
 const Branch = require('../models/Branch');
 const Payment = require('../models/Payment');
+const SubscriptionPlan = require('../models/SubscriptionPlan');
+
 // Get all employees of logged-in admin's company
 router.get('/employees', auth(['Company Admin', 'HR']), async (req, res) => {
   try {
@@ -403,6 +405,23 @@ router.delete('/branches/:id', auth(['Company Admin']), async (req, res) => {
     await branch.destroy();
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ----------------------------------------------------
+// SUBSCRIPTION PLANS (Read Only)
+// ----------------------------------------------------
+router.get('/plans', auth(['Company Admin']), async (req, res) => {
+  try {
+    const plans = await SubscriptionPlan.findAll();
+    const parsedPlans = plans.map(p => {
+      const data = p.toJSON();
+      try { data.features = JSON.parse(data.features); } catch(e) {}
+      return data;
+    });
+    res.json(parsedPlans);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

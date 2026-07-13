@@ -20,7 +20,7 @@ require('./models/Department');
 require('./models/Designation');
 require('./models/Branch');
 require('./models/Payment');
-
+require('./models/SubscriptionPlan');
 // Synchronize database
 sequelize.sync({ force: false })
   .then(async () => {
