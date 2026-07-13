@@ -169,6 +169,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         } catch (e) {
           console.error("Failed to load logs", e);
         }
+        try {
+          const globalSettings = await api.getGlobalSettings();
+          if (globalSettings) {
+            setSettings(prev => ({ ...prev, ...globalSettings }));
+          }
+        } catch (e) {
+          console.error("Failed to load settings", e);
+        }
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       }
@@ -196,21 +204,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     paypalEnabled: true,
   };
 
-  const [settings, setSettings] = useState<Settings>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('superowner_settings');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
-      }
-    }
-    return defaultSettings;
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('superowner_settings', JSON.stringify(settings));
-    }
-  }, [settings]);
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
 
   const [selectedCurrency, setSelectedCurrency] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -244,10 +238,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const updateSettings = (newSettings: Partial<Settings>) => {
-    setSettings((prev) => ({ ...prev, ...newSettings }));
-    addToast('System settings updated successfully', 'success');
-    addLog('Settings Updated', 'Platform global settings modified.', 'settings', 'Priya Sharma');
+  const updateSettings = async (newSettings: Partial<Settings>) => {
+    try {
+      const updated = { ...settings, ...newSettings };
+      await api.updateGlobalSettings(updated);
+      setSettings(updated);
+      addToast('System settings updated successfully', 'success');
+      addLog('Settings Updated', 'Platform global settings modified.', 'settings', 'Priya Sharma');
+    } catch (e) {
+      addToast('Failed to update system settings', 'error');
+    }
   };
 
   const addLog = (

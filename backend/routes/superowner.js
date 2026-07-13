@@ -640,6 +640,7 @@ router.delete('/webhooks/:id', auth(['Super Owner']), async (req, res) => {
 });
 
 const SecuritySetting = require('../models/SecuritySetting');
+const GlobalSetting = require('../models/GlobalSetting');
 const ActiveSession = require('../models/ActiveSession');
 const ActivityLog = require('../models/ActivityLog');
 
@@ -714,6 +715,33 @@ router.delete('/logs', auth(['Super Owner']), async (req, res) => {
   try {
     await ActivityLog.destroy({ where: {}, truncate: true });
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Global Settings
+router.get('/settings', auth(['Super Owner']), async (req, res) => {
+  try {
+    let settings = await GlobalSetting.findByPk('global');
+    if (!settings) {
+      settings = await GlobalSetting.create({ id: 'global' });
+    }
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/settings', auth(['Super Owner']), async (req, res) => {
+  try {
+    let settings = await GlobalSetting.findByPk('global');
+    if (!settings) {
+      settings = await GlobalSetting.create({ id: 'global', ...req.body });
+    } else {
+      await settings.update(req.body);
+    }
+    res.json(settings);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

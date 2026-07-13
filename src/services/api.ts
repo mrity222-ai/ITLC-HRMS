@@ -250,6 +250,23 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getGlobalSettings() {
+    const res = await fetch(`${API_URL}/superowner/settings?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async updateGlobalSettings(data: any) {
+    const res = await fetch(`${API_URL}/superowner/settings`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   async getSecuritySettings() {
     const res = await fetch(`${API_URL}/superowner/security?t=${new Date().getTime()}`, {
       method: 'GET',
