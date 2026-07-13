@@ -22,6 +22,7 @@ require('./models/SecuritySetting');
 require('./models/GlobalSetting');
 require('./models/NotificationHistory');
 require('./models/ApiToken');
+require('./models/PayrollRecord');
 require('./models/ActiveSession');
 require('./models/ActivityLog');
 require('./models/CorrectionRequest');

@@ -12,6 +12,8 @@ const Designation = require('../models/Designation');
 const Branch = require('../models/Branch');
 const Payment = require('../models/Payment');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
+const PayrollRecord = require('../models/PayrollRecord');
+const Asset = require('../models/Asset');
 
 // Get all employees of logged-in admin's company
 router.get('/employees', auth(['Company Admin', 'HR']), async (req, res) => {
@@ -422,6 +424,59 @@ router.get('/plans', auth(['Company Admin']), async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ----------------------------------------------------
+// PAYROLL
+// ----------------------------------------------------
+router.get('/payroll', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const records = await PayrollRecord.findAll({ where: { companyId: req.user.companyId } });
+    res.json(records);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/payroll', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const record = await PayrollRecord.create({ ...req.body, companyId: req.user.companyId });
+    res.json(record);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/payroll/:id', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const record = await PayrollRecord.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!record) return res.status(404).json({ error: 'Not found' });
+    await record.update(req.body);
+    res.json(record);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ----------------------------------------------------
+// ASSETS
+// ----------------------------------------------------
+router.get('/assets', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const assets = await Asset.findAll({ where: { companyId: req.user.companyId } });
+    res.json(assets);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/assets', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const assetId = `AST-${Math.floor(1000 + Math.random() * 9000)}`;
+    const asset = await Asset.create({ ...req.body, id: assetId, companyId: req.user.companyId });
+    res.json(asset);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/assets/:id', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const asset = await Asset.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!asset) return res.status(404).json({ error: 'Not found' });
+    await asset.update(req.body);
+    res.json(asset);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;

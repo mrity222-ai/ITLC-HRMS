@@ -11,6 +11,19 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
   const [deductions, setDeductions] = useState(200);
   const [attendance, setAttendance] = useState([]);
   const [loadingAtt, setLoadingAtt] = useState(false);
+  const [payrollHistory, setPayrollHistory] = useState([]);
+
+  useEffect(() => {
+    const fetchPayroll = async () => {
+      try {
+        const history = await api.getAdminPayroll();
+        setPayrollHistory(history);
+      } catch (err) {
+        console.error("Failed to load payroll history:", err);
+      }
+    };
+    fetchPayroll();
+  }, []);
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -63,8 +76,40 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
     alert(`Downloading Payslip for ${selectedEmp.name} (July 2026). PDF generated successfully!`);
   };
 
-  const handleRunBulkPayroll = () => {
-    alert(`Bulk payroll processing initialized! ₹${(240000).toLocaleString()} net salary disbursed across ${employees.length} employee accounts.`);
+  const handleRunBulkPayroll = async () => {
+    try {
+      let totalAmount = 0;
+      for (const emp of employees) {
+        const empBase = (typeof emp.salary === 'string') 
+          ? parseFloat(emp.salary.replace('$', '').replace('₹', '').replace(/,/g, '')) / 12 
+          : (typeof emp.salary === 'number' ? emp.salary / 12 : 5000);
+        const empPf = Math.round(empBase * 0.12);
+        const empEsi = Math.round(empBase * 0.0175);
+        const empTax = Math.round(empBase * 0.15);
+        const empNet = Math.round(empBase - empPf - empEsi - empTax);
+        totalAmount += empNet;
+        
+        await api.createAdminPayroll({
+          employeeId: emp.id,
+          employeeName: emp.name,
+          month: 'July',
+          year: 2026,
+          basic: empBase,
+          hra: 0,
+          allowances: 0,
+          deductions: empPf + empEsi + empTax,
+          netSalary: empNet,
+          status: 'Processed'
+        });
+      }
+      alert(`Bulk payroll processing successful! ₹${totalAmount.toLocaleString()} net salary disbursed across ${employees.length} employee accounts.`);
+      
+      const history = await api.getAdminPayroll();
+      setPayrollHistory(history);
+    } catch (err) {
+      alert("Failed to run bulk payroll.");
+      console.error(err);
+    }
   };
 
   return (
@@ -347,11 +392,11 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
                   </tr>
                 </thead>
                 <tbody>
-                  {mockPayslipHistory.map(slip => (
+                  {payrollHistory.map(slip => (
                     <tr key={slip.id}>
                       <td style={{ fontWeight: 700 }}>{slip.id}</td>
-                      <td style={{ fontSize: '0.8rem' }}>{slip.date}</td>
-                      <td className="number-font" style={{ fontSize: '0.85rem' }}>{slip.amount}</td>
+                      <td style={{ fontSize: '0.8rem' }}>{slip.month} {slip.year} - {slip.employeeName}</td>
+                      <td className="number-font" style={{ fontSize: '0.85rem' }}>₹{slip.netSalary?.toLocaleString()}</td>
                       <td><span className="badge badge-success">{slip.status}</span></td>
                       <td style={{ textAlign: 'right' }}>
                         <button 

@@ -104,7 +104,60 @@ export const api = {
   },
 
   // ========================================================
-  // SUPER OWNER PLAN & TENANT APIs
+  // ===== PAYROLL =====
+  async getAdminPayroll() {
+    const res = await fetch(`${API_URL}/admin/payroll?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createAdminPayroll(data: any) {
+    const res = await fetch(`${API_URL}/admin/payroll`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async updateAdminPayroll(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/payroll/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async getAdminAssets() {
+    const res = await fetch(`${API_URL}/admin/assets?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createAdminAsset(data: any) {
+    const res = await fetch(`${API_URL}/admin/assets`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async updateAdminAsset(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/assets/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  // ===== SUPEROWNER ENDPOINTS =====& TENANT APIs
   // ========================================================
   async getCompanies() {
     const res = await fetch(`${API_URL}/superowner/companies?t=${new Date().getTime()}`, {

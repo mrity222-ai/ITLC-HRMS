@@ -8,32 +8,67 @@ const mockRequests = [];
 
 const mockMaintenance = [];
 
+import { api } from '../../services/api';
+import { useEffect } from 'react';
+
 export default function AssetManagement({ subTab = 'inventory' }) {
-  const [assets, setAssets] = useState(initialAssets);
+  const [assets, setAssets] = useState([]);
   const [requests, setRequests] = useState(mockRequests);
   const [maintenance, setMaintenance] = useState(mockMaintenance);
   const [typeFilter, setTypeFilter] = useState('All');
+
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        const list = await api.getAdminAssets();
+        const mapped = list.map(a => ({
+          id: a.id,
+          name: a.assetName || a.name || 'Unknown',
+          type: a.assetType || a.type || 'Accessory',
+          user: a.assignedName || a.assignedTo || 'None',
+          date: a.purchaseDate ? new Date(a.purchaseDate).toLocaleDateString() : 'N/A',
+          status: a.status || 'Available'
+        }));
+        setAssets(mapped);
+      } catch (err) {
+        console.error("Failed to load assets:", err);
+      }
+    };
+    fetchAssets();
+    const interval = setInterval(fetchAssets, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Allocate form state
   const [selectedAssetId, setSelectedAssetId] = useState(assets[2]?.id || '');
   const [allocateUser, setAllocateUser] = useState('');
 
-  const handleReturn = (id) => {
-    setAssets(assets.map(ast => 
-      ast.id === id ? { ...ast, user: '-', date: '-', status: 'Available' } : ast
-    ));
+  const handleReturn = async (id) => {
+    try {
+      await api.updateAdminAsset(id, { status: 'Available', assignedTo: 'None', assignedName: '' });
+      setAssets(assets.map(ast => 
+        ast.id === id ? { ...ast, user: 'None', status: 'Available' } : ast
+      ));
+    } catch (err) {
+      alert("Failed to deallocate asset");
+    }
   };
 
-  const handleAllocate = (e) => {
+  const handleAllocate = async (e) => {
     e.preventDefault();
     if (!selectedAssetId || !allocateUser) return;
-    setAssets(assets.map(ast => 
-      ast.id === selectedAssetId 
-        ? { ...ast, user: allocateUser, date: new Date().toLocaleDateString(), status: 'Allocated' }
-        : ast
-    ));
-    setAllocateUser('');
-    alert("Asset successfully allocated to employee!");
+    try {
+      await api.updateAdminAsset(selectedAssetId, { status: 'Allocated', assignedTo: allocateUser, assignedName: allocateUser });
+      setAssets(assets.map(ast => 
+        ast.id === selectedAssetId 
+          ? { ...ast, user: allocateUser, status: 'Allocated' }
+          : ast
+      ));
+      setAllocateUser('');
+      alert("Asset successfully allocated to employee!");
+    } catch (err) {
+      alert("Failed to allocate asset");
+    }
   };
 
   const handleApproveRequest = (id, newStatus) => {
