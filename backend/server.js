@@ -20,6 +20,7 @@ require('./models/Integration');
 require('./models/Webhook');
 require('./models/SecuritySetting');
 require('./models/GlobalSetting');
+require('./models/NotificationHistory');
 require('./models/ActiveSession');
 require('./models/ActivityLog');
 require('./models/CorrectionRequest');

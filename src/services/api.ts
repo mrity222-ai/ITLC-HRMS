@@ -250,6 +250,23 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getNotifications() {
+    const res = await fetch(`${API_URL}/superowner/notifications?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async sendNotification(data: any) {
+    const res = await fetch(`${API_URL}/superowner/notifications`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   async getGlobalSettings() {
     const res = await fetch(`${API_URL}/superowner/settings?t=${new Date().getTime()}`, {
       method: 'GET',

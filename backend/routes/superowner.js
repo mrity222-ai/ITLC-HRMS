@@ -641,6 +641,7 @@ router.delete('/webhooks/:id', auth(['Super Owner']), async (req, res) => {
 
 const SecuritySetting = require('../models/SecuritySetting');
 const GlobalSetting = require('../models/GlobalSetting');
+const NotificationHistory = require('../models/NotificationHistory');
 const ActiveSession = require('../models/ActiveSession');
 const ActivityLog = require('../models/ActivityLog');
 
@@ -742,6 +743,25 @@ router.put('/settings', auth(['Super Owner']), async (req, res) => {
       await settings.update(req.body);
     }
     res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Notifications History
+router.get('/notifications', auth(['Super Owner']), async (req, res) => {
+  try {
+    const history = await NotificationHistory.findAll({ order: [['timestamp', 'DESC']] });
+    res.json(history);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/notifications', auth(['Super Owner']), async (req, res) => {
+  try {
+    const newNotif = await NotificationHistory.create(req.body);
+    res.json(newNotif);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

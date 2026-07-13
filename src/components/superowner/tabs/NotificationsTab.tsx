@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 
+import { api } from '../../../services/api';
+
 interface SentNotification {
   id: string;
   title: string;
@@ -62,24 +64,21 @@ export const NotificationsTab: React.FC = () => {
   };
 
   // Sent notifications list
-  const [history, setHistory] = useState<SentNotification[]>([
-    {
-      id: 'not_1',
-      title: 'Platform Maintenance Alert - June 30',
-      target: 'All Companies',
-      channels: ['Email', 'Push'],
-      timestamp: '2026-06-28T09:00:00Z',
-      senderName: 'Priya Sharma'
-    },
-    {
-      id: 'not_2',
-      title: 'Trial Expiring Alert',
-      target: 'Trial Users',
-      channels: ['Email', 'SMS'],
-      timestamp: '2026-06-25T11:45:00Z',
-      senderName: 'Priya Sharma'
-    }
-  ]);
+  const [history, setHistory] = useState<SentNotification[]>([]);
+
+  React.useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const data = await api.getNotifications();
+        if (data && Array.isArray(data)) {
+          setHistory(data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch notification history', e);
+      }
+    };
+    fetchHistory();
+  }, []);
 
   const handleChannelToggle = (channelKey: keyof typeof formData.channels) => {
     updateForm(prev => ({
@@ -91,7 +90,7 @@ export const NotificationsTab: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const selectedChannels = Object.entries(formData.channels)
       .filter(([_, enabled]) => enabled)
@@ -112,33 +111,37 @@ export const NotificationsTab: React.FC = () => {
       targetText = 'Expired Companies';
     }
 
-    const newNotification: SentNotification = {
+    const newNotificationData = {
       id: `not_${Math.random().toString(36).substring(2, 9)}`,
       title: formData.title,
       target: targetText,
       channels: selectedChannels,
-      timestamp: new Date().toISOString(),
       senderName: 'Priya Sharma'
     };
 
-    setHistory(prev => [newNotification, ...prev]);
-    addToast('Notification broadcast dispatched', 'success');
-    addLog('Notification Dispatched', `Broadcast "${formData.title}" sent to ${targetText} via ${selectedChannels.join(', ')}.`, 'settings');
-    
-    // Reset form
-    setFormData({
-      title: '',
-      message: '',
-      targetGroup: 'all',
-      selectedCompanyId: '',
-      channels: {
-        email: true,
-        sms: false,
-        push: false,
-        whatsapp: false
-      }
-    });
-    setIsFormDirty(false);
+    try {
+      const savedNotif = await api.sendNotification(newNotificationData);
+      setHistory(prev => [savedNotif, ...prev]);
+      addToast('Notification broadcast dispatched', 'success');
+      addLog('Notification Dispatched', `Broadcast "${formData.title}" sent to ${targetText} via ${selectedChannels.join(', ')}.`, 'settings');
+      
+      // Reset form
+      setFormData({
+        title: '',
+        message: '',
+        targetGroup: 'all',
+        selectedCompanyId: '',
+        channels: {
+          email: true,
+          sms: false,
+          push: false,
+          whatsapp: false
+        }
+      });
+      setIsFormDirty(false);
+    } catch (err) {
+      addToast('Failed to dispatch broadcast', 'error');
+    }
   };
 
   return (
