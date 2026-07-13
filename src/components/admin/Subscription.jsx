@@ -24,8 +24,21 @@ export default function Subscription({ onSubscriptionUpdate }) {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState(() => localStorage.getItem('admin_subscription_currency') || 'USD');
   const [gateway, setGateway] = useState('stripe'); // 'stripe' or 'razorpay'
+
+  // Load plans from localStorage (saved by Superowner) or fallback to INITIAL_PLANS
+  const [plans, setPlans] = useState(() => {
+    try {
+      const saved = localStorage.getItem('superowner_plans');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return INITIAL_PLANS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('admin_subscription_currency', currency);
+  }, [currency]);
 
   useRazorpay();
 
@@ -169,7 +182,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
     status: 'trial'
   };
 
-  const activePlan = INITIAL_PLANS.find(p => p.id === company.subscriptionPlanId) || INITIAL_PLANS[0];
+  const activePlan = plans.find(p => p.id === company.subscriptionPlanId) || plans[0];
 
   const formatPrice = (usdPrice) => {
     if (usdPrice === 0) return `${SYMBOLS[currency]}0`;
@@ -302,7 +315,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
         <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: 24 }}>Choose the plan that fits your business scale. Subscriptions are billed monthly.</p>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-          {INITIAL_PLANS.map((plan) => {
+          {plans.map((plan) => {
             const isCurrent = company.subscriptionPlanId === plan.id;
             return (
               <div 

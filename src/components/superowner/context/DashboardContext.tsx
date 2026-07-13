@@ -82,7 +82,21 @@ import { api } from '../../../services/api';
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<string>('Dashboard');
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>(INITIAL_PLANS);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('superowner_plans');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) {}
+      }
+    }
+    return INITIAL_PLANS;
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('superowner_plans', JSON.stringify(plans));
+    }
+  }, [plans]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
