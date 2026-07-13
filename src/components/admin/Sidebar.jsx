@@ -121,6 +121,7 @@ const menuItems = [
   { id: 'notifications', label: 'Notifications', icon: BellRing },
   { id: 'settings', label: 'Company Settings', icon: Settings },
   { id: 'security', label: 'Security', icon: ShieldAlert },
+  { id: 'subscription', label: 'Subscription & Billing', icon: CreditCard },
   { id: 'support', label: 'Support', icon: HeartHandshake },
 ];
 
@@ -138,7 +139,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
 
   const visibleMenuItems = menuItems.filter(item => {
     // Core menus that are always visible
-    if (['dashboard', 'people', 'reports', 'notifications', 'settings', 'security', 'support'].includes(item.id)) return true;
+    if (['dashboard', 'people', 'reports', 'notifications', 'settings', 'security', 'support', 'subscription'].includes(item.id)) return true;
     
     // For all other modules, ONLY SHOW if explicitly enabled by superowner
     return featureFlags[item.id] === true;
