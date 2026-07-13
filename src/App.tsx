@@ -91,8 +91,8 @@ export default function App() {
 
   if (view !== 'superowner' && view !== 'superowner-login' && profile?.companyDetails?.status === 'expired') {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white font-sans overflow-y-auto">
-        <div className="w-full max-w-6xl p-6 relative my-auto">
+      <div className="min-h-screen w-full flex flex-col items-center bg-slate-900 text-white font-sans overflow-y-auto py-10">
+        <div className="w-full max-w-6xl p-6 relative">
           <div className="bg-rose-500/10 text-rose-400 p-4 rounded-xl border border-rose-500/20 mb-6 flex items-start gap-4 shadow-lg shadow-rose-900/20">
             <div className="h-10 w-10 shrink-0 bg-rose-500/20 rounded-full flex items-center justify-center font-bold text-xl">!</div>
             <div>
