@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { SupportTicket, TicketMessage } from '../types';
+import { api } from '../../../services/api';
 
 export const SupportCenterTab: React.FC = () => {
   const { tickets, setTickets, addToast, addLog } = useDashboard();
@@ -40,7 +41,7 @@ export const SupportCenterTab: React.FC = () => {
     }
   }, [selectedTicketId]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !selectedTicketId) return;
 
@@ -53,47 +54,42 @@ export const SupportCenterTab: React.FC = () => {
       isAgent: true
     };
 
+    const targetTicket = tickets.find(t => t.id === selectedTicketId);
+    if (!targetTicket) return;
+    
+    const updatedMessages = [...targetTicket.messages, newMsg];
+
     setTickets(prev => prev.map(t => {
       if (t.id === selectedTicketId) {
         return {
           ...t,
           status: 'pending', // mark pending user response
-          messages: [...t.messages, newMsg]
+          messages: updatedMessages
         };
       }
       return t;
     }));
 
+    try {
+      await api.updateSuperOwnerTicket(selectedTicketId, {
+        status: 'pending',
+        messagesJson: JSON.stringify(updatedMessages)
+      });
+    } catch (e) {
+      console.error('Failed to update ticket on server', e);
+    }
+
     setChatInput('');
     addToast('Response sent to client admin', 'success');
-
-    // Simulate client response after 3 seconds for ultimate interactive experience
-    const simulatedClientName = selectedTicket?.requesterName || 'Client';
-    const simulatedClientRole = 'Company Admin';
-    setTimeout(() => {
-      const clientMsg: TicketMessage = {
-        id: `msg_${Math.random().toString(36).substring(2, 9)}`,
-        senderName: simulatedClientName,
-        senderRole: simulatedClientRole,
-        content: "Understood, thank you. I've applied the instructions and will update you if anything else comes up.",
-        timestamp: new Date().toISOString(),
-        isAgent: false
-      };
-      setTickets(prev => prev.map(t => {
-        if (t.id === selectedTicketId) {
-          return {
-            ...t,
-            messages: [...t.messages, clientMsg]
-          };
-        }
-        return t;
-      }));
-      addToast(`New message from ${simulatedClientName}`, 'info');
-    }, 3000);
   };
 
-  const handleResolveTicket = (id: string, subject: string) => {
+  const handleResolveTicket = async (id: string, subject: string) => {
     setTickets(prev => prev.map(t => t.id === id ? { ...t, status: 'resolved' } : t));
+    try {
+      await api.updateSuperOwnerTicket(id, { status: 'resolved' });
+    } catch (e) {
+      console.error('Failed to mark resolved on server', e);
+    }
     addToast(`Ticket #${id} marked as Resolved`, 'success');
     addLog('Ticket Resolved', `Support Ticket #${id} ("${subject}") status marked as Resolved.`, 'settings');
   };
