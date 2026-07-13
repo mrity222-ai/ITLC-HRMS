@@ -3,6 +3,7 @@ const router = express.Router();
 const Company = require('../models/Company');
 const Employee = require('../models/Employee');
 const SupportTicket = require('../models/SupportTicket');
+const Payment = require('../models/Payment');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 
@@ -334,6 +335,32 @@ router.get('/employees/:employeeId/attendance', auth(['Super Owner']), async (re
       order: [['date', 'DESC']]
     });
     res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all payments (for Super Owner)
+router.get('/payments', auth(['Super Owner']), async (req, res) => {
+  try {
+    const list = await Payment.findAll({ order: [['date', 'DESC']] });
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update payment status (e.g. refund/retry)
+router.put('/payments/:id', auth(['Super Owner']), async (req, res) => {
+  try {
+    const payment = await Payment.findByPk(req.params.id);
+    if (!payment) return res.status(404).json({ error: 'Payment not found' });
+    
+    if (req.body.status) {
+      payment.status = req.body.status;
+      await payment.save();
+    }
+    res.json(payment);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

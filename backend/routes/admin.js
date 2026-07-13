@@ -7,6 +7,7 @@ const Company = require('../models/Company');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const SupportTicket = require('../models/SupportTicket');
+const Payment = require('../models/Payment');
 
 // Get all employees of logged-in admin's company
 router.get('/employees', auth(['Company Admin', 'HR']), async (req, res) => {
@@ -164,18 +165,24 @@ router.put('/subscription', auth(['Company Admin']), async (req, res) => {
 
     let maxEmployees = 20;
     let storageLimit = 1.0;
+    let amount = 0;
+
     if (planId === 'starter') {
       maxEmployees = 50;
       storageLimit = 5.0;
+      amount = 99;
     } else if (planId === 'premium') {
       maxEmployees = 150;
       storageLimit = 20.0;
+      amount = 199;
     } else if (planId === 'enterprise') {
       maxEmployees = 500;
       storageLimit = 100.0;
+      amount = 499;
     } else if (planId === 'free_trial') {
       maxEmployees = 20;
       storageLimit = 1.0;
+      amount = 0;
     } else {
       return res.status(400).json({ error: 'Invalid plan selected' });
     }
@@ -187,9 +194,24 @@ router.put('/subscription', auth(['Company Admin']), async (req, res) => {
       status: 'active'
     });
 
+    let payment = null;
+    if (amount > 0) {
+      payment = await Payment.create({
+        id: `pay_${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+        companyId: company.id,
+        companyName: company.name,
+        invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        amount: amount,
+        gateway: 'stripe',
+        status: 'successful',
+        date: new Date().toISOString()
+      });
+    }
+
     res.json({
       success: true,
-      company
+      company,
+      payment
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

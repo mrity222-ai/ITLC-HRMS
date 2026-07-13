@@ -148,6 +148,23 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getSuperOwnerPayments() {
+    const res = await fetch(`${API_URL}/superowner/payments`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async updateSuperOwnerPaymentStatus(id: string, status: string) {
+    const res = await fetch(`${API_URL}/superowner/payments/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ status })
+    });
+    return handleResponse(res);
+  },
+
   async updateSuperOwnerTicket(id: string, data: any) {
     const res = await fetch(`${API_URL}/superowner/tickets/${id}`, {
       method: 'PUT',

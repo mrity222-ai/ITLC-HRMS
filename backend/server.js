@@ -16,6 +16,7 @@ require('./models/Meeting');
 require('./models/Asset');
 require('./models/Announcement');
 require('./models/CorrectionRequest');
+require('./models/Payment');
 
 // Synchronize database
 sequelize.sync({ force: false })

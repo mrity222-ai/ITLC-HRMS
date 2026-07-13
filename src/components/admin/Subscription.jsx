@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BadgeCheck, CreditCard, HardDrive, Cpu, Users, FileText, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { api } from '../../services/api';
+import { downloadPaymentSlip } from '../../utils/PaymentSlip';
 
 const PLANS = [
   { id: 'free_trial', name: 'Free Trial', price: '$0', employees: 20, storage: 1, desc: 'Ideal for small startup evaluations.' },
@@ -45,10 +46,14 @@ export default function Subscription() {
     if (!selectedPlan) return;
     setIsProcessing(true);
     try {
-      await api.upgradeSubscription(selectedPlan.id);
+      const result = await api.upgradeSubscription(selectedPlan.id);
       alert(`Payment of ${selectedPlan.price}/month confirmed! Your subscription has been successfully updated to ${selectedPlan.name}.`);
       setIsModalOpen(false);
       await fetchBillingInfo();
+      
+      if (result.payment) {
+        downloadPaymentSlip(result.payment, result.company);
+      }
     } catch (err) {
       alert(err.message || 'Upgrade failed.');
     } finally {

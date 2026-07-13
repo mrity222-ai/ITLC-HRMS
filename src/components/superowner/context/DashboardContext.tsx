@@ -83,7 +83,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [activeTab, setActiveTab] = useState<string>('Dashboard');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>(INITIAL_PLANS);
-  const [payments, setPayments] = useState<Payment[]>(INITIAL_PAYMENTS);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -116,6 +116,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         const userList = await api.getSuperOwnerUsers();
         setUsers(userList);
+
+        try {
+          const paymentList = await api.getSuperOwnerPayments();
+          setPayments(paymentList);
+        } catch (e) {
+          console.error("Failed to load payments", e);
+        }
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       }

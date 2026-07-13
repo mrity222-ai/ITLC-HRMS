@@ -5,6 +5,8 @@ import {
   HelpCircle, Settings, Key, ToggleLeft, ToggleRight, ArrowRight
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
+import { api } from '../../../services/api';
+import { downloadPaymentSlip } from '../../../utils/PaymentSlip';
 
 export const PaymentsTab: React.FC = () => {
   const { payments, setPayments, addToast, addLog, formatAmount } = useDashboard();
@@ -17,21 +19,29 @@ export const PaymentsTab: React.FC = () => {
     bank_transfer: false,
   });
 
-  const handleRefund = (id: string, invoiceNo: string, amount: number, companyName: string) => {
+  const handleRefund = async (id: string, invoiceNo: string, amount: number, companyName: string) => {
     if (confirm(`Are you sure you want to refund ${companyName} for Invoice ${invoiceNo} ($${amount})?`)) {
-      setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'failed' } : p)); // mark failed/refunded
-      addToast(`Refund for ${invoiceNo} initiated successfully`, 'warning');
-      addLog('Payment Refunded', `Initiated refund of $${amount} for invoice ${invoiceNo} (${companyName}).`, 'payment');
+      try {
+        await api.updateSuperOwnerPaymentStatus(id, 'failed');
+        setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'failed' } : p));
+        addToast(`Refund for ${invoiceNo} initiated successfully`, 'warning');
+        addLog('Payment Refunded', `Initiated refund of $${amount} for invoice ${invoiceNo} (${companyName}).`, 'payment');
+      } catch (err) {
+        addToast('Failed to refund payment', 'error');
+      }
     }
   };
 
-  const handleRetry = (id: string, invoiceNo: string, amount: number, companyName: string) => {
+  const handleRetry = async (id: string, invoiceNo: string, amount: number, companyName: string) => {
     addToast(`Retrying payment request for ${invoiceNo}...`, 'info');
-    setTimeout(() => {
+    try {
+      await api.updateSuperOwnerPaymentStatus(id, 'successful');
       setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'successful' } : p));
       addToast(`Payment succeeded for ${invoiceNo}`, 'success');
       addLog('Payment Succeeded', `Retried payment of $${amount} for invoice ${invoiceNo} was settled.`, 'payment');
-    }, 1500);
+    } catch (err) {
+      addToast('Retry failed', 'error');
+    }
   };
 
   const toggleGateway = (gateway: keyof typeof gatewayToggles) => {
@@ -300,12 +310,20 @@ export const PaymentsTab: React.FC = () => {
                   <td className="py-3 px-4 text-right">
                     <div className="flex justify-end gap-2">
                       {p.status === 'successful' && (
-                        <button
-                          onClick={() => handleRefund(p.id, p.invoiceNumber, p.amount, p.companyName)}
-                          className="px-3 py-1 rounded-lg bg-rose-600/10 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/20 text-xs font-semibold flex items-center gap-1.5 transition"
-                        >
-                          <RotateCcw className="h-3 w-3" /> Refund Charge
-                        </button>
+                        <>
+                          <button
+                            onClick={() => downloadPaymentSlip(p, { name: p.companyName })}
+                            className="px-3 py-1 rounded-lg bg-emerald-600/10 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/20 text-xs font-semibold flex items-center gap-1.5 transition"
+                          >
+                            Download Slip
+                          </button>
+                          <button
+                            onClick={() => handleRefund(p.id, p.invoiceNumber, p.amount, p.companyName)}
+                            className="px-3 py-1 rounded-lg bg-rose-600/10 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/20 text-xs font-semibold flex items-center gap-1.5 transition"
+                          >
+                            <RotateCcw className="h-3 w-3" /> Refund Charge
+                          </button>
+                        </>
                       )}
                       {p.status === 'failed' && (
                         <button
