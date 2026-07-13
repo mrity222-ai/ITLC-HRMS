@@ -256,6 +256,30 @@ export const api = {
     return handleResponse(res);
   },
 
+  // ===== LEAVE POLICIES =====
+  async getAdminLeavePolicies() {
+    const res = await fetch(`${API_URL}/admin/leave-policies?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+  async createAdminLeavePolicy(data: any) {
+    const res = await fetch(`${API_URL}/admin/leave-policies`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async deleteAdminLeavePolicy(id: string) {
+    const res = await fetch(`${API_URL}/admin/leave-policies/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   // ===== SUPEROWNER ENDPOINTS =====& TENANT APIs
   // ========================================================
   async getCompanies() {

@@ -18,6 +18,7 @@ const PerformanceReview = require('../models/PerformanceReview');
 const JobOpening = require('../models/JobOpening');
 const TrainingProgram = require('../models/TrainingProgram');
 const Holiday = require('../models/Holiday');
+const LeavePolicy = require('../models/LeavePolicy');
 const Asset = require('../models/Asset');
 
 // Get all employees of logged-in admin's company
@@ -600,6 +601,33 @@ router.post('/holidays', auth(['Company Admin', 'HR', 'Manager']), async (req, r
 router.delete('/holidays/:id', auth(['Company Admin', 'HR', 'Manager']), async (req, res) => {
   try {
     const record = await Holiday.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!record) return res.status(404).json({ error: 'Not found' });
+    await record.destroy();
+    res.json({ message: 'Deleted successfully' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ----------------------------------------------------
+// LEAVE POLICIES
+// ----------------------------------------------------
+router.get('/leave-policies', auth(['Company Admin', 'HR', 'Manager']), async (req, res) => {
+  try {
+    const records = await LeavePolicy.findAll({ where: { companyId: req.user.companyId } });
+    res.json(records);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/leave-policies', auth(['Company Admin', 'HR', 'Manager']), async (req, res) => {
+  try {
+    const polId = `POL-${Math.floor(1000 + Math.random() * 9000)}`;
+    const record = await LeavePolicy.create({ ...req.body, id: polId, companyId: req.user.companyId });
+    res.json(record);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/leave-policies/:id', auth(['Company Admin', 'HR', 'Manager']), async (req, res) => {
+  try {
+    const record = await LeavePolicy.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
     if (!record) return res.status(404).json({ error: 'Not found' });
     await record.destroy();
     res.json({ message: 'Deleted successfully' });

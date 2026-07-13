@@ -29,6 +29,7 @@ require('./models/CorrectionRequest');
 require('./models/JobOpening');
 require('./models/TrainingProgram');
 require('./models/Holiday');
+require('./models/LeavePolicy');
 require('./models/Department');
 require('./models/Designation');
 require('./models/Branch');

@@ -12,10 +12,8 @@ const initialLeaveBalances = [
 const initialRequests = [
   { id: 1, name: 'Alice Smith', type: 'Annual Leave', range: 'July 10 - July 15', days: 5, reason: 'Family vacation', status: 'Pending' },
   { id: 2, name: 'Bob Johnson', type: 'Sick Leave', range: 'July 05 - July 06', days: 2, reason: 'Dental surgery', status: 'Pending' },
-  { id: 3, name: 'Clara Oswald', type: 'Casual Leave', range: 'July 02 - July 02', days: 1, reason: 'Personal errand', status: 'Approved' },
-];
-
 const initialHolidays = [];
+const initialLeavePolicies = [];
 
 import { api } from '../../services/api';
 import { useEffect } from 'react';
@@ -24,10 +22,16 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
   const [balances, setBalances] = useState(initialLeaveBalances);
   const [requests, setRequests] = useState([]);
   const [holidays, setHolidays] = useState(initialHolidays);
+  const [policies, setPolicies] = useState(initialLeavePolicies);
   const [selectedLeaveDetails, setSelectedLeaveDetails] = useState(null);
 
   const [newHolidayName, setNewHolidayName] = useState('');
   const [newHolidayDate, setNewHolidayDate] = useState('');
+
+  const [newPolicyName, setNewPolicyName] = useState('');
+  const [newPolicyAlloc, setNewPolicyAlloc] = useState('0');
+  const [newPolicyCarry, setNewPolicyCarry] = useState('0');
+  const [newPolicyPayout, setNewPolicyPayout] = useState('Paid');
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -59,6 +63,9 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
 
         const hols = await api.getAdminHolidays();
         setHolidays(hols);
+
+        const pols = await api.getAdminLeavePolicies();
+        setPolicies(pols);
       } catch (err) {
         console.error(err);
       }
@@ -396,6 +403,63 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Allocated limits, carryovers, and constraints</span>
             </div>
 
+            <div style={{ padding: 16, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input 
+                type="text" 
+                placeholder="Leave Class (e.g. Annual Leave)" 
+                value={newPolicyName} 
+                onChange={e => setNewPolicyName(e.target.value)}
+                className="premium-input"
+                style={{ flex: 1, minWidth: 200 }}
+              />
+              <input 
+                type="number" 
+                placeholder="Annual Allocation (Days)" 
+                value={newPolicyAlloc} 
+                onChange={e => setNewPolicyAlloc(e.target.value)}
+                className="premium-input"
+                style={{ width: 120 }}
+              />
+              <input 
+                type="number" 
+                placeholder="Carry Forward" 
+                value={newPolicyCarry} 
+                onChange={e => setNewPolicyCarry(e.target.value)}
+                className="premium-input"
+                style={{ width: 120 }}
+              />
+              <select 
+                value={newPolicyPayout} 
+                onChange={e => setNewPolicyPayout(e.target.value)}
+                className="premium-input"
+                style={{ width: 120 }}
+              >
+                <option value="Paid">Paid</option>
+                <option value="Unpaid">Unpaid</option>
+              </select>
+              <button 
+                onClick={async () => {
+                  if(!newPolicyName) return;
+                  await api.createAdminLeavePolicy({ 
+                    leaveClass: newPolicyName, 
+                    annualAllocation: Number(newPolicyAlloc), 
+                    carryForwardLimit: Number(newPolicyCarry), 
+                    payoutMode: newPolicyPayout 
+                  });
+                  setNewPolicyName('');
+                  setNewPolicyAlloc('0');
+                  setNewPolicyCarry('0');
+                  setNewPolicyPayout('Paid');
+                  const pols = await api.getAdminLeavePolicies();
+                  setPolicies(pols);
+                }}
+                className="premium-btn premium-btn-primary" 
+                style={{ padding: '8px 16px' }}
+              >
+                Add Policy
+              </button>
+            </div>
+
             <div className="premium-table-container">
               <table className="premium-table">
                 <thead>
@@ -404,33 +468,36 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
                     <th>Annual Allocation</th>
                     <th>Carry-forward Limit</th>
                     <th>Payout Mode</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td style={{ fontWeight: 700 }}>Annual Leave</td>
-                    <td className="number-font">24 Days</td>
-                    <td className="number-font">5 Days</td>
-                    <td>Paid</td>
-                  </tr>
-                  <tr>
-                    <td style={{ fontWeight: 700 }}>Sick Leave</td>
-                    <td className="number-font">12 Days</td>
-                    <td className="number-font">0 Days</td>
-                    <td>Paid</td>
-                  </tr>
-                  <tr>
-                    <td style={{ fontWeight: 700 }}>Casual Leave</td>
-                    <td className="number-font">8 Days</td>
-                    <td className="number-font">0 Days</td>
-                    <td>Paid</td>
-                  </tr>
-                  <tr>
-                    <td style={{ fontWeight: 700 }}>Maternity Leave</td>
-                    <td className="number-font">90 Days</td>
-                    <td className="number-font">0 Days</td>
-                    <td>Paid (100%)</td>
-                  </tr>
+                  {policies.map(pol => (
+                    <tr key={pol.id}>
+                      <td style={{ fontWeight: 700 }}>{pol.leaveClass}</td>
+                      <td className="number-font">{pol.annualAllocation} Days</td>
+                      <td className="number-font">{pol.carryForwardLimit} Days</td>
+                      <td>{pol.payoutMode}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button 
+                          onClick={async () => {
+                            await api.deleteAdminLeavePolicy(pol.id);
+                            const pols = await api.getAdminLeavePolicies();
+                            setPolicies(pols);
+                          }}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer' }}
+                          title="Delete Policy"
+                        >
+                          <X size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {policies.length === 0 && (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: 20, color: 'var(--color-text-tertiary)' }}>No leave policies defined.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
