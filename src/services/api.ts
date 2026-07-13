@@ -157,6 +157,81 @@ export const api = {
     return handleResponse(res);
   },
 
+  // ===== PERFORMANCE =====
+  async getAdminPerformance() {
+    const res = await fetch(`${API_URL}/admin/performance?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+  async createAdminPerformance(data: any) {
+    const res = await fetch(`${API_URL}/admin/performance`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async updateAdminPerformance(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/performance/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  // ===== JOBS =====
+  async getAdminJobs() {
+    const res = await fetch(`${API_URL}/admin/jobs?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+  async createAdminJob(data: any) {
+    const res = await fetch(`${API_URL}/admin/jobs`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async updateAdminJob(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/jobs/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  // ===== TRAININGS =====
+  async getAdminTrainings() {
+    const res = await fetch(`${API_URL}/admin/trainings?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+  async createAdminTraining(data: any) {
+    const res = await fetch(`${API_URL}/admin/trainings`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async updateAdminTraining(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/trainings/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   // ===== SUPEROWNER ENDPOINTS =====& TENANT APIs
   // ========================================================
   async getCompanies() {

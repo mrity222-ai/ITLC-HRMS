@@ -6,12 +6,28 @@ const mockGoals = [];
 
 const mockFeedback = [];
 
+import { api } from '../../services/api';
+import { useEffect } from 'react';
+
 export default function Performance({ employees, subTab = 'dashboard' }) {
   const [goals, setGoals] = useState(mockGoals);
+  const [reviews, setReviews] = useState([]);
   const [selectedEmpId, setSelectedEmpId] = useState(employees[0]?.id || 1);
   const [designScore, setDesignScore] = useState(4.2);
   const [deliveryScore, setDeliveryScore] = useState(4.5);
   const [teamworkScore, setTeamworkScore] = useState(4.0);
+
+  useEffect(() => {
+    const fetchPerformance = async () => {
+      try {
+        const list = await api.getAdminPerformance();
+        setReviews(list);
+      } catch (err) {
+        console.error("Failed to load performance data:", err);
+      }
+    };
+    fetchPerformance();
+  }, []);
 
   const selectedEmp = employees.find(emp => emp.id === Number(selectedEmpId)) || employees[0];
   const overallRating = ((Number(designScore) + Number(deliveryScore) + Number(teamworkScore)) / 3).toFixed(1);
@@ -106,6 +122,31 @@ export default function Performance({ employees, subTab = 'dashboard' }) {
                     <span className="number-font" style={{ fontSize: '1.5rem', fontWeight: 800 }}>{overallRating}</span>
                   </div>
                 </div>
+
+                <button 
+                  onClick={async () => {
+                    if (!selectedEmp) return;
+                    try {
+                      await api.createAdminPerformance({
+                        id: `REV-${Math.floor(1000 + Math.random() * 9000)}`,
+                        employeeId: selectedEmp.id,
+                        employeeName: selectedEmp.name,
+                        managerId: 'Admin',
+                        rating: overallRating,
+                        reviewPeriod: 'Monthly'
+                      });
+                      alert("Appraisal submitted successfully!");
+                      const list = await api.getAdminPerformance();
+                      setReviews(list);
+                    } catch (err) {
+                      alert("Failed to submit appraisal");
+                    }
+                  }}
+                  className="premium-btn premium-btn-primary" 
+                  style={{ width: '100%', padding: '12px 24px', justifyContent: 'center' }}
+                >
+                  Submit Appraisal Rating
+                </button>
               </div>
             </div>
           </motion.div>
@@ -251,15 +292,18 @@ export default function Performance({ employees, subTab = 'dashboard' }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map(emp => (
-                    <tr key={emp.id}>
-                      <td style={{ fontWeight: 600 }}>{emp.name}</td>
-                      <td className="number-font">4.2</td>
-                      <td className="number-font">4.5</td>
-                      <td className="number-font">4.0</td>
-                      <td className="number-font" style={{ fontWeight: 700, color: 'var(--color-primary)' }}>4.2 / 5.0</td>
+                  {reviews.map(rev => (
+                    <tr key={rev.id}>
+                      <td style={{ fontWeight: 600 }}>{rev.employeeName}</td>
+                      <td className="number-font">-</td>
+                      <td className="number-font">-</td>
+                      <td className="number-font">-</td>
+                      <td className="number-font" style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{rev.rating} / 5.0</td>
                     </tr>
                   ))}
+                  {reviews.length === 0 && (
+                    <tr><td colSpan="5" style={{ textAlign: 'center' }}>No appraisals recorded yet.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>

@@ -14,6 +14,10 @@ const Payment = require('../models/Payment');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const PayrollRecord = require('../models/PayrollRecord');
 const Asset = require('../models/Asset');
+const PerformanceReview = require('../models/PerformanceReview');
+const JobOpening = require('../models/JobOpening');
+const TrainingProgram = require('../models/TrainingProgram');
+const Asset = require('../models/Asset');
 
 // Get all employees of logged-in admin's company
 router.get('/employees', auth(['Company Admin', 'HR']), async (req, res) => {
@@ -476,6 +480,101 @@ router.put('/assets/:id', auth(['Company Admin', 'HR']), async (req, res) => {
     if (!asset) return res.status(404).json({ error: 'Not found' });
     await asset.update(req.body);
     res.json(asset);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ----------------------------------------------------
+// PERFORMANCE
+// ----------------------------------------------------
+router.get('/performance', auth(['Company Admin', 'HR', 'Manager']), async (req, res) => {
+  try {
+    const records = await PerformanceReview.findAll({ where: { companyId: req.user.companyId } });
+    const mapped = records.map(r => {
+      const data = r.toJSON();
+      try { data.kpis = JSON.parse(data.kpis); } catch (e) { data.kpis = []; }
+      try { data.kras = JSON.parse(data.kras); } catch (e) { data.kras = []; }
+      try { data.goals = JSON.parse(data.goals); } catch (e) { data.goals = []; }
+      return data;
+    });
+    res.json(mapped);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/performance', auth(['Company Admin', 'HR', 'Manager']), async (req, res) => {
+  try {
+    const data = { ...req.body, companyId: req.user.companyId };
+    if (data.kpis) data.kpis = JSON.stringify(data.kpis);
+    if (data.kras) data.kras = JSON.stringify(data.kras);
+    if (data.goals) data.goals = JSON.stringify(data.goals);
+    const record = await PerformanceReview.create(data);
+    res.json(record);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/performance/:id', auth(['Company Admin', 'HR', 'Manager']), async (req, res) => {
+  try {
+    const record = await PerformanceReview.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!record) return res.status(404).json({ error: 'Not found' });
+    const data = { ...req.body };
+    if (data.kpis) data.kpis = JSON.stringify(data.kpis);
+    if (data.kras) data.kras = JSON.stringify(data.kras);
+    if (data.goals) data.goals = JSON.stringify(data.goals);
+    await record.update(data);
+    res.json(record);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ----------------------------------------------------
+// RECRUITMENT (JOB OPENINGS)
+// ----------------------------------------------------
+router.get('/jobs', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const jobs = await JobOpening.findAll({ where: { companyId: req.user.companyId } });
+    res.json(jobs);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/jobs', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const jobId = `JOB-${Math.floor(1000 + Math.random() * 9000)}`;
+    const job = await JobOpening.create({ ...req.body, id: jobId, companyId: req.user.companyId });
+    res.json(job);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/jobs/:id', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const job = await JobOpening.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!job) return res.status(404).json({ error: 'Not found' });
+    await job.update(req.body);
+    res.json(job);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ----------------------------------------------------
+// TRAINING
+// ----------------------------------------------------
+router.get('/trainings', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const trainings = await TrainingProgram.findAll({ where: { companyId: req.user.companyId } });
+    res.json(trainings);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/trainings', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const tId = `TRN-${Math.floor(1000 + Math.random() * 9000)}`;
+    const training = await TrainingProgram.create({ ...req.body, id: tId, companyId: req.user.companyId });
+    res.json(training);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/trainings/:id', auth(['Company Admin', 'HR']), async (req, res) => {
+  try {
+    const training = await TrainingProgram.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!training) return res.status(404).json({ error: 'Not found' });
+    await training.update(req.body);
+    res.json(training);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

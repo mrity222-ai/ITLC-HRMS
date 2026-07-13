@@ -26,6 +26,8 @@ require('./models/PayrollRecord');
 require('./models/ActiveSession');
 require('./models/ActivityLog');
 require('./models/CorrectionRequest');
+require('./models/JobOpening');
+require('./models/TrainingProgram');
 require('./models/Department');
 require('./models/Designation');
 require('./models/Branch');

@@ -6,30 +6,51 @@ const initialOpenings = [];
 
 const initialCandidates = [];
 
+import { api } from '../../services/api';
+import { useEffect } from 'react';
+
 export default function Recruitment({ subTab = 'dashboard' }) {
-  const [openings, setOpenings] = useState(initialOpenings);
+  const [openings, setOpenings] = useState([]);
   const [candidates, setCandidates] = useState(initialCandidates);
   const [showAddOpening, setShowAddOpening] = useState(false);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const list = await api.getAdminJobs();
+        setOpenings(list);
+      } catch (err) {
+        console.error("Failed to load jobs:", err);
+      }
+    };
+    fetchJobs();
+    const interval = setInterval(fetchJobs, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Form states
   const [newTitle, setNewTitle] = useState('');
   const [newDept, setNewDept] = useState('Engineering');
   const [newType, setNewType] = useState('Full-time');
 
-  const handleAddJob = (e) => {
+  const handleAddJob = async (e) => {
     e.preventDefault();
     if (!newTitle) return;
-    const newJob = {
-      id: openings.length + 1,
-      title: newTitle,
-      department: newDept,
-      type: newType,
-      candidates: 0,
-      status: 'Active'
-    };
-    setOpenings([...openings, newJob]);
-    setNewTitle('');
-    setShowAddOpening(false);
+    try {
+      await api.createAdminJob({
+        title: newTitle,
+        department: newDept,
+        type: newType,
+        vacancies: 1,
+        status: 'Active'
+      });
+      const list = await api.getAdminJobs();
+      setOpenings(list);
+      setNewTitle('');
+      setShowAddOpening(false);
+    } catch (err) {
+      alert("Failed to create job opening");
+    }
   };
 
   const moveCandidate = (id, nextStage) => {
