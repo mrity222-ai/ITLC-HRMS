@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { BadgeCheck, CreditCard, HardDrive, Cpu, Users, FileText, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { BadgeCheck, CreditCard, HardDrive, Cpu, Users, FileText, CheckCircle2, ShieldCheck, Globe } from 'lucide-react';
 import { api } from '../../services/api';
 import { downloadPaymentSlip } from '../../utils/PaymentSlip';
+import { INITIAL_PLANS } from '../superowner/dashboardData';
 
-const PLANS = [
-  { id: 'free_trial', name: 'Free Trial', price: '$0', employees: 20, storage: 1, desc: 'Ideal for small startup evaluations.' },
-  { id: 'starter', name: 'Starter Pack', price: '$99', employees: 50, storage: 5, desc: 'Great for growing small businesses.' },
-  { id: 'premium', name: 'Premium Business', price: '$199', employees: 150, storage: 20, desc: 'Advanced features for scaling companies.' },
-  { id: 'enterprise', name: 'Enterprise Suite', price: '$499', employees: 500, storage: 100, desc: 'Complete enterprise-grade security and capabilities.' },
-];
+const RATES = { USD: 1, INR: 83, EUR: 0.92, GBP: 0.79 };
+const SYMBOLS = { USD: '$', INR: '₹', EUR: '€', GBP: '£' };
 
 export default function Subscription({ onSubscriptionUpdate }) {
   const [profile, setProfile] = useState(null);
@@ -17,13 +14,12 @@ export default function Subscription({ onSubscriptionUpdate }) {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currency, setCurrency] = useState('USD');
 
   const fetchBillingInfo = async () => {
     try {
       const prof = await api.getProfile();
       setProfile(prof);
-
-      // Fetch employees to count actual usage
       const emps = await api.getEmployees();
       setEmployeeCount(emps.length);
     } catch (err) {
@@ -47,7 +43,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
     setIsProcessing(true);
     try {
       const result = await api.upgradeSubscription(selectedPlan.id);
-      alert(`Payment of ${selectedPlan.price}/month confirmed! Your subscription has been successfully updated to ${selectedPlan.name}.`);
+      alert(`Payment of ${SYMBOLS[currency]}${(selectedPlan.price * RATES[currency]).toFixed(0)}/month confirmed! Your subscription has been successfully updated to ${selectedPlan.name}.`);
       setIsModalOpen(false);
       await fetchBillingInfo();
       
@@ -68,7 +64,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-        <div className="h-8 w-8 border-2 border-indigo-650 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-8 w-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -81,72 +77,99 @@ export default function Subscription({ onSubscriptionUpdate }) {
     status: 'trial'
   };
 
-  const activePlan = PLANS.find(p => p.id === company.subscriptionPlanId) || PLANS[0];
+  const activePlan = INITIAL_PLANS.find(p => p.id === company.subscriptionPlanId) || INITIAL_PLANS[0];
+
+  const formatPrice = (usdPrice) => {
+    if (usdPrice === 0) return `${SYMBOLS[currency]}0`;
+    return `${SYMBOLS[currency]}${(usdPrice * RATES[currency]).toFixed(0)}`;
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, background: '#ffffff', borderRadius: '16px', padding: '24px' }}>
       
+      {/* Header and Currency Selector */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Subscription & Billing</h2>
+          <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '4px 0 0 0' }}>Manage your subscription plan, usage, and billing settings.</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <Globe size={16} style={{ color: '#64748b' }} />
+          <select 
+            value={currency} 
+            onChange={(e) => setCurrency(e.target.value)}
+            style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}
+          >
+            <option value="USD">USD ($)</option>
+            <option value="INR">INR (₹)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+          </select>
+        </div>
+      </div>
+
       {/* Plan Card & Meters */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 24 }}>
         
         {/* Tier Details Card */}
-        <div className="premium-card" style={{ 
+        <div style={{ 
           padding: 28, 
-          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.07) 0%, rgba(6, 182, 212, 0.04) 100%)',
+          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
           height: 320,
-          border: '1px solid rgba(79, 70, 229, 0.2)'
+          border: '1px solid rgba(79, 70, 229, 0.2)',
+          borderRadius: '16px'
         }}>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="badge badge-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#4f46e5', color: '#fff' }}>
+              <span style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#4f46e5', color: '#fff', borderRadius: '999px', fontWeight: 700 }}>
                 Active Plan
               </span>
-              <span className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800 }}>{activePlan.price} / mo</span>
+              <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>{formatPrice(activePlan.price)} / mo</span>
             </div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: 14, color: '#fff' }}>{activePlan.name}</h3>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 4 }}>{activePlan.desc}</p>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: 14, color: '#0f172a' }}>{activePlan.name}</h3>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: 4 }}>Access to your HRMS features.</p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.8rem', color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.875rem', color: '#334155' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <BadgeCheck size={16} style={{ color: '#34d399' }} />
-              <span>Up to {activePlan.employees} Employee Workspace entries</span>
+              <BadgeCheck size={16} style={{ color: '#10b981' }} />
+              <span>Up to {activePlan.employeeLimit} Employee Workspace entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <BadgeCheck size={16} style={{ color: '#34d399' }} />
-              <span>Up to {activePlan.storage} GB Cloud Storage limit</span>
+              <BadgeCheck size={16} style={{ color: '#10b981' }} />
+              <span>Up to {activePlan.storageLimit} GB Cloud Storage limit</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <BadgeCheck size={16} style={{ color: '#34d399' }} />
+              <BadgeCheck size={16} style={{ color: '#10b981' }} />
               <span>Automatic backups & real-time analytics access</span>
             </div>
           </div>
 
           <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <ShieldCheck size={14} style={{ color: '#34d399' }} />
+            <ShieldCheck size={14} style={{ color: '#10b981' }} />
             <span>Workspace isolated under Tenant ID: {company.id}</span>
           </div>
         </div>
 
         {/* Meters Panel */}
-        <div className="premium-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 800, margin: 0, color: '#fff' }}>Resource Metering</h3>
+        <div style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 20, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Resource Metering</h3>
           
           {/* Storage Meter */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 6 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#cbd5e1' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#475569' }}>
                 <HardDrive size={14} style={{ color: '#64748b' }} />
-                <span>Cloud Storage</span>
+                <span style={{ fontWeight: 600 }}>Cloud Storage</span>
               </div>
-              <strong className="number-font" style={{ color: '#fff' }}>
+              <strong style={{ color: '#0f172a' }}>
                 {Number(company.storageUsed).toFixed(2)} GB / {company.storageLimit} GB
               </strong>
             </div>
-            <div style={{ width: '100%', height: 6, background: '#1e293b', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
               <div 
                 style={{ 
                   width: `${Math.min(100, (company.storageUsed / company.storageLimit) * 100)}%`, 
@@ -160,15 +183,15 @@ export default function Subscription({ onSubscriptionUpdate }) {
           {/* Employee Meter */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 6 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#cbd5e1' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#475569' }}>
                 <Users size={14} style={{ color: '#64748b' }} />
-                <span>Employee Database Limit</span>
+                <span style={{ fontWeight: 600 }}>Employee Database Limit</span>
               </div>
-              <strong className="number-font" style={{ color: '#fff' }}>
+              <strong style={{ color: '#0f172a' }}>
                 {employeeCount} / {company.maxEmployees}
               </strong>
             </div>
-            <div style={{ width: '100%', height: 6, background: '#1e293b', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
               <div 
                 style={{ 
                   width: `${Math.min(100, (employeeCount / company.maxEmployees) * 100)}%`, 
@@ -182,56 +205,66 @@ export default function Subscription({ onSubscriptionUpdate }) {
       </div>
 
       {/* Available Plans Selection Grid */}
-      <div className="premium-card" style={{ padding: 28 }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', marginBottom: 6 }}>Select Subscription Upgrade</h3>
-        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: 24 }}>Choose the plan that fits your business scale. Subscriptions are billed monthly.</p>
+      <div style={{ padding: 28, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>Select Subscription Upgrade</h3>
+        <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: 24 }}>Choose the plan that fits your business scale. Subscriptions are billed monthly.</p>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-          {PLANS.map((plan) => {
+          {INITIAL_PLANS.map((plan) => {
             const isCurrent = company.subscriptionPlanId === plan.id;
             return (
               <div 
                 key={plan.id} 
-                className="premium-card" 
                 style={{ 
-                  padding: 20, 
+                  padding: 24, 
                   display: 'flex', 
                   flexDirection: 'column', 
                   justifyContent: 'space-between',
-                  border: isCurrent ? '2px solid #4f46e5' : '1px solid rgba(255,255,255,0.05)',
-                  background: isCurrent ? 'rgba(79, 70, 229, 0.05)' : 'rgba(255,255,255,0.01)',
-                  borderRadius: '16px'
+                  border: isCurrent ? '2px solid #4f46e5' : '1px solid #e2e8f0',
+                  background: isCurrent ? '#f1f5f9' : '#fff',
+                  borderRadius: '16px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
                 }}
               >
                 <div>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', margin: 0 }}>{plan.name}</h4>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, margin: '12px 0 8px 0' }}>
-                    <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff' }}>{plan.price}</span>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>/ month</span>
+                  <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>{plan.name}</h4>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, margin: '16px 0 12px 0' }}>
+                    <span style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a' }}>{formatPrice(plan.price)}</span>
+                    <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 600 }}>/ month</span>
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: '#cbd5e1', marginBottom: 16 }}>{plan.desc}</p>
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.7rem', color: '#94a3b8', marginBottom: 20 }}>
-                    <div>• Up to {plan.employees} employees</div>
-                    <div>• Up to {plan.storage} GB storage</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.875rem', color: '#475569', marginBottom: 24, fontWeight: 500 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <CheckCircle2 size={16} style={{ color: '#4f46e5' }} /> Up to {plan.employeeLimit} employees
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <CheckCircle2 size={16} style={{ color: '#4f46e5' }} /> Up to {plan.storageLimit} GB storage
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <CheckCircle2 size={16} style={{ color: '#4f46e5' }} /> {plan.aiCreditsLimit} AI Credits
+                    </div>
                   </div>
                 </div>
 
                 {isCurrent ? (
                   <button 
                     disabled 
-                    className="premium-btn" 
-                    style={{ width: '100%', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: 'none', color: '#cbd5e1', cursor: 'default' }}
+                    style={{ 
+                      width: '100%', padding: '10px', borderRadius: '8px', background: '#e2e8f0', border: 'none', color: '#64748b', fontWeight: 700, cursor: 'default' 
+                    }}
                   >
                     Current active plan
                   </button>
                 ) : (
                   <button 
                     onClick={() => handleOpenUpgrade(plan)} 
-                    className="premium-btn premium-btn-primary" 
-                    style={{ width: '100%', justifyContent: 'center' }}
+                    style={{ 
+                      width: '100%', padding: '10px', borderRadius: '8px', background: '#4f46e5', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s'
+                    }}
+                    onMouseOver={(e) => e.target.style.background = '#4338ca'}
+                    onMouseOut={(e) => e.target.style.background = '#4f46e5'}
                   >
-                    Upgrade / Select
+                    Select Plan
                   </button>
                 )}
               </div>
@@ -242,25 +275,25 @@ export default function Subscription({ onSubscriptionUpdate }) {
 
       {/* Confirmation Modal */}
       {isModalOpen && selectedPlan && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div className="premium-card animate-zoom" style={{ width: '100%', maxWidth: '400px', padding: 28, background: '#0f172a', border: '1px solid #334155', borderRadius: '24px' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <CreditCard size={18} style={{ color: '#4f46e5' }} />
-              <span>Confirm Subscription Upgrade</span>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)' }}>
+          <div style={{ width: '100%', maxWidth: '420px', padding: 32, background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <CreditCard size={24} style={{ color: '#4f46e5' }} />
+              Confirm Upgrade
             </h3>
             
-            <p style={{ fontSize: '0.8rem', color: '#cbd5e1', margin: '14px 0', lineHeight: 1.5 }}>
-              You are upgrading to the <strong style={{ color: '#fff' }}>{selectedPlan.name}</strong>. You will be billed <strong style={{ color: '#fff' }}>{selectedPlan.price}/month</strong> starting today.
+            <p style={{ fontSize: '0.9rem', color: '#475569', margin: '0 0 20px 0', lineHeight: 1.6 }}>
+              You are upgrading to the <strong style={{ color: '#0f172a' }}>{selectedPlan.name}</strong>. You will be billed <strong style={{ color: '#0f172a' }}>{formatPrice(selectedPlan.price)}/month</strong>.
             </p>
 
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: 14, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8', marginBottom: 4 }}>
-                <span>Employee Limit increases to:</span>
-                <strong style={{ color: '#fff' }}>{selectedPlan.employees}</strong>
+            <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#64748b', marginBottom: 8 }}>
+                <span>Employee Limit:</span>
+                <strong style={{ color: '#0f172a' }}>{selectedPlan.employeeLimit}</strong>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8' }}>
-                <span>Storage Limit increases to:</span>
-                <strong style={{ color: '#fff' }}>{selectedPlan.storage} GB</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#64748b' }}>
+                <span>Storage Limit:</span>
+                <strong style={{ color: '#0f172a' }}>{selectedPlan.storageLimit} GB</strong>
               </div>
             </div>
 
@@ -268,16 +301,16 @@ export default function Subscription({ onSubscriptionUpdate }) {
               <button 
                 disabled={isProcessing}
                 onClick={() => setIsModalOpen(false)} 
-                className="premium-btn premium-btn-secondary"
+                style={{ padding: '10px 16px', borderRadius: '8px', background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
               >
                 Cancel
               </button>
               <button 
                 disabled={isProcessing}
                 onClick={handleConfirmUpgrade} 
-                className="premium-btn premium-btn-primary"
+                style={{ padding: '10px 20px', borderRadius: '8px', background: '#4f46e5', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
               >
-                {isProcessing ? 'Processing Payment...' : 'Confirm & Pay'}
+                {isProcessing ? 'Processing...' : 'Confirm & Pay'}
               </button>
             </div>
           </div>
