@@ -10,13 +10,21 @@ import { downloadPaymentSlip } from '../../../utils/PaymentSlip';
 
 export const PaymentsTab: React.FC = () => {
   const { payments, setPayments, addToast, addLog, formatAmount } = useDashboard();
-  const [gatewayToggles, setGatewayToggles] = useState({
-    stripe: true,
-    razorpay: true,
-    paypal: true,
-    credit_card: true,
-    upi: true,
-    bank_transfer: false,
+  const [gatewayToggles, setGatewayToggles] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('superowner_gateway_toggles');
+      if (saved) {
+        try { return JSON.parse(saved); } catch(e) {}
+      }
+    }
+    return {
+      stripe: true,
+      razorpay: true,
+      paypal: true,
+      credit_card: true,
+      upi: true,
+      bank_transfer: false,
+    };
   });
 
   const handleRefund = async (id: string, invoiceNo: string, amount: number, companyName: string) => {
@@ -47,6 +55,9 @@ export const PaymentsTab: React.FC = () => {
   const toggleGateway = (gateway: keyof typeof gatewayToggles) => {
     setGatewayToggles(prev => {
       const updated = { ...prev, [gateway]: !prev[gateway] };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('superowner_gateway_toggles', JSON.stringify(updated));
+      }
       addToast(`${gateway.toUpperCase().replace('_', ' ')} Gateway ${updated[gateway] ? 'Enabled' : 'Disabled'}`, 'info');
       addLog('Gateway Configuration Changed', `Payment gateway routing updated.`, 'settings');
       return updated;
