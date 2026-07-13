@@ -12,6 +12,8 @@ const initialLeaveBalances = [
 const initialRequests = [
   { id: 1, name: 'Alice Smith', type: 'Annual Leave', range: 'July 10 - July 15', days: 5, reason: 'Family vacation', status: 'Pending' },
   { id: 2, name: 'Bob Johnson', type: 'Sick Leave', range: 'July 05 - July 06', days: 2, reason: 'Dental surgery', status: 'Pending' },
+];
+
 const initialHolidays = [];
 const initialLeavePolicies = [];
 
