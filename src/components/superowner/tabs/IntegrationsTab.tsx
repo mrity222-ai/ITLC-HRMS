@@ -5,41 +5,63 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 
-interface Webhook {
+import { api } from '../../../services/api';
+
+export interface Webhook {
   id: string;
   url: string;
   events: string[];
   status: 'active' | 'inactive';
 }
 
+export interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  connected: boolean;
+}
+
 export const IntegrationsTab: React.FC = () => {
   const { addToast, addLog } = useDashboard();
   
-  const [integrations, setIntegrations] = useState([
-    { id: 'google', name: 'Google Workspace', desc: 'Sync employee directory, calendars & logins', icon: Globe, connected: true },
-    { id: 'm365', name: 'Microsoft 365', desc: 'Sync active directory logs & corporate calendars', icon: Calendar, connected: false },
-    { id: 'slack', name: 'Slack Bot', desc: 'Dispatch check-in logs & alerts to corporate channels', icon: MessageSquare, connected: true },
-    { id: 'zoom', name: 'Zoom API', desc: 'Schedule video interviews in recruitment flows', icon: Video, connected: false },
-    { id: 'teams', name: 'Microsoft Teams', desc: 'Integrate team alerts & calendars', icon: Video, connected: false },
-    { id: 'whatsapp', name: 'WhatsApp Enterprise', desc: 'Broadcast payslips & attendance notices directly', icon: MessageSquare, connected: true },
-  ]);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [webhooks, setWebhooks] = useState<Webhook[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [ints, whs] = await Promise.all([
+          api.getIntegrations(),
+          api.getWebhooks()
+        ]);
+        setIntegrations(ints || []);
+        setWebhooks(whs || []);
+      } catch (e) {
+        addToast('Failed to load integrations', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [addToast]);
 
-  // Webhooks
-  const [webhooks, setWebhooks] = useState<Webhook[]>([
-    { id: 'wh_1', url: 'https://api.acme.com/webhooks/hrms', events: ['employee.created', 'payment.succeeded'], status: 'active' }
-  ]);
   const [newWhUrl, setNewWhUrl] = useState('');
 
   // API Tokens
   const [apiKey, setApiKey] = useState('sk_live_placeholder_key_xxxx_xxxx');
   const [showKey, setShowKey] = useState(false);
 
-  const toggleIntegration = (id: string, name: string, current: boolean) => {
-    setIntegrations(prev => prev.map(item => item.id === id ? { ...item, connected: !current } : item));
-    const action = !current ? 'Connected' : 'Disconnected';
-    addToast(`${name} ${action}`, !current ? 'success' : 'warning');
-    addLog('Integration Modified', `Third-party integration "${name}" status changed to ${action}.`, 'settings');
+  const toggleIntegration = async (id: string, name: string, current: boolean) => {
+    try {
+      await api.updateIntegration(id, { connected: !current });
+      setIntegrations(prev => prev.map(item => item.id === id ? { ...item, connected: !current } : item));
+      const action = !current ? 'Connected' : 'Disconnected';
+      addToast(`${name} ${action}`, !current ? 'success' : 'warning');
+      addLog('Integration Modified', `Third-party integration "${name}" status changed to ${action}.`, 'settings');
+    } catch (e) {
+      addToast(`Failed to update ${name}`, 'error');
+    }
   };
 
   const handleGenerateKey = () => {
@@ -49,28 +71,38 @@ export const IntegrationsTab: React.FC = () => {
     addLog('API Key Rotated', 'Super Owner rotated platform system access API token.', 'security');
   };
 
-  const handleAddWebhook = (e: React.FormEvent) => {
+  const handleAddWebhook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newWhUrl.trim()) return;
 
-    const newWh: Webhook = {
-      id: `wh_${Math.random().toString(36).substring(2, 9)}`,
-      url: newWhUrl,
-      events: ['employee.created', 'attendance.clocked'],
-      status: 'active'
-    };
-
-    setWebhooks(prev => [...prev, newWh]);
-    setNewWhUrl('');
-    addToast('Webhook endpoint added successfully', 'success');
-    addLog('Webhook Created', `Registered new webhook callback receiver: ${newWhUrl}`, 'settings');
+    try {
+      const newWhData = {
+        id: `wh_${Math.random().toString(36).substring(2, 9)}`,
+        url: newWhUrl,
+        events: ['employee.created', 'attendance.clocked'],
+        status: 'active'
+      };
+      
+      await api.createWebhook(newWhData);
+      setWebhooks(prev => [...prev, newWhData as Webhook]);
+      setNewWhUrl('');
+      addToast('Webhook endpoint added successfully', 'success');
+      addLog('Webhook Created', `Registered new webhook callback receiver: ${newWhUrl}`, 'settings');
+    } catch (e) {
+      addToast('Failed to add webhook', 'error');
+    }
   };
 
-  const handleDeleteWebhook = (id: string, url: string) => {
+  const handleDeleteWebhook = async (id: string, url: string) => {
     if (confirm(`Remove webhook endpoint: ${url}?`)) {
-      setWebhooks(prev => prev.filter(wh => wh.id !== id));
-      addToast('Webhook endpoint removed', 'warning');
-      addLog('Webhook Deleted', `Removed webhook callback receiver: ${url}`, 'settings');
+      try {
+        await api.deleteWebhook(id);
+        setWebhooks(prev => prev.filter(wh => wh.id !== id));
+        addToast('Webhook endpoint removed', 'warning');
+        addLog('Webhook Deleted', `Removed webhook callback receiver: ${url}`, 'settings');
+      } catch (e) {
+        addToast('Failed to delete webhook', 'error');
+      }
     }
   };
 
@@ -92,11 +124,11 @@ export const IntegrationsTab: React.FC = () => {
           <div key={item.id} className="glass-card p-5 rounded-2xl flex flex-col justify-between hover:border-indigo-500/20">
             <div className="flex gap-4">
               <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-300 shrink-0">
-                <item.icon className="h-5 w-5 text-indigo-400" />
+                <Globe className="h-5 w-5 text-indigo-400" />
               </div>
               <div className="space-y-1">
                 <span className="font-semibold text-white text-sm block">{item.name}</span>
-                <p className="text-[10px] text-slate-400 leading-normal">{item.desc}</p>
+                <p className="text-[10px] text-slate-400 leading-normal">{item.description}</p>
               </div>
             </div>
 

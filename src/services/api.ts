@@ -208,6 +208,48 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getIntegrations() {
+    const res = await fetch(`${API_URL}/superowner/integrations?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async updateIntegration(id: string, data: any) {
+    const res = await fetch(`${API_URL}/superowner/integrations/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async getWebhooks() {
+    const res = await fetch(`${API_URL}/superowner/webhooks?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createWebhook(data: any) {
+    const res = await fetch(`${API_URL}/superowner/webhooks`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async deleteWebhook(id: string) {
+    const res = await fetch(`${API_URL}/superowner/webhooks/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerTickets() {
     const res = await fetch(`${API_URL}/superowner/tickets`, {
       method: 'GET',

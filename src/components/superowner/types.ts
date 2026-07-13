@@ -69,6 +69,20 @@ export interface Coupon {
   status: 'active' | 'inactive';
 }
 
+export interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  connected: boolean;
+}
+
+export interface Webhook {
+  id: string;
+  url: string;
+  events: string[];
+  status: 'active' | 'inactive';
+}
+
 export interface TicketMessage {
   id: string;
   senderName: string;
@@ -105,6 +119,8 @@ export const SubscriptionPlan = {};
 export const Payment = {};
 export const User = {};
 export const Coupon = {};
+export const Integration = {};
+export const Webhook = {};
 export const TicketMessage = {};
 export const SupportTicket = {};
 export const ActivityLog = {};

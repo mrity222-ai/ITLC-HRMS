@@ -573,4 +573,70 @@ router.delete('/coupons/:id', auth(['Super Owner']), async (req, res) => {
   }
 });
 
+const Integration = require('../models/Integration');
+const Webhook = require('../models/Webhook');
+
+// Default initial integrations for seed
+const defaultIntegrations = [
+  { id: 'google', name: 'Google Workspace', description: 'Sync employee directory, calendars & logins', connected: true },
+  { id: 'm365', name: 'Microsoft 365', description: 'Sync active directory logs & corporate calendars', connected: false },
+  { id: 'slack', name: 'Slack Bot', description: 'Dispatch check-in logs & alerts to corporate channels', connected: true },
+  { id: 'zoom', name: 'Zoom API', description: 'Schedule video interviews in recruitment flows', connected: false },
+  { id: 'teams', name: 'Microsoft Teams', description: 'Integrate team alerts & calendars', connected: false },
+  { id: 'whatsapp', name: 'WhatsApp Enterprise', description: 'Broadcast payslips & attendance notices directly', connected: true },
+];
+
+router.get('/integrations', auth(['Super Owner']), async (req, res) => {
+  try {
+    let integrations = await Integration.findAll();
+    if (integrations.length === 0) {
+      await Integration.bulkCreate(defaultIntegrations);
+      integrations = await Integration.findAll();
+    }
+    res.json(integrations);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/integrations/:id', auth(['Super Owner']), async (req, res) => {
+  try {
+    const integration = await Integration.findByPk(req.params.id);
+    if (!integration) return res.status(404).json({ error: 'Integration not found' });
+    await integration.update(req.body);
+    res.json(integration);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/webhooks', auth(['Super Owner']), async (req, res) => {
+  try {
+    const webhooks = await Webhook.findAll();
+    res.json(webhooks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/webhooks', auth(['Super Owner']), async (req, res) => {
+  try {
+    const newWebhook = await Webhook.create(req.body);
+    res.json(newWebhook);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/webhooks/:id', auth(['Super Owner']), async (req, res) => {
+  try {
+    const webhook = await Webhook.findByPk(req.params.id);
+    if (!webhook) return res.status(404).json({ error: 'Webhook not found' });
+    await webhook.destroy();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
