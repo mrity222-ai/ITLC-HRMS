@@ -4,6 +4,7 @@ import {
   Plus, Edit2, Trash2, Check, X, Ticket, Calendar, 
   Users, ToggleLeft, ToggleRight, Info, AlertTriangle, ShieldAlert
 } from 'lucide-react';
+import { api } from '../../../services/api';
 import { useDashboard } from '../context/DashboardContext';
 import { Coupon } from '../types';
 
@@ -18,7 +19,7 @@ export const CouponsTab: React.FC = () => {
   // Form states
   const [formData, setFormData] = useState({
     code: '',
-    discountType: 'percentage' as 'percentage' | 'flat',
+    discountType: 'percentage' as 'percentage' | 'fixed',
     value: 10,
     expiryDate: '',
     usageLimit: 100,
@@ -59,57 +60,94 @@ export const CouponsTab: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const executeDelete = () => {
+  const executeDelete = async () => {
     if (!deleteConfirmCoupon) return;
     const { id, code } = deleteConfirmCoupon;
-    setCoupons(prev => prev.filter(c => c.id !== id));
-    addToast(`Promo code "${code}" deleted`, 'success');
-    addLog('Coupon Deleted', `Promo discount code "${code}" was deleted from registry.`, 'settings');
-    setDeleteConfirmCoupon(null);
+    try {
+      await api.deleteCoupon(id);
+      setCoupons(prev => prev.filter(c => c.id !== id));
+      addToast(`Promo code "${code}" deleted`, 'success');
+      addLog('Coupon Deleted', `Promo discount code "${code}" was deleted from registry.`, 'settings');
+    } catch (err) {
+      addToast('Failed to delete coupon', 'error');
+    } finally {
+      setDeleteConfirmCoupon(null);
+    }
   };
 
-  const handleToggleStatus = (id: string, code: string, currentStatus: 'active' | 'inactive') => {
+  const handleToggleStatus = async (id: string, code: string, currentStatus: 'active' | 'inactive') => {
     const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    setCoupons(prev => prev.map(c => c.id === id ? { ...c, status: nextStatus } : c));
-    addToast(`Promo code "${code}" set to ${nextStatus}`, nextStatus === 'active' ? 'success' : 'warning');
-    addLog('Coupon Status Changed', `Coupon "${code}" status updated to ${nextStatus}.`, 'settings');
+    try {
+      await api.updateCoupon(id, { status: nextStatus });
+      setCoupons(prev => prev.map(c => c.id === id ? { ...c, status: nextStatus } : c));
+      addToast(`Promo code "${code}" set to ${nextStatus}`, nextStatus === 'active' ? 'success' : 'warning');
+      addLog('Coupon Status Changed', `Coupon "${code}" status updated to ${nextStatus}.`, 'settings');
+    } catch (err) {
+      addToast('Failed to update coupon status', 'error');
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const uppercaseCode = formData.code.toUpperCase().replace(/\s+/g, '');
     
-    if (selectedCoupon) {
-      // Edit
-      setCoupons(prev => prev.map(c => c.id === selectedCoupon.id ? {
-        ...c,
-        code: uppercaseCode,
-        discountType: formData.discountType,
-        value: Number(formData.value),
-        expiryDate: formData.expiryDate,
-        usageLimit: Number(formData.usageLimit),
-        status: formData.status
-      } : c));
-      addToast(`Coupon "${uppercaseCode}" updated`, 'success');
-      addLog('Coupon Updated', `Promo code details for "${uppercaseCode}" modified.`, 'settings');
-    } else {
-      // Create
-      const newCoupon: Coupon = {
-        id: `cp_${Math.random().toString(36).substring(2, 9)}`,
-        code: uppercaseCode,
-        discountType: formData.discountType,
-        value: Number(formData.value),
-        expiryDate: formData.expiryDate,
-        usageLimit: Number(formData.usageLimit),
-        usageCount: 0,
-        status: formData.status
-      };
-      setCoupons(prev => [...prev, newCoupon]);
-      addToast(`Coupon "${uppercaseCode}" created`, 'success');
-      addLog('Coupon Created', `New promo code "${uppercaseCode}" added.`, 'settings');
+    try {
+      if (selectedCoupon) {
+        // Edit
+        const updatedData = {
+          code: uppercaseCode,
+          discountType: formData.discountType,
+          discountValue: Number(formData.value),
+          validUntil: formData.expiryDate,
+          usageLimit: Number(formData.usageLimit),
+          status: formData.status
+        };
+        await api.updateCoupon(selectedCoupon.id, updatedData);
+        setCoupons(prev => prev.map(c => c.id === selectedCoupon.id ? {
+          ...c,
+          code: uppercaseCode,
+          discountType: formData.discountType,
+          value: Number(formData.value),
+          expiryDate: formData.expiryDate,
+          usageLimit: Number(formData.usageLimit),
+          status: formData.status
+        } : c));
+        addToast(`Coupon "${uppercaseCode}" updated`, 'success');
+        addLog('Coupon Updated', `Promo code details for "${uppercaseCode}" modified.`, 'settings');
+      } else {
+        // Create
+        const id = `cp_${Math.random().toString(36).substring(2, 9)}`;
+        const newData = {
+          id,
+          code: uppercaseCode,
+          discountType: formData.discountType,
+          discountValue: Number(formData.value),
+          validUntil: formData.expiryDate,
+          usageLimit: Number(formData.usageLimit),
+          usedCount: 0,
+          status: formData.status
+        };
+        await api.createCoupon(newData);
+        
+        const newCoupon: Coupon = {
+          id,
+          code: uppercaseCode,
+          discountType: formData.discountType,
+          value: Number(formData.value),
+          expiryDate: formData.expiryDate,
+          usageLimit: Number(formData.usageLimit),
+          usageCount: 0,
+          status: formData.status
+        };
+        setCoupons(prev => [...prev, newCoupon]);
+        addToast(`Coupon "${uppercaseCode}" created`, 'success');
+        addLog('Coupon Created', `New promo code "${uppercaseCode}" added.`, 'settings');
+      }
+      setIsFormDirty(false);
+      setIsModalOpen(false);
+    } catch (err: any) {
+      addToast(err.message || 'Failed to save coupon', 'error');
     }
-    setIsFormDirty(false);
-    setIsModalOpen(false);
   };
 
   return (
@@ -272,11 +310,11 @@ export const CouponsTab: React.FC = () => {
                       <label className="text-xs text-slate-400 font-medium">Voucher Type</label>
                       <select
                         value={formData.discountType}
-                        onChange={(e) => updateForm({ discountType: e.target.value as 'percentage' | 'flat' })}
+                        onChange={(e) => updateForm({ discountType: e.target.value as 'percentage' | 'fixed' })}
                         className="glass-input w-full px-3.5 py-2 rounded-xl text-sm text-slate-300"
                       >
                         <option value="percentage">Percentage (%)</option>
-                        <option value="flat">Flat Amount ($)</option>
+                        <option value="fixed">Flat Amount ($)</option>
                       </select>
                     </div>
 

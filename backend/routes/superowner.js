@@ -531,4 +531,46 @@ router.get('/analytics', auth(['Super Owner']), async (req, res) => {
   }
 });
 
+const Coupon = require('../models/Coupon');
+
+router.get('/coupons', auth(['Super Owner']), async (req, res) => {
+  try {
+    const coupons = await Coupon.findAll();
+    res.json(coupons);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/coupons', auth(['Super Owner']), async (req, res) => {
+  try {
+    const newCoupon = await Coupon.create(req.body);
+    res.json(newCoupon);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/coupons/:id', auth(['Super Owner']), async (req, res) => {
+  try {
+    const coupon = await Coupon.findByPk(req.params.id);
+    if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+    await coupon.update(req.body);
+    res.json(coupon);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/coupons/:id', auth(['Super Owner']), async (req, res) => {
+  try {
+    const coupon = await Coupon.findByPk(req.params.id);
+    if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+    await coupon.destroy();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

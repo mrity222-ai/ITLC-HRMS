@@ -174,6 +174,40 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getCoupons() {
+    const res = await fetch(`${API_URL}/superowner/coupons?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createCoupon(data: any) {
+    const res = await fetch(`${API_URL}/superowner/coupons`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async updateCoupon(id: string, data: any) {
+    const res = await fetch(`${API_URL}/superowner/coupons/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async deleteCoupon(id: string) {
+    const res = await fetch(`${API_URL}/superowner/coupons/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerTickets() {
     const res = await fetch(`${API_URL}/superowner/tickets`, {
       method: 'GET',

@@ -137,6 +137,25 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
 
         try {
+          const fetchedCoupons = await api.getCoupons();
+          if (fetchedCoupons && Array.isArray(fetchedCoupons)) {
+            const mappedCoupons = fetchedCoupons.map((c: any) => ({
+              id: c.id,
+              code: c.code,
+              discountType: c.discountType,
+              value: c.discountValue || 0,
+              expiryDate: c.validUntil || '',
+              usageLimit: c.usageLimit || 0,
+              usageCount: c.usedCount || 0,
+              status: c.status || 'inactive'
+            }));
+            setCoupons(mappedCoupons);
+          }
+        } catch (e) {
+          console.error("Failed to load coupons", e);
+        }
+
+        try {
           const analytics = await api.getSuperOwnerAnalytics();
           setAnalyticsData(analytics);
         } catch (e) {

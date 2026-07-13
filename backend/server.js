@@ -15,6 +15,7 @@ require('./models/PerformanceReview');
 require('./models/Meeting');
 require('./models/Asset');
 require('./models/Announcement');
+require('./models/Coupon');
 require('./models/CorrectionRequest');
 require('./models/Department');
 require('./models/Designation');

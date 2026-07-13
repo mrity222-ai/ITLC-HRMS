@@ -61,7 +61,7 @@ export interface User {
 export interface Coupon {
   id: string;
   code: string;
-  discountType: 'percentage' | 'flat';
+  discountType: 'percentage' | 'fixed';
   value: number; // percentage or flat amount
   expiryDate: string;
   usageLimit: number;
