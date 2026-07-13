@@ -7,9 +7,11 @@
     "dev": "vite --host",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mobile:sync": "npm run build && npx cap sync android"
   },
   "dependencies": {
+    "@capacitor/core": "^8.4.1",
     "clsx": "^2.1.1",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
@@ -21,6 +23,8 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
     "@tailwindcss/vite": "^4.3.1",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
