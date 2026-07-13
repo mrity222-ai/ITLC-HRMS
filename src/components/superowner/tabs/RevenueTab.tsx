@@ -11,17 +11,12 @@ import {
 } from 'recharts';
 
 export const RevenueTab: React.FC = () => {
-  const { payments, companies, addToast, addLog, formatAmount } = useDashboard();
+  const { payments, companies, addToast, addLog, formatAmount, plans } = useDashboard();
 
   // Calculated metrics
   const stats = useMemo(() => {
-    const planPrices: Record<string, number> = {
-      free_trial: 0,
-      starter: 49,
-      professional: 149,
-      business: 499,
-      enterprise: 999,
-    };
+    const planPrices: Record<string, number> = {};
+    plans.forEach(p => planPrices[p.id] = p.price);
 
     const activeCompanies = companies.filter(c => c.status === 'active');
     

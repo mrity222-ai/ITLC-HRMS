@@ -67,13 +67,8 @@ export const OverviewTab: React.FC = () => {
     const totalEmployees = companies.reduce((acc, c) => acc + c.employeesCount, 0);
     const hrUsersCount = users.filter(u => u.role === 'HR').length + (activeCompanies * 2); // mockup hr users
 
-    const planPrices: Record<string, number> = {
-      free_trial: 0,
-      starter: 49,
-      professional: 149,
-      business: 499,
-      enterprise: 999,
-    };
+    const planPrices: Record<string, number> = {};
+    plans.forEach(p => planPrices[p.id] = p.price);
 
     // Calculate monthly revenue from active companies
     const monthlyRev = companies
