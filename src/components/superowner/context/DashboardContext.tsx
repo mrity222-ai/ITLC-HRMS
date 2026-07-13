@@ -161,6 +161,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         } catch (e) {
           console.error("Failed to load analytics", e);
         }
+        try {
+          const fetchedLogs = await api.getLogs();
+          if (fetchedLogs && Array.isArray(fetchedLogs)) {
+            setLogs(fetchedLogs);
+          }
+        } catch (e) {
+          console.error("Failed to load logs", e);
+        }
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       }
@@ -248,15 +256,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     category: ActivityLog['category'],
     actor = 'Priya Sharma'
   ) => {
-    const newLog: ActivityLog = {
+    const newLogData = {
       id: `log_${Math.random().toString(36).substring(2, 9)}`,
       action,
       details,
-      timestamp: new Date().toISOString(),
       category,
       actorName: actor
     };
-    setLogs((prev) => [newLog, ...prev]);
+    
+    // Optimistic update
+    setLogs((prev) => [{ ...newLogData, timestamp: new Date().toISOString() } as ActivityLog, ...prev]);
+    
+    // Background sync to backend
+    api.createLog(newLogData).catch(e => console.error("Failed to sync log", e));
   };
 
   // Keyboard shortcut Ctrl+K for command palette

@@ -93,26 +93,48 @@ export const SecurityTab: React.FC = () => {
   const [sessionPinning, setSessionPinning] = useState(false);
 
   // IP Whitelist
-  const [ipList, setIpList] = useState<string[]>(['192.168.1.45', '10.0.0.12']);
+  const [ipList, setIpList] = useState<string[]>([]);
   const [newIp, setNewIp] = useState('');
 
   // Active Sessions
-  const [sessions, setSessions] = useState<ActiveSession[]>([
-    { id: 'sess_1', device: 'MacBook Pro / Chrome 124', location: 'San Francisco, US', ip: '192.168.1.45', lastActive: 'Active Now', current: true },
-    { id: 'sess_2', device: 'iPhone 15 Pro / Safari', location: 'San Francisco, US', ip: '192.168.1.92', lastActive: '2 hours ago', current: false },
-    { id: 'sess_3', device: 'Windows 11 / Firefox Developer', location: 'London, UK', ip: '82.165.23.109', lastActive: 'Yesterday', current: false }
-  ]);
+  const [sessions, setSessions] = useState<ActiveSession[]>([]);
 
-  const toggleTwoFactor = () => {
-    setTwoFactor(prev => {
-      const next = !prev;
+  // Load data on mount
+  React.useEffect(() => {
+    const fetchSecurityData = async () => {
+      try {
+        const [settings, activeSessions] = await Promise.all([
+          api.getSecuritySettings(),
+          api.getSessions()
+        ]);
+        if (settings) {
+          setTwoFactor(settings.twoFactor);
+          setSessionPinning(settings.sessionPinning);
+          setIpList(settings.ipList || []);
+        }
+        if (activeSessions) {
+          setSessions(activeSessions);
+        }
+      } catch (err) {
+        console.error("Failed to load security settings", err);
+      }
+    };
+    fetchSecurityData();
+  }, []);
+
+  const toggleTwoFactor = async () => {
+    try {
+      const next = !twoFactor;
+      await api.updateSecuritySettings({ twoFactor: next });
+      setTwoFactor(next);
       addToast(`Two-Factor Authentication ${next ? 'Activated' : 'Deactivated'}`, next ? 'success' : 'warning');
       addLog('Security Configuration Changed', `Two-Factor Authentication policy set to ${next ? 'ENABLED' : 'DISABLED'}.`, 'security');
-      return next;
-    });
+    } catch (e) {
+      addToast('Failed to update 2FA setting', 'error');
+    }
   };
 
-  const handleAddIp = (e: React.FormEvent) => {
+  const handleAddIp = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanIp = newIp.trim();
     if (!cleanIp) return;
@@ -129,25 +151,42 @@ export const SecurityTab: React.FC = () => {
       return;
     }
 
-    setIpList(prev => [...prev, cleanIp]);
-    setNewIp('');
-    addToast(`IP ${cleanIp} added to whitelist`, 'success');
-    addLog('IP Whitelisted', `Added IP Address "${cleanIp}" to white-list database security settings.`, 'security');
-  };
-
-  const handleDeleteIp = (ipAddress: string) => {
-    if (confirm(`Remove IP Whitelist block: ${ipAddress}?`)) {
-      setIpList(prev => prev.filter(ip => ip !== ipAddress));
-      addToast(`IP ${ipAddress} removed from whitelist`, 'warning');
-      addLog('IP Removed', `Removed IP Address "${ipAddress}" from white-list settings.`, 'security');
+    try {
+      const newList = [...ipList, cleanIp];
+      await api.updateSecuritySettings({ ipList: newList });
+      setIpList(newList);
+      setNewIp('');
+      addToast(`IP ${cleanIp} added to whitelist`, 'success');
+      addLog('IP Whitelisted', `Added IP Address "${cleanIp}" to white-list database security settings.`, 'security');
+    } catch (e) {
+      addToast('Failed to update IP whitelist', 'error');
     }
   };
 
-  const handleTerminateSession = (id: string, device: string) => {
+  const handleDeleteIp = async (ipAddress: string) => {
+    if (confirm(`Remove IP Whitelist block: ${ipAddress}?`)) {
+      try {
+        const newList = ipList.filter(ip => ip !== ipAddress);
+        await api.updateSecuritySettings({ ipList: newList });
+        setIpList(newList);
+        addToast(`IP ${ipAddress} removed from whitelist`, 'warning');
+        addLog('IP Removed', `Removed IP Address "${ipAddress}" from white-list settings.`, 'security');
+      } catch (e) {
+        addToast('Failed to delete IP', 'error');
+      }
+    }
+  };
+
+  const handleTerminateSession = async (id: string, device: string) => {
     if (confirm(`Terminate user session on ${device}?`)) {
-      setSessions(prev => prev.filter(s => s.id !== id));
-      addToast(`Session terminated on ${device}`, 'success');
-      addLog('Session Terminated', `Active login session terminated on ${device}.`, 'security');
+      try {
+        await api.deleteSession(id);
+        setSessions(prev => prev.filter(s => s.id !== id));
+        addToast(`Session terminated on ${device}`, 'success');
+        addLog('Session Terminated', `Active login session terminated on ${device}.`, 'security');
+      } catch (e) {
+        addToast('Failed to terminate session', 'error');
+      }
     }
   };
 
@@ -196,9 +235,15 @@ export const SecurityTab: React.FC = () => {
 
               {/* Session IP Pinning */}
               <div 
-                onClick={() => {
-                  setSessionPinning(!sessionPinning);
-                  addToast(`Session Pinning ${!sessionPinning ? 'Enabled' : 'Disabled'}`, !sessionPinning ? 'success' : 'warning');
+                onClick={async () => {
+                  try {
+                    const next = !sessionPinning;
+                    await api.updateSecuritySettings({ sessionPinning: next });
+                    setSessionPinning(next);
+                    addToast(`Session Pinning ${next ? 'Enabled' : 'Disabled'}`, next ? 'success' : 'warning');
+                  } catch (e) {
+                    addToast('Failed to update session pinning', 'error');
+                  }
                 }}
                 className="p-4 rounded-xl border border-white/5 bg-white/2 flex justify-between items-center cursor-pointer select-none hover:bg-white/4 transition"
               >

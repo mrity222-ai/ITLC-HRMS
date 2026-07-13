@@ -250,6 +250,56 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getSecuritySettings() {
+    const res = await fetch(`${API_URL}/superowner/security?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async updateSecuritySettings(data: any) {
+    const res = await fetch(`${API_URL}/superowner/security`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async getSessions() {
+    const res = await fetch(`${API_URL}/superowner/sessions?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async deleteSession(id: string) {
+    const res = await fetch(`${API_URL}/superowner/sessions/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async getLogs() {
+    const res = await fetch(`${API_URL}/superowner/logs?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createLog(data: any) {
+    const res = await fetch(`${API_URL}/superowner/logs`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerTickets() {
     const res = await fetch(`${API_URL}/superowner/tickets`, {
       method: 'GET',

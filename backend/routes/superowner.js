@@ -639,4 +639,75 @@ router.delete('/webhooks/:id', auth(['Super Owner']), async (req, res) => {
   }
 });
 
+const SecuritySetting = require('../models/SecuritySetting');
+const ActiveSession = require('../models/ActiveSession');
+const ActivityLog = require('../models/ActivityLog');
+
+// Security Settings
+router.get('/security', auth(['Super Owner']), async (req, res) => {
+  try {
+    let settings = await SecuritySetting.findByPk('global');
+    if (!settings) {
+      settings = await SecuritySetting.create({ id: 'global', twoFactor: true, sessionPinning: false, ipList: [] });
+    }
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/security', auth(['Super Owner']), async (req, res) => {
+  try {
+    let settings = await SecuritySetting.findByPk('global');
+    if (!settings) {
+      settings = await SecuritySetting.create({ id: 'global', ...req.body });
+    } else {
+      await settings.update(req.body);
+    }
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Active Sessions
+router.get('/sessions', auth(['Super Owner']), async (req, res) => {
+  try {
+    const sessions = await ActiveSession.findAll();
+    res.json(sessions);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/sessions/:id', auth(['Super Owner']), async (req, res) => {
+  try {
+    const session = await ActiveSession.findByPk(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+    await session.destroy();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Activity Logs
+router.get('/logs', auth(['Super Owner']), async (req, res) => {
+  try {
+    const logs = await ActivityLog.findAll({ order: [['timestamp', 'DESC']] });
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/logs', auth(['Super Owner']), async (req, res) => {
+  try {
+    const newLog = await ActivityLog.create(req.body);
+    res.json(newLog);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
