@@ -11,7 +11,14 @@ const bcrypt = require('bcryptjs');
 router.get('/companies', auth(['Super Owner']), async (req, res) => {
   try {
     const companies = await Company.findAll();
-    res.json(companies);
+    const parsedCompanies = companies.map(comp => {
+      const compData = comp.toJSON();
+      if (compData.modulesEnabled && typeof compData.modulesEnabled === 'string') {
+        try { compData.modulesEnabled = JSON.parse(compData.modulesEnabled); } catch (e) {}
+      }
+      return compData;
+    });
+    res.json(parsedCompanies);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -131,7 +138,25 @@ router.put('/companies/:id', auth(['Super Owner']), async (req, res) => {
     const company = await Company.findByPk(req.params.id);
     if (!company) return res.status(404).json({ error: 'Company tenant not found' });
     
-    await company.update(req.body);
+    if (req.body.modulesEnabled !== undefined) {
+      console.log("RECEIVED modulesEnabled:", req.body.modulesEnabled);
+      let stringified = req.body.modulesEnabled;
+      if (typeof stringified === 'object') {
+        stringified = JSON.stringify(stringified);
+      }
+      company.modulesEnabled = stringified; // Force set the property
+    }
+    
+    // Also merge other body fields
+    Object.keys(req.body).forEach(key => {
+      if (key !== 'modulesEnabled') {
+        company[key] = req.body[key];
+      }
+    });
+
+    await company.save(); // Force save to database
+    console.log("SAVED company modulesEnabled:", company.modulesEnabled);
+    
     res.json(company);
   } catch (err) {
     res.status(500).json({ error: err.message });

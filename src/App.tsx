@@ -7,6 +7,7 @@ import ManagerApp from './components/manager/ManagerApp';
 import { App as SuperownerApp } from './components/superowner/SuperownerApp';
 import { DashboardProvider } from './components/superowner/context/DashboardContext';
 import { api } from './services/api';
+import Subscription from './components/admin/Subscription';
 
 export default function App() {
   const [view, setView] = useState<'login' | 'superowner-login' | 'employee' | 'admin' | 'superowner' | 'manager'>('login');
@@ -90,23 +91,22 @@ export default function App() {
 
   if (view !== 'superowner' && view !== 'superowner-login' && profile?.companyDetails?.status === 'expired') {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white font-sans p-6 text-center">
-        <div className="max-w-md space-y-6">
-          <div className="h-16 w-16 mx-auto bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center border border-rose-500/20">
-            <span className="text-2xl font-bold">!</span>
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white font-sans overflow-y-auto">
+        <div className="w-full max-w-6xl p-6 relative my-auto">
+          <div className="bg-rose-500/10 text-rose-400 p-4 rounded-xl border border-rose-500/20 mb-6 flex items-start gap-4 shadow-lg shadow-rose-900/20">
+            <div className="h-10 w-10 shrink-0 bg-rose-500/20 rounded-full flex items-center justify-center font-bold text-xl">!</div>
+            <div>
+              <h3 className="font-bold text-lg">Subscription Expired</h3>
+              <p className="text-sm opacity-80 mt-1">Your company's trial or subscription tier has expired. Please select a plan below to continue using the platform.</p>
+            </div>
+            <button onClick={handleLogout} className="ml-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold transition-all shadow-md">
+              Logout
+            </button>
           </div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-extrabold tracking-tight">Subscription Expired</h2>
-            <p className="text-sm text-slate-400">
-              Your company's trial or subscription tier has expired. Please contact your company administrator or superowner to renew the plan.
-            </p>
+          
+          <div className="bg-slate-800 rounded-2xl p-2 sm:p-6 border border-slate-700 shadow-2xl">
+             <Subscription onSubscriptionUpdate={loadProfile} /> 
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
-          >
-            Logout / Switch Account
-          </button>
         </div>
       </div>
     );

@@ -23,6 +23,7 @@ const Company = sequelize.define('Company', {
   lat: { type: DataTypes.FLOAT, allowNull: true },
   lng: { type: DataTypes.FLOAT, allowNull: true },
   radius: { type: DataTypes.FLOAT, defaultValue: 500.0 },
+  modulesEnabled: { type: DataTypes.TEXT, allowNull: true },
   createdDate: { type: DataTypes.STRING, field: 'created_date', defaultValue: () => new Date().toISOString().split('T')[0] }
 }, {
   tableName: 'companies',

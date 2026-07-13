@@ -148,7 +148,9 @@ router.post('/login', async (req, res) => {
       try {
         const company = await Company.findByPk(user.companyId);
         if (company && company.status === 'expired') {
-          return res.status(403).json({ error: 'Your company subscription has expired. Please contact superowner to renew.' });
+          if (user.role !== 'Company Admin') {
+            return res.status(403).json({ error: 'Your company subscription has expired. You cannot login. Please contact your company administrator.' });
+          }
         }
         if (company && company.status === 'suspended') {
           return res.status(403).json({ error: 'Your company account has been suspended.' });

@@ -7,8 +7,10 @@ const Company = require('../models/Company');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const SupportTicket = require('../models/SupportTicket');
+const Department = require('../models/Department');
+const Designation = require('../models/Designation');
+const Branch = require('../models/Branch');
 const Payment = require('../models/Payment');
-
 // Get all employees of logged-in admin's company
 router.get('/employees', auth(['Company Admin', 'HR']), async (req, res) => {
   try {
@@ -273,7 +275,11 @@ router.get('/company', auth(['Company Admin']), async (req, res) => {
   try {
     const company = await Company.findByPk(req.user.companyId);
     if (!company) return res.status(404).json({ error: 'Company not found' });
-    res.json(company);
+    const compData = company.toJSON();
+    if (compData.modulesEnabled && typeof compData.modulesEnabled === 'string') {
+      try { compData.modulesEnabled = JSON.parse(compData.modulesEnabled); } catch (e) {}
+    }
+    res.json(compData);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -281,7 +287,7 @@ router.get('/company', auth(['Company Admin']), async (req, res) => {
 
 // Update Company profile
 router.put('/company', auth(['Company Admin']), async (req, res) => {
-  const { name, logo, phone, address, gst, lat, lng, radius } = req.body;
+  const { name, logo, phone, address, gst, lat, lng, radius, currency } = req.body;
   try {
     const company = await Company.findByPk(req.user.companyId);
     if (!company) return res.status(404).json({ error: 'Company not found' });
@@ -294,12 +300,109 @@ router.put('/company', auth(['Company Admin']), async (req, res) => {
     if (lat !== undefined) company.lat = lat;
     if (lng !== undefined) company.lng = lng;
     if (radius !== undefined) company.radius = radius;
+    if (currency !== undefined) company.currency = currency;
 
     await company.save();
     res.json(company);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ----------------------------------------------------
+// DEPARTMENTS
+// ----------------------------------------------------
+router.get('/departments', auth(['Company Admin']), async (req, res) => {
+  try {
+    const deps = await Department.findAll({ where: { companyId: req.user.companyId } });
+    res.json(deps);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.post('/departments', auth(['Company Admin']), async (req, res) => {
+  try {
+    const dep = await Department.create({ ...req.body, companyId: req.user.companyId });
+    res.json(dep);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.put('/departments/:id', auth(['Company Admin']), async (req, res) => {
+  try {
+    const dep = await Department.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!dep) return res.status(404).json({ error: 'Not found' });
+    await dep.update(req.body);
+    res.json(dep);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.delete('/departments/:id', auth(['Company Admin']), async (req, res) => {
+  try {
+    const dep = await Department.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!dep) return res.status(404).json({ error: 'Not found' });
+    await dep.destroy();
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ----------------------------------------------------
+// DESIGNATIONS
+// ----------------------------------------------------
+router.get('/designations', auth(['Company Admin']), async (req, res) => {
+  try {
+    const desgs = await Designation.findAll({ where: { companyId: req.user.companyId } });
+    res.json(desgs);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.post('/designations', auth(['Company Admin']), async (req, res) => {
+  try {
+    const desg = await Designation.create({ ...req.body, companyId: req.user.companyId });
+    res.json(desg);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.put('/designations/:id', auth(['Company Admin']), async (req, res) => {
+  try {
+    const desg = await Designation.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!desg) return res.status(404).json({ error: 'Not found' });
+    await desg.update(req.body);
+    res.json(desg);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.delete('/designations/:id', auth(['Company Admin']), async (req, res) => {
+  try {
+    const desg = await Designation.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!desg) return res.status(404).json({ error: 'Not found' });
+    await desg.destroy();
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ----------------------------------------------------
+// BRANCHES
+// ----------------------------------------------------
+router.get('/branches', auth(['Company Admin']), async (req, res) => {
+  try {
+    const branches = await Branch.findAll({ where: { companyId: req.user.companyId } });
+    res.json(branches);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.post('/branches', auth(['Company Admin']), async (req, res) => {
+  try {
+    const branch = await Branch.create({ ...req.body, companyId: req.user.companyId });
+    res.json(branch);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.put('/branches/:id', auth(['Company Admin']), async (req, res) => {
+  try {
+    const branch = await Branch.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!branch) return res.status(404).json({ error: 'Not found' });
+    await branch.update(req.body);
+    res.json(branch);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.delete('/branches/:id', auth(['Company Admin']), async (req, res) => {
+  try {
+    const branch = await Branch.findOne({ where: { id: req.params.id, companyId: req.user.companyId } });
+    if (!branch) return res.status(404).json({ error: 'Not found' });
+    await branch.destroy();
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;

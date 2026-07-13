@@ -10,7 +10,7 @@ const PLANS = [
   { id: 'enterprise', name: 'Enterprise Suite', price: '$499', employees: 500, storage: 100, desc: 'Complete enterprise-grade security and capabilities.' },
 ];
 
-export default function Subscription() {
+export default function Subscription({ onSubscriptionUpdate }) {
   const [profile, setProfile] = useState(null);
   const [employeeCount, setEmployeeCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +53,10 @@ export default function Subscription() {
       
       if (result.payment) {
         downloadPaymentSlip(result.payment, result.company);
+      }
+      
+      if (onSubscriptionUpdate) {
+        onSubscriptionUpdate();
       }
     } catch (err) {
       alert(err.message || 'Upgrade failed.');
