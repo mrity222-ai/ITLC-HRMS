@@ -1020,6 +1020,42 @@ export const api = {
     return handleResponse(res);
   },
 
+  async createPaypalPayment(data: any) {
+    const res = await fetch(`${API_URL}/payment/create-paypal-payment`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async processDirectCard(data: any) {
+    const res = await fetch(`${API_URL}/payment/process-direct-card`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async verifyUpiPayment(data: any) {
+    const res = await fetch(`${API_URL}/payment/verify-upi-payment`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async submitBankTransfer(data: any) {
+    const res = await fetch(`${API_URL}/payment/submit-bank-transfer`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerUsers() {
     const res = await fetch(`${API_URL}/superowner/users?t=${new Date().getTime()}`, {
       method: 'GET',

@@ -25,9 +25,15 @@ export default function Subscription({ onSubscriptionUpdate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currency, setCurrency] = useState(() => localStorage.getItem('admin_subscription_currency') || 'USD');
-  const [gateway, setGateway] = useState('stripe'); // 'stripe' or 'razorpay'
-
+  const [gateway, setGateway] = useState('stripe'); // 'stripe', 'razorpay', 'paypal', 'credit_card', 'upi', 'bank_transfer'
   const [plans, setPlans] = useState(INITIAL_PLANS);
+
+  // Direct payment form states
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [upiTxnId, setUpiTxnId] = useState('');
+  const [wireRefNo, setWireRefNo] = useState('');
 
   useEffect(() => {
     localStorage.setItem('admin_subscription_currency', currency);
@@ -160,6 +166,73 @@ export default function Subscription({ onSubscriptionUpdate }) {
         const rzp = new window.Razorpay(options);
         rzp.open();
         setIsProcessing(false);
+      } else if (gateway === 'paypal') {
+        const result = await api.createPaypalPayment({
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
+          amount: amount,
+          currency: currency
+        });
+        if (result.approvalUrl) {
+          window.location.href = result.approvalUrl;
+        }
+      } else if (gateway === 'credit_card') {
+        if (!cardNumber || !cardExpiry || !cardCvv) {
+          alert('Please enter all card details.');
+          setIsProcessing(false);
+          return;
+        }
+        const result = await api.processDirectCard({
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
+          amount: amount,
+          currency: currency,
+          cardNumber,
+          expiry: cardExpiry,
+          cvv: cardCvv
+        });
+        if (result.success) {
+          alert('Payment via Credit Card Direct successful!');
+          setIsModalOpen(false);
+          await fetchBillingInfo();
+          if (onSubscriptionUpdate) onSubscriptionUpdate();
+        }
+      } else if (gateway === 'upi') {
+        if (!upiTxnId) {
+          alert('Please enter UPI Transaction Reference ID (UTR).');
+          setIsProcessing(false);
+          return;
+        }
+        const result = await api.verifyUpiPayment({
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
+          amount: amount,
+          currency: currency,
+          upiTxnId
+        });
+        if (result.success) {
+          alert('UPI Payment Verified successfully!');
+          setIsModalOpen(false);
+          await fetchBillingInfo();
+          if (onSubscriptionUpdate) onSubscriptionUpdate();
+        }
+      } else if (gateway === 'bank_transfer') {
+        if (!wireRefNo) {
+          alert('Please enter Bank Wire Transaction Reference Number.');
+          setIsProcessing(false);
+          return;
+        }
+        const result = await api.submitBankTransfer({
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
+          amount: amount,
+          currency: currency,
+          wireRefNo
+        });
+        if (result.success) {
+          alert('Bank Transfer wire request submitted! Subscription will activate once Superowner approves it.');
+          setIsModalOpen(false);
+        }
       }
     } catch (err) {
       alert(err.message || 'Payment initiation failed.');
@@ -395,18 +468,61 @@ export default function Subscription({ onSubscriptionUpdate }) {
             {/* Gateway Selection */}
             <div style={{ marginBottom: 20 }}>
               <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: 8 }}>Select Payment Gateway</h4>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: 12, border: gateway === 'stripe' ? '2px solid #4f46e5' : '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer', background: gateway === 'stripe' ? '#e0e7ff' : '#fff' }}>
-                  <input type="radio" name="gateway" value="stripe" checked={gateway === 'stripe'} onChange={() => setGateway('stripe')} style={{ display: 'none' }} />
-                  <div style={{ width: 16, height: 16, borderRadius: '50%', border: gateway === 'stripe' ? '4px solid #4f46e5' : '1px solid #cbd5e1', background: '#fff' }}></div>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>Stripe (Cards)</span>
-                </label>
-                <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: 12, border: gateway === 'razorpay' ? '2px solid #4f46e5' : '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer', background: gateway === 'razorpay' ? '#e0e7ff' : '#fff' }}>
-                  <input type="radio" name="gateway" value="razorpay" checked={gateway === 'razorpay'} onChange={() => setGateway('razorpay')} style={{ display: 'none' }} />
-                  <div style={{ width: 16, height: 16, borderRadius: '50%', border: gateway === 'razorpay' ? '4px solid #4f46e5' : '1px solid #cbd5e1', background: '#fff' }}></div>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>Razorpay (UPI)</span>
-                </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+                {[
+                  { id: 'stripe', label: 'Stripe (Cards)' },
+                  { id: 'razorpay', label: 'Razorpay (UPI)' },
+                  { id: 'paypal', label: 'PayPal' },
+                  { id: 'credit_card', label: 'Credit Card Direct' },
+                  { id: 'upi', label: 'UPI Direct' },
+                  { id: 'bank_transfer', label: 'Bank Transfer' }
+                ].map(g => (
+                  <label key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 10, border: gateway === g.id ? '2px solid #4f46e5' : '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer', background: gateway === g.id ? '#e0e7ff' : '#fff' }}>
+                    <input type="radio" name="gateway" value={g.id} checked={gateway === g.id} onChange={() => setGateway(g.id)} style={{ display: 'none' }} />
+                    <div style={{ width: 14, height: 14, borderRadius: '50%', border: gateway === g.id ? '4px solid #4f46e5' : '1px solid #cbd5e1', background: '#fff' }}></div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0f172a' }}>{g.label}</span>
+                  </label>
+                ))}
               </div>
+
+              {/* Dynamic Gateway Forms */}
+              {gateway === 'credit_card' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12 }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>Card Information</span>
+                  <input type="text" placeholder="Card Number" value={cardNumber} onChange={e => setCardNumber(e.target.value)} style={{ padding: 8, border: '1px solid #cbd5e1', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input type="text" placeholder="MM/YY" value={cardExpiry} onChange={e => setCardExpiry(e.target.value)} style={{ flex: 1, padding: 8, border: '1px solid #cbd5e1', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }} />
+                    <input type="password" placeholder="CVV" value={cardCvv} onChange={e => setCardCvv(e.target.value)} maxLength={3} style={{ flex: 1, padding: 8, border: '1px solid #cbd5e1', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }} />
+                  </div>
+                </div>
+              )}
+
+              {gateway === 'upi' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12, alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', alignSelf: 'flex-start' }}>UPI Direct Transfer</span>
+                  <div style={{ padding: 10, background: '#fff', border: '1px dashed #4f46e5', borderRadius: 8, textAlign: 'center', width: '100%' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block' }}>Scan QR Code or pay directly to UPI VPA:</span>
+                    <strong style={{ fontSize: '0.85rem', color: '#4f46e5' }}>itlc@upi</strong>
+                    <div style={{ width: 100, height: 100, background: '#f1f5f9', margin: '8px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #cbd5e1', borderRadius: 6 }}>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>[ UPI QR CODE ]</span>
+                    </div>
+                  </div>
+                  <input type="text" placeholder="Enter UPI UTR / Transaction Ref ID" value={upiTxnId} onChange={e => setUpiTxnId(e.target.value)} style={{ width: '100%', padding: 8, border: '1px solid #cbd5e1', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }} />
+                </div>
+              )}
+
+              {gateway === 'bank_transfer' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12 }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>SWIFT Bank Wire Details</span>
+                  <div style={{ fontSize: '0.7rem', color: '#334155', background: '#fff', padding: 8, borderRadius: 6, border: '1px solid #e2e8f0', lineHeight: 1.5 }}>
+                    <strong>Beneficiary:</strong> ITLC HRMS Ltd.<br />
+                    <strong>Bank:</strong> Commercial Standard Bank<br />
+                    <strong>Account:</strong> 99008877665544<br />
+                    <strong>SWIFT / IFSC:</strong> CMSB0001234
+                  </div>
+                  <input type="text" placeholder="Enter Bank Wire Ref / Txn Number" value={wireRefNo} onChange={e => setWireRefNo(e.target.value)} style={{ padding: 8, border: '1px solid #cbd5e1', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }} />
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>

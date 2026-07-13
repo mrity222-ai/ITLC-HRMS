@@ -345,9 +345,12 @@ export const PaymentsTab: React.FC = () => {
                         </button>
                       )}
                       {p.status === 'pending' && (
-                        <span className="text-xs text-slate-500 italic flex items-center gap-1 select-none">
-                          <HelpCircle className="h-3.5 w-3.5" /> Settlement Processing
-                        </span>
+                        <button
+                          onClick={() => handleRetry(p.id, p.invoiceNumber, p.amount, p.companyName)}
+                          className="px-3 py-1 rounded-lg bg-emerald-600/15 hover:bg-emerald-600 text-emerald-200 hover:text-white border border-emerald-500/20 text-xs font-semibold flex items-center gap-1.5 transition"
+                        >
+                          <CheckCircle className="h-3 w-3" /> Approve Settle
+                        </button>
                       )}
                     </div>
                   </td>
