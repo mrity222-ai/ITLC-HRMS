@@ -58,7 +58,7 @@ export const PaymentsTab: React.FC = () => {
       if (typeof window !== 'undefined') {
         localStorage.setItem('superowner_gateway_toggles', JSON.stringify(updated));
       }
-      addToast(`${gateway.toUpperCase().replace('_', ' ')} Gateway ${updated[gateway] ? 'Enabled' : 'Disabled'}`, 'info');
+      addToast(`${String(gateway).toUpperCase().replace('_', ' ')} Gateway ${updated[gateway as keyof typeof updated] ? 'Enabled' : 'Disabled'}`, 'info');
       addLog('Gateway Configuration Changed', `Payment gateway routing updated.`, 'settings');
       return updated;
     });
