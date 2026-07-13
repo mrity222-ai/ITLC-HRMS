@@ -129,7 +129,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         try {
           const fetchedPlans = await api.getPlans();
-          if (fetchedPlans && fetchedPlans.length > 0) {
+          if (fetchedPlans && Array.isArray(fetchedPlans)) {
             setPlans(fetchedPlans);
           }
         } catch (e) {
