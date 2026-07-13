@@ -11,7 +11,7 @@ import {
 import { useDashboard } from '../context/DashboardContext';
 
 export const AnalyticsTab: React.FC = () => {
-  const { companies } = useDashboard();
+  const { companies, analyticsData } = useDashboard();
 
   // Compute Employee Distribution data
   const distData = useMemo(() => {
@@ -25,8 +25,8 @@ export const AnalyticsTab: React.FC = () => {
     });
   }, [companies]);
 
-  // Attendance Analytics (Mocked monthly averages)
-  const attendanceData = [
+  // Attendance Analytics
+  const attendanceData = analyticsData?.attendanceData || [
     { month: 'Jan', rate: 94.2 },
     { month: 'Feb', rate: 95.0 },
     { month: 'Mar', rate: 94.8 },
@@ -35,8 +35,8 @@ export const AnalyticsTab: React.FC = () => {
     { month: 'Jun', rate: 97.2 },
   ];
 
-  // Leave Analytics (Mocked leave type breakdown)
-  const leaveData = [
+  // Leave Analytics
+  const leaveData = analyticsData?.leaveData || [
     { type: 'Sick Leave', count: 142, fill: '#f43f5e' },
     { type: 'Casual Leave', count: 289, fill: '#6366f1' },
     { type: 'Maternity/Paternity', count: 48, fill: '#8b5cf6' },
@@ -44,14 +44,18 @@ export const AnalyticsTab: React.FC = () => {
   ];
 
   // Subscription Analytics
-  const subTrends = [
+  const subTrends = analyticsData?.subTrends || [
     { month: 'Jan', Starter: 2, Pro: 1, Business: 1, Enterprise: 0 },
     { month: 'Feb', Starter: 2, Pro: 1, Business: 1, Enterprise: 1 },
     { month: 'Mar', Starter: 2, Pro: 2, Business: 1, Enterprise: 1 },
     { month: 'Apr', Starter: 3, Pro: 2, Business: 1, Enterprise: 1 },
     { month: 'May', Starter: 3, Pro: 2, Business: 2, Enterprise: 1 },
-    { month: 'Jun', Starter: 2, Pro: 3, Business: 2, Enterprise: 2 }, // matched with live
+    { month: 'Jun', Starter: 2, Pro: 3, Business: 2, Enterprise: 2 },
   ];
+
+  const avgAttendance = attendanceData.length > 0 
+    ? (attendanceData.reduce((acc: number, item: any) => acc + item.rate, 0) / attendanceData.length).toFixed(1)
+    : '96.8';
 
   // Login Heatmap Grid (7 days x 24 hours)
   // Generating seed rates: 0 to 4
@@ -105,7 +109,7 @@ export const AnalyticsTab: React.FC = () => {
           </div>
           <div>
             <span className="text-slate-400 text-xs block uppercase">Avg Attendance Rate</span>
-            <span className="text-lg font-bold text-white font-mono">96.8%</span>
+            <span className="text-lg font-bold text-white font-mono">{avgAttendance}%</span>
           </div>
         </div>
 

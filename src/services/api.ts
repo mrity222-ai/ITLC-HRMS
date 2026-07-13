@@ -182,6 +182,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getSuperOwnerAnalytics() {
+    const res = await fetch(`${API_URL}/superowner/analytics`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerPayments() {
     const res = await fetch(`${API_URL}/superowner/payments`, {
       method: 'GET',

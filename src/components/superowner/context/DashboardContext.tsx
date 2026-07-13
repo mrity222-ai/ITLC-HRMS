@@ -63,6 +63,8 @@ interface DashboardContextType {
   formatAmount: (amountInUSD: number) => string;
   isFormDirty: boolean;
   setIsFormDirty: (dirty: boolean) => void;
+  analyticsData: any;
+  setAnalyticsData: React.Dispatch<React.SetStateAction<any>>;
 }
 
 export const CURRENCY_DETAILS: Record<string, { symbol: string; rate: number }> = {
@@ -88,6 +90,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>(INITIAL_LOGS);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
   
   useEffect(() => {
     const loadData = async () => {
@@ -131,6 +134,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           }
         } catch (e) {
           console.error("Failed to load plans", e);
+        }
+
+        try {
+          const analytics = await api.getSuperOwnerAnalytics();
+          setAnalyticsData(analytics);
+        } catch (e) {
+          console.error("Failed to load analytics", e);
         }
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
@@ -277,7 +287,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setSelectedCurrency,
         formatAmount,
         isFormDirty,
-        setIsFormDirty
+        setIsFormDirty,
+        analyticsData,
+        setAnalyticsData
       }}
     >
       {children}
