@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { BadgeCheck, CreditCard, HardDrive, Cpu, Users, FileText, CheckCircle2, ShieldCheck, Globe } from 'lucide-react';
+import { BadgeCheck, CreditCard, HardDrive, Users, CheckCircle2, ShieldCheck, Globe } from 'lucide-react';
 import { api } from '../../services/api';
 import { downloadPaymentSlip } from '../../utils/PaymentSlip';
 import { INITIAL_PLANS } from '../superowner/dashboardData';
 
 const RATES = { USD: 1, INR: 83, EUR: 0.92, GBP: 0.79 };
 const SYMBOLS = { USD: '$', INR: '₹', EUR: '€', GBP: '£' };
+
+// Hook to load Razorpay script dynamically
+const useRazorpay = () => {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+};
 
 export default function Subscription({ onSubscriptionUpdate }) {
   const [profile, setProfile] = useState(null);
@@ -15,6 +25,9 @@ export default function Subscription({ onSubscriptionUpdate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currency, setCurrency] = useState('USD');
+  const [gateway, setGateway] = useState('stripe'); // 'stripe' or 'razorpay'
+
+  useRazorpay();
 
   const fetchBillingInfo = async () => {
     try {
@@ -31,6 +44,22 @@ export default function Subscription({ onSubscriptionUpdate }) {
 
   useEffect(() => {
     fetchBillingInfo();
+    // Check if we came back from Stripe Success
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    const returnedGateway = urlParams.get('gateway');
+    const planId = urlParams.get('planId');
+    const amt = urlParams.get('amount');
+    if (sessionId && returnedGateway === 'stripe' && planId) {
+      verifyPayment({
+        gateway: 'stripe',
+        planId: planId,
+        paymentId: sessionId,
+        amount: amt
+      });
+      // Clear url params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const handleOpenUpgrade = (plan) => {
@@ -38,25 +67,88 @@ export default function Subscription({ onSubscriptionUpdate }) {
     setIsModalOpen(true);
   };
 
-  const handleConfirmUpgrade = async () => {
-    if (!selectedPlan) return;
+  const verifyPayment = async (data) => {
     setIsProcessing(true);
     try {
-      const result = await api.upgradeSubscription(selectedPlan.id);
-      alert(`Payment of ${SYMBOLS[currency]}${(selectedPlan.price * RATES[currency]).toFixed(0)}/month confirmed! Your subscription has been successfully updated to ${selectedPlan.name}.`);
-      setIsModalOpen(false);
-      await fetchBillingInfo();
-      
+      const result = await api.verifyPayment(data);
+      alert('Payment successful! Your subscription is active.');
       if (result.payment) {
         downloadPaymentSlip(result.payment, result.company);
       }
-      
-      if (onSubscriptionUpdate) {
-        onSubscriptionUpdate();
+      setIsModalOpen(false);
+      await fetchBillingInfo();
+      if (onSubscriptionUpdate) onSubscriptionUpdate();
+    } catch (err) {
+      alert(err.message || 'Verification failed');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmUpgrade = async () => {
+    if (!selectedPlan) return;
+    setIsProcessing(true);
+    const amount = Number((selectedPlan.price * RATES[currency]).toFixed(0));
+
+    try {
+      if (gateway === 'stripe') {
+        const result = await api.createStripeSession({
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
+          amount: amount,
+          currency: currency
+        });
+        if (result.url) {
+          window.location.href = result.url; // Redirect to Stripe Checkout or Mock URL
+        }
+      } else if (gateway === 'razorpay') {
+        const result = await api.createRazorpayOrder({
+          amount: amount,
+          currency: currency
+        });
+
+        if (result.orderId && result.orderId.startsWith('mock_')) {
+           // Mock fallback if keys not configured
+           verifyPayment({
+             gateway: 'razorpay',
+             planId: selectedPlan.id,
+             paymentId: `mock_pay_${Date.now()}`,
+             orderId: result.orderId,
+             amount: amount
+           });
+           return;
+        }
+
+        const options = {
+          key: result.key,
+          amount: result.amount,
+          currency: result.currency,
+          name: 'HRMS Platform',
+          description: `Upgrade to ${selectedPlan.name}`,
+          order_id: result.orderId,
+          handler: function (response) {
+            verifyPayment({
+              gateway: 'razorpay',
+              planId: selectedPlan.id,
+              paymentId: response.razorpay_payment_id,
+              orderId: response.razorpay_order_id,
+              signature: response.razorpay_signature,
+              amount: amount
+            });
+          },
+          prefill: {
+            name: profile?.name || '',
+            email: profile?.email || ''
+          },
+          theme: { color: '#4f46e5' }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+        setIsProcessing(false);
       }
     } catch (err) {
-      alert(err.message || 'Upgrade failed.');
-    } finally {
+      alert(err.message || 'Payment initiation failed.');
       setIsProcessing(false);
     }
   };
@@ -286,14 +378,20 @@ export default function Subscription({ onSubscriptionUpdate }) {
               You are upgrading to the <strong style={{ color: '#0f172a' }}>{selectedPlan.name}</strong>. You will be billed <strong style={{ color: '#0f172a' }}>{formatPrice(selectedPlan.price)}/month</strong>.
             </p>
 
-            <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#64748b', marginBottom: 8 }}>
-                <span>Employee Limit:</span>
-                <strong style={{ color: '#0f172a' }}>{selectedPlan.employeeLimit}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#64748b' }}>
-                <span>Storage Limit:</span>
-                <strong style={{ color: '#0f172a' }}>{selectedPlan.storageLimit} GB</strong>
+            {/* Gateway Selection */}
+            <div style={{ marginBottom: 20 }}>
+              <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: 8 }}>Select Payment Gateway</h4>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: 12, border: gateway === 'stripe' ? '2px solid #4f46e5' : '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer', background: gateway === 'stripe' ? '#e0e7ff' : '#fff' }}>
+                  <input type="radio" name="gateway" value="stripe" checked={gateway === 'stripe'} onChange={() => setGateway('stripe')} style={{ display: 'none' }} />
+                  <div style={{ width: 16, height: 16, borderRadius: '50%', border: gateway === 'stripe' ? '4px solid #4f46e5' : '1px solid #cbd5e1', background: '#fff' }}></div>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>Stripe (Cards)</span>
+                </label>
+                <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: 12, border: gateway === 'razorpay' ? '2px solid #4f46e5' : '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer', background: gateway === 'razorpay' ? '#e0e7ff' : '#fff' }}>
+                  <input type="radio" name="gateway" value="razorpay" checked={gateway === 'razorpay'} onChange={() => setGateway('razorpay')} style={{ display: 'none' }} />
+                  <div style={{ width: 16, height: 16, borderRadius: '50%', border: gateway === 'razorpay' ? '4px solid #4f46e5' : '1px solid #cbd5e1', background: '#fff' }}></div>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>Razorpay (UPI)</span>
+                </label>
               </div>
             </div>
 
@@ -310,7 +408,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
                 onClick={handleConfirmUpgrade} 
                 style={{ padding: '10px 20px', borderRadius: '8px', background: '#4f46e5', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
               >
-                {isProcessing ? 'Processing...' : 'Confirm & Pay'}
+                {isProcessing ? 'Processing...' : `Pay ${formatPrice(selectedPlan.price)}`}
               </button>
             </div>
           </div>

@@ -529,11 +529,29 @@ export const api = {
     return handleResponse(res);
   },
 
-  async upgradeSubscription(planId: string) {
-    const res = await fetch(`${API_URL}/admin/subscription`, {
-      method: 'PUT',
+  async createStripeSession(data: any) {
+    const res = await fetch(`${API_URL}/payment/create-stripe-session`, {
+      method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ planId })
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async createRazorpayOrder(data: any) {
+    const res = await fetch(`${API_URL}/payment/create-razorpay-order`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async verifyPayment(data: any) {
+    const res = await fetch(`${API_URL}/payment/verify`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
     });
     return handleResponse(res);
   },

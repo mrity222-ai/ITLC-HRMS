@@ -193,6 +193,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/employee', require('./routes/employee'));
 app.use('/api/superowner', require('./routes/superowner'));
+app.use('/api/payment', require('./routes/payment'));
 
 // Root endpoint to verify API status
 app.get('/', (req, res) => {
