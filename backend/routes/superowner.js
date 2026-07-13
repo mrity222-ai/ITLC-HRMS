@@ -710,4 +710,13 @@ router.post('/logs', auth(['Super Owner']), async (req, res) => {
   }
 });
 
+router.delete('/logs', auth(['Super Owner']), async (req, res) => {
+  try {
+    await ActivityLog.destroy({ where: {}, truncate: true });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

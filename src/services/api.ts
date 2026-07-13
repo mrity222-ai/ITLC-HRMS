@@ -300,6 +300,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async clearLogs() {
+    const res = await fetch(`${API_URL}/superowner/logs`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerTickets() {
     const res = await fetch(`${API_URL}/superowner/tickets`, {
       method: 'GET',

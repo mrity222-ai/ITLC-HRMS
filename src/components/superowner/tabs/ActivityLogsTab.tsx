@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
 import { ActivityLog } from '../types';
+import { api } from '../../../services/api';
 
 export const ActivityLogsTab: React.FC = () => {
   const { logs, setLogs, addToast } = useDashboard();
@@ -27,10 +28,15 @@ export const ActivityLogsTab: React.FC = () => {
     });
   }, [logs, searchTerm, categoryFilter]);
 
-  const handleClearLogs = () => {
+  const handleClearLogs = async () => {
     if (confirm('Clear audit trail? (Warning: This action is irreversible and violates compliance standards in production)')) {
-      setLogs([]);
-      addToast('Audit trail logs cleared', 'warning');
+      try {
+        await api.clearLogs();
+        setLogs([]);
+        addToast('Audit trail logs cleared permanently', 'warning');
+      } catch (e) {
+        addToast('Failed to clear logs', 'error');
+      }
     }
   };
 
