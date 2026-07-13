@@ -21,6 +21,7 @@ require('./models/Webhook');
 require('./models/SecuritySetting');
 require('./models/GlobalSetting');
 require('./models/NotificationHistory');
+require('./models/ApiToken');
 require('./models/ActiveSession');
 require('./models/ActivityLog');
 require('./models/CorrectionRequest');

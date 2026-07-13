@@ -642,6 +642,7 @@ router.delete('/webhooks/:id', auth(['Super Owner']), async (req, res) => {
 const SecuritySetting = require('../models/SecuritySetting');
 const GlobalSetting = require('../models/GlobalSetting');
 const NotificationHistory = require('../models/NotificationHistory');
+const ApiToken = require('../models/ApiToken');
 const ActiveSession = require('../models/ActiveSession');
 const ActivityLog = require('../models/ActivityLog');
 
@@ -762,6 +763,35 @@ router.post('/notifications', auth(['Super Owner']), async (req, res) => {
   try {
     const newNotif = await NotificationHistory.create(req.body);
     res.json(newNotif);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API Tokens
+router.get('/api-token', auth(['Super Owner']), async (req, res) => {
+  try {
+    let apiToken = await ApiToken.findByPk('master');
+    if (!apiToken) {
+      const generatedToken = `sk_live_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`.toUpperCase();
+      apiToken = await ApiToken.create({ id: 'master', token: generatedToken });
+    }
+    res.json(apiToken);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/api-token/rotate', auth(['Super Owner']), async (req, res) => {
+  try {
+    const generatedToken = `sk_live_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`.toUpperCase();
+    let apiToken = await ApiToken.findByPk('master');
+    if (!apiToken) {
+      apiToken = await ApiToken.create({ id: 'master', token: generatedToken });
+    } else {
+      await apiToken.update({ token: generatedToken, lastRotated: new Date() });
+    }
+    res.json(apiToken);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

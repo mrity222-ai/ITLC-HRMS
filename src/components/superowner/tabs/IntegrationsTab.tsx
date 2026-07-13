@@ -31,12 +31,16 @@ export const IntegrationsTab: React.FC = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const [ints, whs] = await Promise.all([
+        const [ints, whs, apiTokenData] = await Promise.all([
           api.getIntegrations(),
-          api.getWebhooks()
+          api.getWebhooks(),
+          api.getApiToken()
         ]);
         setIntegrations(ints || []);
         setWebhooks(whs || []);
+        if (apiTokenData && apiTokenData.token) {
+          setApiKey(apiTokenData.token);
+        }
       } catch (e) {
         addToast('Failed to load integrations', 'error');
       } finally {
@@ -64,11 +68,19 @@ export const IntegrationsTab: React.FC = () => {
     }
   };
 
-  const handleGenerateKey = () => {
-    const randomKey = `sk_live_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`.toUpperCase();
-    setApiKey(randomKey);
-    addToast('New API Secret Key generated', 'success');
-    addLog('API Key Rotated', 'Super Owner rotated platform system access API token.', 'security');
+  const handleGenerateKey = async () => {
+    if (confirm("Warning: Rotating this key will invalidate all existing API connections. Are you sure?")) {
+      try {
+        const data = await api.rotateApiToken();
+        if (data && data.token) {
+          setApiKey(data.token);
+          addToast('New API Secret Key generated and saved securely', 'success');
+          addLog('API Key Rotated', 'Super Owner rotated platform system access API token.', 'security');
+        }
+      } catch (e) {
+        addToast('Failed to rotate API Key', 'error');
+      }
+    }
   };
 
   const handleAddWebhook = async (e: React.FormEvent) => {

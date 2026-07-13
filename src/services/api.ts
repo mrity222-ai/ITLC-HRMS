@@ -250,6 +250,22 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getApiToken() {
+    const res = await fetch(`${API_URL}/superowner/api-token?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async rotateApiToken() {
+    const res = await fetch(`${API_URL}/superowner/api-token/rotate`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getNotifications() {
     const res = await fetch(`${API_URL}/superowner/notifications?t=${new Date().getTime()}`, {
       method: 'GET',
