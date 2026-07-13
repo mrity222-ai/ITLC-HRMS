@@ -1056,6 +1056,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getUpiDetails() {
+    const res = await fetch(`${API_URL}/payment/upi-details`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerUsers() {
     const res = await fetch(`${API_URL}/superowner/users?t=${new Date().getTime()}`, {
       method: 'GET',

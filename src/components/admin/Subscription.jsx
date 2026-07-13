@@ -34,6 +34,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
   const [cardCvv, setCardCvv] = useState('');
   const [upiTxnId, setUpiTxnId] = useState('');
   const [wireRefNo, setWireRefNo] = useState('');
+  const [realUpiId, setRealUpiId] = useState('itlc@upi');
 
   useEffect(() => {
     localStorage.setItem('admin_subscription_currency', currency);
@@ -54,6 +55,14 @@ export default function Subscription({ onSubscriptionUpdate }) {
         }
       } catch (err) {
         console.error('Failed to load plans:', err);
+      }
+      try {
+        const upiRes = await api.getUpiDetails();
+        if (upiRes && upiRes.upiId) {
+          setRealUpiId(upiRes.upiId);
+        }
+      } catch (err) {
+        console.error('Failed to load UPI details:', err);
       }
     } catch (err) {
       console.error('Failed to load subscription info:', err);
@@ -497,19 +506,25 @@ export default function Subscription({ onSubscriptionUpdate }) {
                 </div>
               )}
 
-              {gateway === 'upi' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12, alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', alignSelf: 'flex-start' }}>UPI Direct Transfer</span>
-                  <div style={{ padding: 10, background: '#fff', border: '1px dashed #4f46e5', borderRadius: 8, textAlign: 'center', width: '100%' }}>
-                    <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block' }}>Scan QR Code or pay directly to UPI VPA:</span>
-                    <strong style={{ fontSize: '0.85rem', color: '#4f46e5' }}>itlc@upi</strong>
-                    <div style={{ width: 100, height: 100, background: '#f1f5f9', margin: '8px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #cbd5e1', borderRadius: 6 }}>
-                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>[ UPI QR CODE ]</span>
+              {gateway === 'upi' && (() => {
+                const planAmount = Number((selectedPlan.price * RATES[currency]).toFixed(0));
+                const upiUri = `upi://pay?pa=${realUpiId}&pn=ITLC_HRMS&am=${planAmount}&cu=INR`;
+                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiUri)}`;
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12, alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', alignSelf: 'flex-start' }}>UPI Direct Transfer</span>
+                    <div style={{ padding: 10, background: '#fff', border: '1px dashed #4f46e5', borderRadius: 8, textAlign: 'center', width: '100%' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', marginBottom: 4 }}>Scan QR Code or pay directly to UPI VPA:</span>
+                      <strong style={{ fontSize: '0.85rem', color: '#4f46e5', display: 'block', marginBottom: 8 }}>{realUpiId}</strong>
+                      <div style={{ margin: '8px auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                        <img src={qrCodeUrl} alt="UPI QR Code" style={{ width: 140, height: 140, border: '1px solid #cbd5e1', borderRadius: 6, padding: 6, background: '#fff' }} />
+                        <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700 }}>Amount: {formatPrice(selectedPlan.price)}</span>
+                      </div>
                     </div>
+                    <input type="text" placeholder="Enter UPI UTR / Transaction Ref ID (12 digits)" value={upiTxnId} onChange={e => setUpiTxnId(e.target.value)} style={{ width: '100%', padding: 8, border: '1px solid #cbd5e1', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }} />
                   </div>
-                  <input type="text" placeholder="Enter UPI UTR / Transaction Ref ID" value={upiTxnId} onChange={e => setUpiTxnId(e.target.value)} style={{ width: '100%', padding: 8, border: '1px solid #cbd5e1', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }} />
-                </div>
-              )}
+                );
+              })()}
 
               {gateway === 'bank_transfer' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12 }}>
