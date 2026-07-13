@@ -35,6 +35,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
   const [upiTxnId, setUpiTxnId] = useState('');
   const [wireRefNo, setWireRefNo] = useState('');
   const [realUpiId, setRealUpiId] = useState('itlc@upi');
+  const [history, setHistory] = useState([]);
 
   useEffect(() => {
     localStorage.setItem('admin_subscription_currency', currency);
@@ -63,6 +64,14 @@ export default function Subscription({ onSubscriptionUpdate }) {
         }
       } catch (err) {
         console.error('Failed to load UPI details:', err);
+      }
+      try {
+        const historyList = await api.getBillingHistory();
+        if (Array.isArray(historyList)) {
+          setHistory(historyList);
+        }
+      } catch (err) {
+        console.error('Failed to load billing history:', err);
       }
     } catch (err) {
       console.error('Failed to load subscription info:', err);
@@ -559,6 +568,63 @@ export default function Subscription({ onSubscriptionUpdate }) {
           </div>
         </div>
       )}
+
+      {/* Billing History Section */}
+      <div style={{ padding: 28, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', marginTop: 12 }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>Billing & Invoices History</h3>
+        <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: 18 }}>View and download your past subscription payment invoices.</p>
+        
+        {history.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '24px 0', color: '#64748b', fontSize: '0.9rem' }}>
+            No invoice records found for this workspace.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#475569', fontWeight: 700 }}>
+                  <th style={{ padding: '10px 12px' }}>Invoice No</th>
+                  <th style={{ padding: '10px 12px' }}>Date</th>
+                  <th style={{ padding: '10px 12px' }}>Amount</th>
+                  <th style={{ padding: '10px 12px' }}>Gateway</th>
+                  <th style={{ padding: '10px 12px' }}>Status</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((h) => (
+                  <tr key={h.id} style={{ borderBottom: '1px solid #e2e8f0', color: '#0f172a' }}>
+                    <td style={{ padding: '12px', fontWeight: 600, fontFamily: 'monospace' }}>{h.invoiceNumber}</td>
+                    <td style={{ padding: '12px' }}>{new Date(h.date).toLocaleDateString()}</td>
+                    <td style={{ padding: '12px', fontWeight: 700 }}>{SYMBOLS[currency] || '$'}{(h.amount * (RATES[currency] || 1)).toFixed(0)}</td>
+                    <td style={{ padding: '12px', textTransform: 'capitalize' }}>{h.gateway.replace('_', ' ')}</td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{
+                        padding: '3px 8px',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        borderRadius: '4px',
+                        background: h.status === 'successful' ? '#def7ec' : h.status === 'pending' ? '#fef3c7' : '#fde8e8',
+                        color: h.status === 'successful' ? '#03543f' : h.status === 'pending' ? '#92400e' : '#9b1c1c'
+                      }}>
+                        {h.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                      <button 
+                        onClick={() => downloadPaymentSlip(h, { name: profile?.companyName || 'Workspace' })}
+                        style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600, color: '#4f46e5', border: '1px solid #4f46e5', background: 'transparent', borderRadius: '6px', cursor: 'pointer' }}
+                      >
+                        Download Slip
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
     </div>
   );

@@ -1064,6 +1064,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getBillingHistory() {
+    const res = await fetch(`${API_URL}/payment/history?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerUsers() {
     const res = await fetch(`${API_URL}/superowner/users?t=${new Date().getTime()}`, {
       method: 'GET',
