@@ -40,7 +40,6 @@ function AnimatedCounter({ value, duration = 1000, currencySymbol = '$' }) {
   return <span className="number-font">{isCurrency && currencySymbol}{count.toLocaleString()}{isPercent && '%'}</span>;
 }
 
-const initialDepartments = [];
 
 export default function Departments({ setActiveTab, currency = 'USD' }) {
   const currencySymbol = (() => {
@@ -69,7 +68,7 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
   useEffect(() => {
     const fetchDeps = async () => {
       try {
-        const data = await api.getDepartments();
+        const data = await api.getAdminDepartments();
         setDepartments(data);
       } catch (err) {
         console.error('Failed to load departments', err);
@@ -100,10 +99,10 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
 
     try {
       if (viewMode === 'edit') {
-        const updated = await api.updateDepartment(editingDept.id, { name, code, head, budget: Number(budget), status });
+        const updated = await api.updateAdminDepartment(editingDept.id, { name, code, head, budget: Number(budget), status });
         setDepartments(departments.map(d => d.id === editingDept.id ? updated : d));
       } else {
-        const newD = await api.createDepartment({ name, code, head, budget: Number(budget), status });
+        const newD = await api.createAdminDepartment({ name, code, head, budget: Number(budget), status });
         setDepartments([...departments, newD]);
       }
       resetForm();
@@ -116,7 +115,7 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
   const handleDelete = async (id) => {
     if (confirm("Purge department and reallocate budget allocations?")) {
       try {
-        await api.deleteDepartment(id);
+        await api.deleteAdminDepartment(id);
         setDepartments(departments.filter(d => d.id !== id));
       } catch (err) {
         alert(err.message || 'Failed to delete');

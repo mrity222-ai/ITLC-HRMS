@@ -132,7 +132,7 @@ export default function Organization({ employees = [], setActiveTab, currency = 
   useEffect(() => {
     const fetchBranches = async () => {
       try {
-        const data = await api.getBranches();
+        const data = await api.getAdminBranches();
         setBranches(data);
       } catch (err) {
         console.error('Failed to load branches', err);
@@ -153,7 +153,7 @@ export default function Organization({ employees = [], setActiveTab, currency = 
     e.preventDefault();
     if (!newName || !newManager) return;
     try {
-      const newBr = await api.createBranch({
+      const newBr = await api.createAdminBranch({
         name: newName,
         country: newCountry,
         address: 'Main Commercial Ring Road',

@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, Plus, FileText, CheckCircle, XCircle, Search, PieChart } from 'lucide-react';
 
-const initialExpenses = [
-  { id: 1, employee: 'Sarah Jenkins', amount: '₹120.50', category: 'Travel & Meals', merchant: 'Uber Trip', date: 'July 01, 2026', status: 'Approved' },
-  { id: 2, employee: 'Marcus Vance', amount: '₹1,540.00', category: 'Software Subs', merchant: 'AWS Cloud Services', date: 'June 28, 2026', status: 'Pending' },
-  { id: 3, employee: 'Clara Oswald', amount: '₹45.00', category: 'Office Supplies', merchant: 'Staples Office', date: 'June 25, 2026', status: 'Approved' },
-  { id: 4, employee: 'Sophia Patel', amount: '₹310.00', category: 'Client Meeting', merchant: 'SOHO Bistro', date: 'June 20, 2026', status: 'Rejected' },
-];
+
 
 import { api } from '../../services/api';
 import { useEffect } from 'react';

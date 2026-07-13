@@ -280,6 +280,60 @@ export const api = {
     return handleResponse(res);
   },
 
+  // ===== DEPARTMENTS =====
+  async getAdminDepartments() {
+    const res = await fetch(`${API_URL}/admin/departments?t=${new Date().getTime()}`, { method: 'GET', headers: getHeaders() });
+    return handleResponse(res);
+  },
+  async createAdminDepartment(data: any) {
+    const res = await fetch(`${API_URL}/admin/departments`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(data) });
+    return handleResponse(res);
+  },
+  async updateAdminDepartment(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/departments/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(data) });
+    return handleResponse(res);
+  },
+  async deleteAdminDepartment(id: string) {
+    const res = await fetch(`${API_URL}/admin/departments/${id}`, { method: 'DELETE', headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  // ===== DESIGNATIONS =====
+  async getAdminDesignations() {
+    const res = await fetch(`${API_URL}/admin/designations?t=${new Date().getTime()}`, { method: 'GET', headers: getHeaders() });
+    return handleResponse(res);
+  },
+  async createAdminDesignation(data: any) {
+    const res = await fetch(`${API_URL}/admin/designations`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(data) });
+    return handleResponse(res);
+  },
+  async updateAdminDesignation(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/designations/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(data) });
+    return handleResponse(res);
+  },
+  async deleteAdminDesignation(id: string) {
+    const res = await fetch(`${API_URL}/admin/designations/${id}`, { method: 'DELETE', headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  // ===== BRANCHES =====
+  async getAdminBranches() {
+    const res = await fetch(`${API_URL}/admin/branches?t=${new Date().getTime()}`, { method: 'GET', headers: getHeaders() });
+    return handleResponse(res);
+  },
+  async createAdminBranch(data: any) {
+    const res = await fetch(`${API_URL}/admin/branches`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(data) });
+    return handleResponse(res);
+  },
+  async updateAdminBranch(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/branches/${id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(data) });
+    return handleResponse(res);
+  },
+  async deleteAdminBranch(id: string) {
+    const res = await fetch(`${API_URL}/admin/branches/${id}`, { method: 'DELETE', headers: getHeaders() });
+    return handleResponse(res);
+  },
+
   // ===== SUPEROWNER ENDPOINTS =====& TENANT APIs
   // ========================================================
   async getCompanies() {

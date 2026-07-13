@@ -37,7 +37,6 @@ function AnimatedCounter({ value, duration = 1000, currencySymbol = '$' }) {
   return <span className="number-font">{isCurrency && currencySymbol}{count.toLocaleString()}{isPercent && '%'}</span>;
 }
 
-const initialDesignations = [];
 
 export default function Designations({ setActiveTab, currency = 'USD' }) {
   const currencySymbol = (() => {
@@ -66,7 +65,7 @@ export default function Designations({ setActiveTab, currency = 'USD' }) {
   useEffect(() => {
     const fetchDesgs = async () => {
       try {
-        const data = await api.getDesignations();
+        const data = await api.getAdminDesignations();
         setDesignations(data);
       } catch (err) {
         console.error('Failed to load designations', err);
@@ -94,10 +93,10 @@ export default function Designations({ setActiveTab, currency = 'USD' }) {
 
     try {
       if (viewMode === 'edit') {
-        const updated = await api.updateDesignation(editingDesg.id, { title, department: dept, level, salaryBand, avgSalary: Number(avgSalary), status });
+        const updated = await api.updateAdminDesignation(editingDesg.id, { title, department: dept, level, salaryBand, avgSalary: Number(avgSalary), status });
         setDesignations(designations.map(d => d.id === editingDesg.id ? updated : d));
       } else {
-        const newD = await api.createDesignation({ title, department: dept, level, salaryBand, avgSalary: Number(avgSalary), status });
+        const newD = await api.createAdminDesignation({ title, department: dept, level, salaryBand, avgSalary: Number(avgSalary), status });
         setDesignations([...designations, newD]);
       }
       resetForm();
@@ -110,7 +109,7 @@ export default function Designations({ setActiveTab, currency = 'USD' }) {
   const handleDelete = async (id) => {
     if (confirm("Delete designation? All active associated employee profiles must be re-categorized.")) {
       try {
-        await api.deleteDesignation(id);
+        await api.deleteAdminDesignation(id);
         setDesignations(designations.filter(d => d.id !== id));
       } catch (err) {
         alert(err.message || 'Failed to delete');

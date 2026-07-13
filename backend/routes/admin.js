@@ -19,7 +19,6 @@ const JobOpening = require('../models/JobOpening');
 const TrainingProgram = require('../models/TrainingProgram');
 const Holiday = require('../models/Holiday');
 const LeavePolicy = require('../models/LeavePolicy');
-const Asset = require('../models/Asset');
 
 // Get all employees of logged-in admin's company
 router.get('/employees', auth(['Company Admin', 'HR']), async (req, res) => {
