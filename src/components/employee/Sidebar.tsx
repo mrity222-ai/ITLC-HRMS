@@ -67,18 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobil
     }
   };
 
-  const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    {
-      id: "profile",
-      label: "My Profile",
-      icon: User,
-      subItems: [
-        { id: "profile-personal", label: "Personal Info" },
-        { id: "profile-experience", label: "Work & Experience" },
-        { id: "profile-documents", label: "KYC Documents" },
-      ],
-    },
+  const menuItems: Array<{ id: string; label: string; icon: any; subItems?: Array<{ id: string; label: string }>; badge?: number }> = [
     {
       id: "attendance",
       label: "Attendance & Logs",
@@ -90,17 +79,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobil
       ],
     },
     {
-      id: "leaves",
-      label: "Leave Management",
-      icon: CalendarDays,
-      subItems: [
-        { id: "leave-dashboard", label: "Balances overview" },
-        { id: "leave-apply", label: "Apply for leaves" },
-        { id: "leave-history", label: "Applications ledger" },
-      ],
-    },
-    { id: "tasks", label: "My Tasks", icon: ClipboardList },
-    {
       id: "payroll",
       label: "Payroll & payslip",
       icon: CreditCard,
@@ -110,30 +88,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobil
         { id: "pay-tax", label: "Tax Declarations" },
       ],
     },
-    { id: "documents", label: "Document Center", icon: FolderOpen },
-    { id: "expenses", label: "Expense Claim", icon: Receipt },
-    { id: "assets", label: "Assets Allocated", icon: Laptop },
     {
-      id: "helpdesk",
-      label: "Helpdesk Tickets",
-      icon: LifeBuoy,
+      id: "profile",
+      label: "My Profile",
+      icon: User,
       subItems: [
-        { id: "help-new", label: "Log New Ticket" },
-        { id: "help-my", label: "My Tickets logs" },
-      ],
-      badge: activeTicketsCount,
-    },
-    {
-      id: "training",
-      label: "Training & LMS",
-      icon: GraduationCap,
-      subItems: [
-        { id: "lms-courses", label: "Online Courses" },
-        { id: "lms-certifications", label: "My Certificates" },
+        { id: "profile-personal", label: "Personal Info" },
+        { id: "profile-experience", label: "Work & Experience" },
+        { id: "profile-documents", label: "KYC Documents" },
       ],
     },
-    { id: "notifications", label: "Alerts Inbox", icon: Bell, badge: unreadNotificationsCount },
-    { id: "settings", label: "Settings", icon: SettingsIcon },
   ];
 
   return (

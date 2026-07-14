@@ -5,7 +5,8 @@ import {
   CreditCard, HardDrive, MessageSquare, FileText, Megaphone, Bell, 
   User, Settings as SettingsIcon, LogOut, CheckCircle2, XCircle, 
   AlertCircle, Plus, Calendar, Mail, Phone, ShieldCheck, MapPin, Eye, 
-  UserCheck, ThumbsUp, AlertTriangle, Download, Info, Menu, Video, ChevronRight, Play
+  UserCheck, ThumbsUp, AlertTriangle, Download, Info, Menu, Video, ChevronRight, Play,
+  Trash2, UploadCloud
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -14,9 +15,104 @@ import {
 import { api } from '../../services/api';
 import { Card, Button, Modal, Badge, Select, cn } from '../employee/UI';
 
+const DEFAULT_DOCUMENTS = [
+  {
+    id: "profile-photo",
+    name: "Profile Photo",
+    type: "photo",
+    status: "Not Uploaded",
+    uploadedDate: "-",
+    fileType: "-",
+    fileData: null,
+    fileName: null,
+    canDelete: false,
+    canReplace: true
+  },
+  {
+    id: "aadhaar",
+    name: "Aadhaar Card",
+    type: "aadhaar",
+    status: "Not Uploaded",
+    uploadedDate: "-",
+    fileType: "-",
+    fileData: null,
+    fileName: null,
+    canDelete: false,
+    canReplace: true
+  },
+  {
+    id: "pan",
+    name: "PAN Card",
+    type: "pan",
+    status: "Not Uploaded",
+    uploadedDate: "-",
+    fileType: "-",
+    fileData: null,
+    fileName: null,
+    canDelete: false,
+    canReplace: true
+  },
+  {
+    id: "resume",
+    name: "Resume / CV",
+    type: "resume",
+    status: "Not Uploaded",
+    uploadedDate: "-",
+    fileType: "-",
+    fileData: null,
+    fileName: null,
+    canDelete: true,
+    canReplace: true
+  }
+];
+
+const compressImage = (base64Str, maxWidth = 800, maxHeight = 800) => {
+  return new Promise((resolve) => {
+    if (!base64Str || !base64Str.startsWith('data:image/')) {
+      resolve(base64Str);
+      return;
+    }
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      } else {
+        resolve(base64Str);
+      }
+    };
+  });
+};
+
 export default function ManagerApp({ onLogout }) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('attendance');
   const [managerProfile, setManagerProfile] = useState(null);
+  const [documentsVault, setDocumentsVault] = useState([]);
+  const [uploadingDocId, setUploadingDocId] = useState(null);
+  const [expandedDocId, setExpandedDocId] = useState(null);
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [activeDocUploadId, setActiveDocUploadId] = useState(null);
+  const docFileInputRef = React.useRef(null);
   
   // Direct reports & dashboard arrays
   const [teamMembers, setTeamMembers] = useState([]);
@@ -81,6 +177,7 @@ export default function ManagerApp({ onLogout }) {
       ]);
 
       setManagerProfile(profile);
+      setDocumentsVault(profile.documents && profile.documents.length > 0 ? profile.documents : DEFAULT_DOCUMENTS);
       setTeamMembers(team || []);
       setLeaves(leaveList || []);
       setAttendance(attList || []);
@@ -104,6 +201,91 @@ export default function ManagerApp({ onLogout }) {
     const interval = setInterval(loadLiveManagerPortal, 8000);
     return () => clearInterval(interval);
   }, []);
+
+  const triggerDocUploadPicker = (docId) => {
+    setActiveDocUploadId(docId);
+    setTimeout(() => {
+      docFileInputRef.current?.click();
+    }, 50);
+  };
+
+  const processUploadedFile = (docId, file) => {
+    const isValidType = file.type.startsWith("image/") || file.type === "application/pdf" || file.name.endsWith(".pdf") || file.name.endsWith(".jpg") || file.name.endsWith(".jpeg") || file.name.endsWith(".png");
+    if (!isValidType) {
+      alert("Invalid file format. Please upload an image (PNG, JPEG, JPG) or PDF file.");
+      return;
+    }
+
+    setUploadingDocId(docId);
+
+    setTimeout(() => {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        if (typeof reader.result === "string") {
+          try {
+            const compressed = await compressImage(reader.result);
+            const todayStr = new Date().toISOString().split("T")[0];
+            const updated = documentsVault.map((doc) => {
+              if (doc.id === docId) {
+                return {
+                  ...doc,
+                  status: "Uploaded",
+                  uploadedDate: todayStr,
+                  fileType: file.type.startsWith("image/") ? "image/jpeg" : file.type || (file.name.endsWith(".pdf") ? "application/pdf" : "image/jpeg"),
+                  fileData: compressed,
+                  fileName: file.name,
+                };
+              }
+              return doc;
+            });
+            
+            setDocumentsVault(updated);
+            await api.updateProfile({ documents: updated });
+            setManagerProfile(prev => ({ ...prev, documents: updated }));
+            alert('Document uploaded successfully!');
+          } catch (err) {
+            alert('Upload failed: ' + err.message);
+          }
+        }
+        setUploadingDocId(null);
+      };
+      reader.readAsDataURL(file);
+    }, 1000);
+  };
+
+  const handleDocFilePickerChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file && activeDocUploadId) {
+      processUploadedFile(activeDocUploadId, file);
+    }
+    setActiveDocUploadId(null);
+  };
+
+  const handleDeleteDoc = async (docId) => {
+    if (window.confirm("Are you sure you want to delete this document from your vault?")) {
+      const updated = documentsVault.map((doc) => {
+        if (doc.id === docId) {
+          return {
+            ...doc,
+            status: "Not Uploaded",
+            uploadedDate: "-",
+            fileType: "-",
+            fileData: null,
+            fileName: null,
+          };
+        }
+        return doc;
+      });
+      try {
+        setDocumentsVault(updated);
+        await api.updateProfile({ documents: updated });
+        setManagerProfile(prev => ({ ...prev, documents: updated }));
+        alert('Document deleted successfully!');
+      } catch (err) {
+        alert('Deletion failed: ' + err.message);
+      }
+    }
+  };
 
   const todayDate = new Date().toISOString().split('T')[0];
   const todayOwnRecord = ownLogs.find(r => r.date === todayDate);
@@ -395,8 +577,29 @@ export default function ManagerApp({ onLogout }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground relative">
       
+      {/* Mobile Drawer Overlay */}
+      {mobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/60 z-40 md:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 40
+          }}
+        />
+      )}
+
       {/* SIDEBAR NAVIGATION - Styled like other panels with Card/Sidebar structure */}
-      <aside className="h-screen bg-card border-r border-border flex flex-col transition-all duration-300 shrink-0 w-64 hidden md:flex">
+      <aside 
+        className={cn(
+          "top-0 bottom-0 left-0 h-screen bg-card border-r border-border flex flex-col transition-all duration-300 shrink-0 w-64",
+          mobileSidebarOpen 
+            ? "fixed z-50 translate-x-0" 
+            : "hidden md:flex md:sticky md:z-30 md:translate-x-0"
+        )}
+        style={mobileSidebarOpen ? { zIndex: 50 } : undefined}
+      >
         {/* Brand Header */}
         <div className="h-16 flex items-center gap-3 px-4 border-b border-border select-none">
           <div className="p-1.5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -411,25 +614,18 @@ export default function ManagerApp({ onLogout }) {
         {/* Navigation Menu */}
         <nav className="flex-1 py-4 overflow-y-auto px-2 space-y-1 scrollbar-none">
           {[
-            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-            { id: 'team', label: 'Team Directory', icon: Users },
             { id: 'attendance', label: 'Attendance Approvals', icon: Clock, badge: pendingCorrCount },
-            { id: 'leaves', label: 'Leave Management', icon: CalendarDays, badge: pendingLeavesCount },
-            { id: 'tasks', label: 'Task Management', icon: ClipboardList },
-            { id: 'performance', label: 'Performance Review', icon: TrendingUp },
-            { id: 'expenses', label: 'Expense Claims', icon: CreditCard, badge: pendingClaimsCount },
-            { id: 'assets', label: 'Assigned Assets', icon: HardDrive },
-            { id: 'meetings', label: 'Meetings Scheduler', icon: Video },
-            { id: 'reports', label: 'Data Reports', icon: FileText },
-            { id: 'announcements', label: 'Announcements', icon: Megaphone },
+            { id: 'expenses', label: 'Salary & Expenses', icon: CreditCard, badge: pendingClaimsCount },
             { id: 'profile', label: 'Manager Profile', icon: User },
-            { id: 'settings', label: 'Settings', icon: SettingsIcon },
           ].map(item => {
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setMobileSidebarOpen(false);
+                }}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer text-left",
                   isActive 
@@ -465,7 +661,7 @@ export default function ManagerApp({ onLogout }) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
         {/* TOP NAVBAR */}
-        <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-card print:hidden">
+        <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-border bg-card print:hidden">
           <button 
             onClick={() => setMobileSidebarOpen(true)}
             className="md:hidden p-1.5 rounded-lg hover:bg-secondary text-foreground cursor-pointer"
@@ -529,7 +725,7 @@ export default function ManagerApp({ onLogout }) {
                   <span className="text-xs font-bold uppercase">{managerProfile?.name ? managerProfile.name[0] : 'M'}</span>
                 )}
               </div>
-              <div className="text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-xl uppercase tracking-wider select-none">
+              <div className="text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-xl uppercase tracking-wider select-none hidden sm:block">
                 Welcome, <strong className="font-extrabold">{managerProfile?.name || 'Manager'}</strong>
               </div>
             </div>
@@ -537,7 +733,7 @@ export default function ManagerApp({ onLogout }) {
         </header>
 
         {/* MODULE CONTAINER VIEW */}
-        <main className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scrollbar-none">
+        <main className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-6 scrollbar-none">
           {loading ? (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
               Syncing Live database records...
@@ -710,13 +906,13 @@ export default function ManagerApp({ onLogout }) {
                   className="space-y-6 animate-fadeIn"
                 >
                   {/* Header SubTabs navigation */}
-                  <div className="flex justify-between items-center pb-2 border-b border-border">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start sm:items-center gap-4 pb-2 border-b border-border">
                     <div>
                       <h3 className="text-base font-extrabold text-foreground uppercase tracking-wider">Attendance Console</h3>
                       <p className="text-[11px] text-muted-foreground mt-0.5">Manage personal logins and team check-in requests</p>
                     </div>
                     
-                    <div className="flex bg-secondary/50 p-0.5 rounded-lg border border-border space-x-1 shrink-0">
+                    <div className="flex bg-secondary/50 p-0.5 rounded-lg border border-border space-x-1 shrink-0 overflow-x-auto max-w-full scrollbar-none">
                       {[
                         { id: 'my-attendance', label: 'My Attendance' },
                         { id: 'team-logs', label: 'Team Logs' },
@@ -1361,6 +1557,155 @@ export default function ManagerApp({ onLogout }) {
                       </div>
                     </div>
                   </Card>
+
+                  {/* Document Upload Input */}
+                  <input 
+                    type="file"
+                    id="manager-doc-upload-picker"
+                    ref={docFileInputRef}
+                    className="hidden"
+                    accept="image/*,application/pdf"
+                    onChange={handleDocFilePickerChange}
+                  />
+
+                  {/* Document Verification Center Card */}
+                  <Card className="p-6 bg-card border border-border">
+                    <div className="space-y-3">
+                      <div className="pb-2 border-b border-border flex justify-between items-center">
+                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                          <FileText className="h-4.5 w-4.5 text-primary" /> Document Verification Center
+                        </h3>
+                      </div>
+                      {documentsVault.map((doc) => {
+                        const isExpanded = expandedDocId === doc.id;
+                        const isUploading = uploadingDocId === doc.id;
+
+                        return (
+                          <div
+                            key={doc.id}
+                            className={cn(
+                              "border border-border rounded-xl overflow-hidden bg-card transition-all duration-200",
+                              isExpanded ? "ring-1 ring-primary shadow-sm border-primary/30" : "hover:border-primary/20 hover:shadow-xs",
+                              isUploading && "opacity-75 pointer-events-none"
+                            )}
+                          >
+                            <div
+                              onClick={() => setExpandedDocId(isExpanded ? null : doc.id)}
+                              className={cn(
+                                "flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 cursor-pointer select-none transition-colors",
+                                isExpanded ? "bg-secondary/25" : "hover:bg-secondary/15"
+                              )}
+                            >
+                              <div className="flex items-center gap-3 min-w-0 sm:w-2/5">
+                                <div className={cn(
+                                  "p-2 rounded-lg border shrink-0",
+                                  doc.status === "Uploaded"
+                                    ? "bg-primary/10 text-primary border-primary/20"
+                                    : "bg-secondary text-muted-foreground border-border"
+                                )}>
+                                  <FileText className="h-4 w-4 shrink-0" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <span className="text-xs font-bold text-foreground block truncate">{doc.name}</span>
+                                  {doc.status === "Uploaded" && doc.fileName && (
+                                    <span className="text-[10px] text-muted-foreground truncate block max-w-xs mt-0.5">
+                                      {doc.fileName}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center sm:w-1/5 shrink-0">
+                                <span className={cn(
+                                  "text-[9px] px-2 py-0.5 font-bold rounded-full border tracking-wide uppercase",
+                                  doc.status === "Uploaded"
+                                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                    : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                )}>
+                                  {doc.status === "Uploaded" ? "Uploaded" : "Pending"}
+                                </span>
+                              </div>
+
+                              <div className="text-[10px] text-muted-foreground sm:w-1/5 shrink-0">
+                                {doc.status === "Uploaded" ? `Uploaded: ${doc.uploadedDate}` : "No Date Available"}
+                              </div>
+
+                              <div className="flex items-center gap-1.5 sm:w-1/5 sm:justify-end shrink-0" onClick={(e) => e.stopPropagation()}>
+                                {doc.status === "Uploaded" ? (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setPreviewDoc(doc)}
+                                      className="text-[10px] h-7 px-2 shrink-0 border border-border"
+                                    >
+                                      View
+                                    </Button>
+                                    {doc.canDelete && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteDoc(doc.id)}
+                                        className="text-[10px] h-7 px-2 shrink-0 text-rose-500 hover:bg-rose-500/10 border border-rose-500/20"
+                                      >
+                                        Delete
+                                      </Button>
+                                    )}
+                                  </>
+                                ) : (
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => triggerDocUploadPicker(doc.id)}
+                                    className="text-[10px] h-7 px-2 shrink-0"
+                                  >
+                                    Upload
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Expanded detail preview option */}
+                            {isExpanded && (
+                              <div className="p-4 border-t border-border bg-secondary/5 space-y-4">
+                                {doc.status === "Uploaded" && doc.fileData && (
+                                  <div className="flex flex-col gap-2">
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">Document Preview:</span>
+                                    <div className="max-h-60 overflow-hidden border border-border rounded-lg bg-slate-900/10 flex items-center justify-center p-2">
+                                      {doc.fileType.startsWith("image/") ? (
+                                        <img src={doc.fileData} alt={doc.name} className="max-h-56 max-w-full object-contain rounded" />
+                                      ) : (
+                                        <div className="py-8 flex flex-col items-center gap-2">
+                                          <FileText className="h-10 w-10 text-rose-500" />
+                                          <span className="text-xs font-semibold text-foreground">{doc.fileName} (PDF File)</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {doc.status !== "Uploaded" && (
+                                  <div className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center gap-2 bg-secondary/10">
+                                    <UploadCloud className="h-8 w-8 text-muted-foreground" />
+                                    <span className="text-xs font-semibold text-foreground">Select a file from your device</span>
+                                    <span className="text-[10px] text-muted-foreground">Supports JPEG, PNG, or PDF up to 2MB</span>
+                                    <Button
+                                      variant="primary"
+                                      size="sm"
+                                      onClick={() => triggerDocUploadPicker(doc.id)}
+                                      className="mt-2"
+                                    >
+                                      Browse Files
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
                 </motion.div>
               )}
 
@@ -1583,6 +1928,37 @@ export default function ManagerApp({ onLogout }) {
         </form>
       </Modal>
 
+      {/* 5. Document Viewer Modal */}
+      {previewDoc && (
+        <Modal isOpen={!!previewDoc} onClose={() => setPreviewDoc(null)} title={previewDoc.name}>
+          <div className="space-y-4">
+            <div className="border border-border rounded-lg max-h-[70vh] overflow-auto flex items-center justify-center p-2 bg-slate-950/5">
+              {previewDoc.fileType.startsWith("image/") ? (
+                <img src={previewDoc.fileData} alt={previewDoc.name} className="max-w-full max-h-[60vh] object-contain rounded" />
+              ) : (
+                <div className="py-12 flex flex-col items-center gap-3">
+                  <FileText className="h-16 w-16 text-rose-500" />
+                  <span className="text-sm font-semibold text-foreground">{previewDoc.fileName}</span>
+                  <span className="text-xs text-muted-foreground">PDF Document</span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <Button variant="outline" onClick={() => setPreviewDoc(null)}>Close</Button>
+              {previewDoc.fileData && (
+                <a 
+                  href={previewDoc.fileData} 
+                  download={previewDoc.fileName || 'document.jpg'} 
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 transition-all"
+                >
+                  <Download className="h-3.5 w-3.5" /> Download
+                </a>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
+
     </div>
   );
 }
@@ -1603,8 +1979,24 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c; // in meters
 }
 
+const requestCapacitorLocationPermission = async () => {
+  if (typeof window !== 'undefined' && window.Capacitor) {
+    try {
+      const { Geolocation } = await import('@capacitor/geolocation');
+      const permStatus = await Geolocation.checkPermissions();
+      if (permStatus.location === 'denied' || permStatus.location === 'prompt') {
+        await Geolocation.requestPermissions();
+      }
+    } catch (e) {
+      console.warn("Capacitor Geolocation permission request failed: ", e);
+    }
+  }
+};
+
 function checkGeofence(companyDetails) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    // Ask for native permission first
+    await requestCapacitorLocationPermission();
     if (!companyDetails || companyDetails.lat === null || companyDetails.lng === null || companyDetails.lat === undefined || companyDetails.lng === undefined) {
       resolve(true);
       return;

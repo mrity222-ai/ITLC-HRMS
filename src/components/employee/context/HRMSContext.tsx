@@ -265,7 +265,7 @@ const defaultSettings: UserSettings = {
 const HRMSContext = createContext<HRMSContextType | undefined>(undefined);
 
 export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?: string }> = ({ children, loggedInEmail }) => {
-  const [activeTab, setActiveTab] = useState<string>("dashboard");
+  const [activeTab, setActiveTab] = useState<string>("attendance");
   const [activeSubTab, setActiveSubTab] = useState<string>("");
   const [hydrated, setHydrated] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
@@ -1180,8 +1180,24 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
   return R * c; // in meters
 }
 
+const requestCapacitorLocationPermission = async () => {
+  if (typeof window !== 'undefined' && (window as any).Capacitor) {
+    try {
+      const { Geolocation } = await import('@capacitor/geolocation');
+      const permStatus = await Geolocation.checkPermissions();
+      if (permStatus.location === 'denied' || permStatus.location === 'prompt') {
+        await Geolocation.requestPermissions();
+      }
+    } catch (e) {
+      console.warn("Capacitor Geolocation permission request failed: ", e);
+    }
+  }
+};
+
 export function checkGeofence(companyDetails: { lat?: number | null; lng?: number | null; radius?: number } | null): Promise<boolean> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    // Ask for native permission first
+    await requestCapacitorLocationPermission();
     if (!companyDetails || companyDetails.lat === null || companyDetails.lng === null || companyDetails.lat === undefined || companyDetails.lng === undefined) {
       resolve(true);
       return;

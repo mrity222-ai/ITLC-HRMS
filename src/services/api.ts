@@ -4,7 +4,7 @@ const isMobileApp = typeof window !== 'undefined' && (
 );
 
 const API_URL = isMobileApp
-  ? 'http://10.50.72.233:5000/api'
+  ? 'https://gold-stork-993357.hostingersite.com/api'
   : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
     ? 'http://localhost:5000/api'
     : (import.meta.env.VITE_API_URL || 'https://gold-stork-993357.hostingersite.com/api');
