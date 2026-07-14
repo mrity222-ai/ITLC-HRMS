@@ -160,24 +160,35 @@ export default function ManagerApp({ onLogout }) {
 
   // Load live data
   const loadLiveManagerPortal = async () => {
+    const safeFetch = async (apiCall, fallback) => {
+      try {
+        return await apiCall();
+      } catch (err) {
+        console.warn("Failed fetching from api:", err);
+        return fallback;
+      }
+    };
+
     try {
       const [profile, team, leaveList, attList, corrList, taskList, perfList, expList, assetList, meetList, annList, personalData] = await Promise.all([
-        api.getProfile(),
-        api.getManagerTeam(),
-        api.getManagerLeaves(),
-        api.getManagerTeamAttendance(),
-        api.getManagerCorrections(),
-        api.getManagerTasks(),
-        api.getManagerPerformance(),
-        api.getManagerExpenses(),
-        api.getManagerAssets(),
-        api.getManagerMeetings(),
-        api.getManagerAnnouncements(),
-        api.getEmployeeAttendance()
+        safeFetch(() => api.getProfile(), null),
+        safeFetch(() => api.getManagerTeam(), []),
+        safeFetch(() => api.getManagerLeaves(), []),
+        safeFetch(() => api.getManagerTeamAttendance(), []),
+        safeFetch(() => api.getManagerCorrections(), []),
+        safeFetch(() => api.getManagerTasks(), []),
+        safeFetch(() => api.getManagerPerformance(), []),
+        safeFetch(() => api.getManagerExpenses(), []),
+        safeFetch(() => api.getManagerAssets(), []),
+        safeFetch(() => api.getManagerMeetings(), []),
+        safeFetch(() => api.getManagerAnnouncements(), []),
+        safeFetch(() => api.getEmployeeAttendance(), [])
       ]);
 
-      setManagerProfile(profile);
-      setDocumentsVault(profile.documents && profile.documents.length > 0 ? profile.documents : DEFAULT_DOCUMENTS);
+      if (profile) {
+        setManagerProfile(profile);
+        setDocumentsVault(profile.documents && profile.documents.length > 0 ? profile.documents : DEFAULT_DOCUMENTS);
+      }
       setTeamMembers(team || []);
       setLeaves(leaveList || []);
       setAttendance(attList || []);
@@ -190,7 +201,7 @@ export default function ManagerApp({ onLogout }) {
       setAnnouncements(annList || []);
       setOwnLogs(personalData || []);
     } catch (err) {
-      console.error("Error loading manager portal live records:", err);
+      console.error("Critical error in loadLiveManagerPortal:", err);
     } finally {
       setLoading(false);
     }
