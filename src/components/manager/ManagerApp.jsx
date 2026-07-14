@@ -143,6 +143,7 @@ export default function ManagerApp({ onLogout }) {
   
   // Manager personal attendance states
   const [ownLogs, setOwnLogs] = useState([]);
+  const [myPayslips, setMyPayslips] = useState([]);
   const [punchedIn, setPunchedIn] = useState(false);
   const [punchTime, setPunchTime] = useState(null);
   const [workDuration, setWorkDuration] = useState('00:00:00');
@@ -185,7 +186,7 @@ export default function ManagerApp({ onLogout }) {
     };
 
     try {
-      const [profile, team, leaveList, attList, corrList, taskList, perfList, expList, assetList, meetList, annList, personalData] = await Promise.all([
+      const [profile, team, leaveList, attList, corrList, taskList, perfList, expList, assetList, meetList, annList, personalData, payrollList] = await Promise.all([
         safeFetch(() => api.getProfile(), null),
         safeFetch(() => api.getManagerTeam(), []),
         safeFetch(() => api.getManagerLeaves(), []),
@@ -197,7 +198,8 @@ export default function ManagerApp({ onLogout }) {
         safeFetch(() => api.getManagerAssets(), []),
         safeFetch(() => api.getManagerMeetings(), []),
         safeFetch(() => api.getManagerAnnouncements(), []),
-        safeFetch(() => api.getEmployeeAttendance(), [])
+        safeFetch(() => api.getEmployeeAttendance(), []),
+        safeFetch(() => api.getEmployeePayroll(), [])
       ]);
 
       if (profile) {
@@ -215,6 +217,21 @@ export default function ManagerApp({ onLogout }) {
       setMeetings(meetList || []);
       setAnnouncements(annList || []);
       setOwnLogs(personalData || []);
+      
+      if (Array.isArray(payrollList)) {
+        const mappedPayslips = payrollList.map((p) => ({
+          id: p.id.toString(),
+          month: p.month,
+          year: p.year,
+          grossSalary: (p.basic || 0) + (p.hra || 0) + (p.allowances || 0),
+          deductions: p.deductions || 0,
+          netSalary: p.netSalary || 0,
+          bonus: 0,
+          reimbursement: 0,
+          taxDeduction: 0
+        }));
+        setMyPayslips(mappedPayslips);
+      }
     } catch (err) {
       console.error("Critical error in loadLiveManagerPortal:", err);
     } finally {
@@ -652,6 +669,7 @@ export default function ManagerApp({ onLogout }) {
             { id: 'reports', label: 'Data Reports', icon: FileText },
             { id: 'announcements', label: 'Announcements', icon: Megaphone },
             { id: 'profile', label: 'Manager Profile', icon: User },
+            { id: 'payroll', label: 'My Payslips', icon: CreditCard },
             { id: 'settings', label: 'Settings', icon: SettingsIcon },
           ].filter(item => !isMobile || ['attendance', 'profile'].includes(item.id)).map(item => {
             const isActive = activeTab === item.id;
@@ -1932,6 +1950,106 @@ export default function ManagerApp({ onLogout }) {
                       )}
                     </div>
                   </Card>
+                </motion.div>
+              )}
+
+              {/* ------------------------------------------------------------------
+                  TAB: MANAGER MY PAYSLIPS
+                  ------------------------------------------------------------------ */}
+              {activeTab === 'payroll' && (
+                <motion.div
+                  key="payroll"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                      <CreditCard className="h-5 w-5 text-primary" /> My Salary & Payslips
+                    </h2>
+                    <p className="text-xs text-muted-foreground">Review your personal salary disbursements and download official monthly payslip receipts.</p>
+                  </div>
+
+                  {myPayslips.length === 0 ? (
+                    <Card className="p-12 text-center text-sm text-muted-foreground flex flex-col items-center justify-center gap-3 bg-card border border-border">
+                      <CreditCard className="h-10 w-10 text-muted-foreground/40" />
+                      <div>
+                        <p className="font-bold text-foreground">No payslips disbursed yet</p>
+                        <p className="text-xs mt-1">Your monthly payslip history will show up here once processed by Admin.</p>
+                      </div>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      {/* Left: Salary History */}
+                      <Card className="p-6 bg-card border border-border lg:col-span-2 space-y-4">
+                        <h3 className="font-bold text-sm text-foreground">Disbursement History</h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="border-b border-border text-[10px] text-muted-foreground uppercase font-bold">
+                                <th className="pb-3">Period</th>
+                                <th className="pb-3">Gross Salary</th>
+                                <th className="pb-3">Deductions</th>
+                                <th className="pb-3 text-primary">Net Paid</th>
+                                <th className="pb-3 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {myPayslips.map((pay) => (
+                                <tr key={pay.id} className="border-b border-border/50 hover:bg-secondary/10 transition-colors">
+                                  <td className="py-3 font-bold text-foreground">{pay.month} {pay.year}</td>
+                                  <td className="py-3 text-muted-foreground">₹{pay.grossSalary.toLocaleString('en-IN')}</td>
+                                  <td className="py-3 text-danger/80">-₹{pay.deductions.toLocaleString('en-IN')}</td>
+                                  <td className="py-3 font-bold text-primary">₹{pay.netSalary.toLocaleString('en-IN')}</td>
+                                  <td className="py-3 text-right">
+                                    <Button 
+                                      size="xs" 
+                                      variant="outline" 
+                                      onClick={() => alert(`Downloading Payslip receipt for ${pay.month} ${pay.year}. PDF generated successfully!`)}
+                                    >
+                                      PDF Receipt
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </Card>
+
+                      {/* Right: Latest Payslip Details breakdown */}
+                      <Card className="p-6 bg-card border border-border space-y-6">
+                        <div className="border-b border-border pb-4">
+                          <span className="text-[10px] text-muted-foreground font-bold uppercase">Latest Disbursed Period</span>
+                          <h3 className="font-extrabold text-foreground text-base mt-1">{myPayslips[0].month} {myPayslips[0].year}</h3>
+                        </div>
+
+                        <div className="space-y-3 text-xs">
+                          <div className="flex justify-between items-center py-1">
+                            <span className="text-muted-foreground">Earnings (Basic + Allowances)</span>
+                            <span className="font-bold text-foreground">₹{myPayslips[0].grossSalary.toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-1 text-danger/80">
+                            <span>Total Deductions (Tax & PF)</span>
+                            <span>-₹{myPayslips[0].deductions.toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-3 border-t border-border mt-2 text-sm font-bold text-primary">
+                            <span>Net Salary Paid</span>
+                            <span>₹{myPayslips[0].netSalary.toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
+
+                        <Button 
+                          variant="primary" 
+                          className="w-full"
+                          onClick={() => window.print()}
+                        >
+                          Print Details
+                        </Button>
+                      </Card>
+                    </div>
+                  )}
                 </motion.div>
               )}
 

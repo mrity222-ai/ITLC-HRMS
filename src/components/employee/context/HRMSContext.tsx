@@ -285,7 +285,7 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
   const [leaveBalances, setLeaveBalances] = useState({ casual: 12, sick: 8, earned: 18, compOff: 4 });
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(defaultLeaveRequests);
   
-  const [payslips] = useState<Payslip[]>(defaultPayslips);
+  const [payslips, setPayslips] = useState<Payslip[]>(defaultPayslips);
   const [documents, setDocuments] = useState<Document[]>(defaultDocuments);
   const [expenses, setExpenses] = useState<ExpenseClaim[]>(defaultExpenses);
   const [assets, setAssets] = useState<Asset[]>(defaultAssets);
@@ -361,6 +361,27 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
           createdAt: t.createdDate
         }));
         setTickets(mappedTickets);
+
+        // Load Payslips
+        try {
+          const payrollList = await api.getEmployeePayroll();
+          if (Array.isArray(payrollList)) {
+            const mappedPayslips = payrollList.map((p: any) => ({
+              id: p.id.toString(),
+              month: p.month,
+              year: p.year,
+              grossSalary: (p.basic || 0) + (p.hra || 0) + (p.allowances || 0),
+              deductions: p.deductions || 0,
+              netSalary: p.netSalary || 0,
+              bonus: 0,
+              reimbursement: 0,
+              taxDeduction: 0
+            }));
+            setPayslips(mappedPayslips);
+          }
+        } catch (err) {
+          console.error("Failed loading employee payslips:", err);
+        }
 
         // Load Attendance History
         try {

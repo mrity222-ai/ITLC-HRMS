@@ -120,6 +120,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getEmployeePayroll() {
+    const res = await fetch(`${API_URL}/employee/payroll?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async createAdminPayroll(data: any) {
     const res = await fetch(`${API_URL}/admin/payroll`, {
       method: 'POST',

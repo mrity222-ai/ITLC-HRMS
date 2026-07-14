@@ -76,6 +76,28 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
     alert(`Downloading Payslip for ${selectedEmp.name} (July 2026). PDF generated successfully!`);
   };
 
+  const handleProcessSinglePayslip = async () => {
+    try {
+      await api.createAdminPayroll({
+        employeeId: selectedEmp.id,
+        employeeName: selectedEmp.name,
+        month: 'July',
+        year: 2026,
+        basic: adjustedBaseSalary,
+        hra: 0,
+        allowances: Number(bonus),
+        deductions: pf + esi + tax + Number(deductions),
+        netSalary: netPay,
+        status: 'Processed'
+      });
+      alert(`Payslip for ${selectedEmp.name} (July 2026) has been successfully processed and disbursed!`);
+      const history = await api.getAdminPayroll();
+      setPayrollHistory(history);
+    } catch (err) {
+      alert("Failed to process individual payslip.");
+    }
+  };
+
   const handleRunBulkPayroll = async () => {
     try {
       let totalAmount = 0;
@@ -207,14 +229,24 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab 
                   </div>
                 </div>
 
-                <button 
-                  onClick={handleDownloadPayslip}
-                  className="premium-btn premium-btn-primary" 
-                  style={{ width: '100%', justifyContent: 'center', padding: 12, marginTop: 10 }}
-                >
-                  <Download size={16} />
-                  <span>Download PDF Payslip</span>
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+                  <button 
+                    onClick={handleProcessSinglePayslip}
+                    className="premium-btn premium-btn-success" 
+                    style={{ width: '100%', justifyContent: 'center', padding: 12, border: 'none', borderRadius: 8, background: 'var(--color-success)', color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <span>Process & Disburse Salary</span>
+                  </button>
+
+                  <button 
+                    onClick={handleDownloadPayslip}
+                    className="premium-btn premium-btn-primary" 
+                    style={{ width: '100%', justifyContent: 'center', padding: 12 }}
+                  >
+                    <Download size={16} />
+                    <span>Download PDF Payslip</span>
+                  </button>
+                </div>
               </div>
             </div>
 
