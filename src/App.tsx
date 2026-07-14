@@ -13,7 +13,6 @@ export default function App() {
   const [view, setView] = useState<'login' | 'superowner-login' | 'employee' | 'admin' | 'superowner' | 'manager'>('login');
   const [loggedInEmail, setLoggedInEmail] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [showSplash, setShowSplash] = useState(true);
   const [profile, setProfile] = useState<any>(null);
 
   const loadProfile = async () => {
@@ -67,10 +66,6 @@ export default function App() {
 
   useEffect(() => {
     loadProfile();
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 3500);
-    return () => clearTimeout(timer);
   }, []);
 
   const handleSuccessLogin = () => {
@@ -85,20 +80,7 @@ export default function App() {
     loadProfile();
   };
 
-  if (showSplash) {
-    return (
-      <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', backgroundColor: '#000', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        <video 
-          src="/splash.mp4"
-          autoPlay 
-          muted 
-          playsInline
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          onEnded={() => setShowSplash(false)}
-        />
-      </div>
-    );
-  }
+
 
   if (isLoading) {
     return (
