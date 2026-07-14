@@ -324,7 +324,15 @@ const AdminDocumentPreviewer = ({ doc, profile }) => {
   }
 };
 
-export default function EmployeeManagement({ employees, setEmployees, searchQuery, initialSelectedEmpId, subTab }) {
+export default function EmployeeManagement({ employees, setEmployees, searchQuery, initialSelectedEmpId, subTab, currency = 'USD' }) {
+  const currencySymbols = {
+    USD: '$',
+    INR: '₹',
+    EUR: '€',
+    GBP: '£'
+  };
+  const cSymbol = currencySymbols[currency] || '$';
+
   const [deptFilter, setDeptFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [desgFilter, setDesgFilter] = useState('All');
@@ -434,7 +442,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
         role: newRole,
         systemRole: newSystemRole,
         department: showCustomDeptInput ? newCustomDept : newDept,
-        salary: `₹${newSalary || '75,000'}`,
+        salary: `${cSymbol}${newSalary || '75,000'}`,
         phone: newPhone || '+1 (555) 019-2834',
         reportingManager: newManager,
         avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 900000)}?w=150&auto=format&fit=crop&q=80`,
@@ -494,7 +502,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
         department: showCustomDeptInput ? newCustomDept : newDept, 
         status: newStatus, 
         phone: newPhone, 
-        salary: `₹${Number(newSalary).toLocaleString()}`,
+        salary: `${cSymbol}${Number(newSalary).toLocaleString()}`,
         dob: newDob,
         gender: newGender,
         address: newAddress,
@@ -934,13 +942,13 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
                 <div className="premium-form-group">
-                  <label className="premium-label">Base Salary (USD/yr)</label>
+                  <label className="premium-label">Base Salary ({currency}/yr)</label>
                   <input 
                     type="number" 
                     value={newSalary} 
                     onChange={(e) => setNewSalary(e.target.value)} 
                     className="premium-input" 
-                    placeholder="75,000"
+                    placeholder="75000"
                   />
                 </div>
                 <div className="premium-form-group">
@@ -1157,7 +1165,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                     )}
                   </div>
                   <div className="premium-form-group">
-                    <label className="premium-label">Base Salary (USD/yr)</label>
+                    <label className="premium-label">Base Salary ({currency}/yr)</label>
                     <input type="text" value={newSalary} onChange={(e) => setNewSalary(e.target.value)} className="premium-input" />
                   </div>
                   <div className="premium-form-group">

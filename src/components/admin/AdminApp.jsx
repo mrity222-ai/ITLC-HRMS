@@ -247,7 +247,7 @@ export default function App({ onLogout }) {
         return <DashboardOverview employeesList={employees} notifications={notifications} setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'employees':
       case 'employee-profile':
-        return <EmployeeManagement employees={employees} setEmployees={setEmployees} searchQuery={searchQuery} subTab={activeTab === 'employee-profile' ? 'profile' : 'directory'} setActiveTab={setActiveTab} />;
+        return <EmployeeManagement employees={employees} setEmployees={setEmployees} searchQuery={searchQuery} subTab={activeTab === 'employee-profile' ? 'profile' : 'directory'} setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'departments':
         return <Departments setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'designations':
@@ -278,7 +278,7 @@ export default function App({ onLogout }) {
       case 'payroll-compliance':
       case 'payroll-reimbursements':
       case 'payroll-reports':
-        return <Payroll employees={employees} subTab={activeTab.split('-')[1] || 'dashboard'} setActiveTab={setActiveTab} />;
+        return <Payroll employees={employees} subTab={activeTab.split('-')[1] || 'dashboard'} setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'recruitment':
       case 'recruitment-dashboard':
       case 'recruitment-openings':
@@ -297,7 +297,7 @@ export default function App({ onLogout }) {
       case 'performance-reports':
         return <Performance employees={employees} subTab={activeTab.split('-')[1] || 'dashboard'} />;
       case 'expenses':
-        return <Expenses setActiveTab={setActiveTab} />;
+        return <Expenses setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'support':
         return <SupportTickets setActiveTab={setActiveTab} />;
       case 'assets':

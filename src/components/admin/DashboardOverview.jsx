@@ -338,7 +338,7 @@ export default function DashboardOverview({ employeesList = [], notifications = 
                 <YAxis tick={{ fontSize: 12, fill: 'var(--color-text-tertiary)' }} axisLine={false} tickLine={false} />
                 <Tooltip 
                   contentStyle={{ background: 'var(--glass-bg)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 12 }}
-                  formatter={(value, name) => [`₹${value}K`, name]}
+                  formatter={(value, name) => [`${currencySymbol}${value}K`, name]}
                 />
                 <Bar dataKey="Net" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Net Payroll">
                   {payrollTrendData.map((entry, index) => (

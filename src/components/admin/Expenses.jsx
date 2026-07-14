@@ -7,7 +7,15 @@ import { CreditCard, Plus, FileText, CheckCircle, XCircle, Search, PieChart } fr
 import { api } from '../../services/api';
 import { useEffect } from 'react';
 
-export default function Expenses({ subTab = 'dashboard' }) {
+export default function Expenses({ subTab = 'dashboard', currency = 'USD' }) {
+  const currencySymbols = {
+    USD: '$',
+    INR: '₹',
+    EUR: '€',
+    GBP: '£'
+  };
+  const cSymbol = currencySymbols[currency] || '$';
+
   const [expenseList, setExpenseList] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -19,7 +27,7 @@ export default function Expenses({ subTab = 'dashboard' }) {
         const mapped = list.map(exp => ({
           id: exp.id,
           employee: exp.employeeName,
-          amount: `₹${exp.amount.toFixed(2)}`,
+          amount: `${cSymbol}${exp.amount.toFixed(2)}`,
           category: exp.category,
           merchant: 'Corporate Expense',
           date: exp.date,
@@ -53,7 +61,7 @@ export default function Expenses({ subTab = 'dashboard' }) {
       const newExp = {
         id: result.id,
         employee: result.employeeName,
-        amount: `₹${result.amount.toFixed(2)}`,
+        amount: `${cSymbol}${result.amount.toFixed(2)}`,
         category: result.category,
         merchant: merchant,
         date: result.date,
@@ -127,7 +135,7 @@ export default function Expenses({ subTab = 'dashboard' }) {
               </select>
             </div>
             <div className="premium-form-group" style={{ marginBottom: 0 }}>
-              <label className="premium-label">Amount (USD)</label>
+              <label className="premium-label">Amount ({currency})</label>
               <input 
                 type="number" 
                 required
