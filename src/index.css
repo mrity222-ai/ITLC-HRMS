@@ -526,10 +526,25 @@ aside,
   border-bottom: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
-  position: sticky !important;
   top: 0 !important;
   height: 100vh !important;
   z-index: 45 !important;
+}
+
+@media (min-width: 768px) {
+  aside, 
+  .sidebar, 
+  [class*="sidebar"] {
+    position: sticky !important;
+  }
+}
+
+@media (max-width: 767px) {
+  aside, 
+  .sidebar, 
+  [class*="sidebar"] {
+    position: fixed !important;
+  }
 }
 
 /* Navigation items inside sidebar */
