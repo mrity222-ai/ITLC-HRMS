@@ -73,7 +73,7 @@ export default function App({ onLogout }) {
 
   useEffect(() => {
     if (isMobile && !['attendance', 'settings', 'payroll', 'attendance-dashboard', 'attendance-logs', 'attendance-grid', 'attendance-my', 'attendance-shift', 'attendance-reports'].includes(activeTab) && !activeTab.startsWith('payroll-')) {
-      setActiveTab('attendance-my');
+      setActiveTab('attendance-dashboard');
     }
   }, [isMobile, activeTab]);
   const [employees, setEmployees] = useState([]);
