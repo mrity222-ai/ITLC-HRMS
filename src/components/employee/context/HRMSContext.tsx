@@ -265,7 +265,7 @@ const defaultSettings: UserSettings = {
 const HRMSContext = createContext<HRMSContextType | undefined>(undefined);
 
 export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?: string }> = ({ children, loggedInEmail }) => {
-  const [activeTab, setActiveTab] = useState<string>("attendance");
+  const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [activeSubTab, setActiveSubTab] = useState<string>("");
   const [hydrated, setHydrated] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);

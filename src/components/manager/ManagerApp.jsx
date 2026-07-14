@@ -105,7 +105,7 @@ const compressImage = (base64Str, maxWidth = 800, maxHeight = 800) => {
 };
 
 export default function ManagerApp({ onLogout }) {
-  const [activeTab, setActiveTab] = useState('attendance');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [managerProfile, setManagerProfile] = useState(null);
   const [documentsVault, setDocumentsVault] = useState([]);
   const [uploadingDocId, setUploadingDocId] = useState(null);
@@ -614,9 +614,19 @@ export default function ManagerApp({ onLogout }) {
         {/* Navigation Menu */}
         <nav className="flex-1 py-4 overflow-y-auto px-2 space-y-1 scrollbar-none">
           {[
+            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'team', label: 'Team Directory', icon: Users },
             { id: 'attendance', label: 'Attendance Approvals', icon: Clock, badge: pendingCorrCount },
-            { id: 'expenses', label: 'Salary & Expenses', icon: CreditCard, badge: pendingClaimsCount },
+            { id: 'leaves', label: 'Leave Management', icon: CalendarDays, badge: pendingLeavesCount },
+            { id: 'tasks', label: 'Task Management', icon: ClipboardList },
+            { id: 'performance', label: 'Performance Review', icon: TrendingUp },
+            { id: 'expenses', label: 'Expense Claims', icon: CreditCard, badge: pendingClaimsCount },
+            { id: 'assets', label: 'Assigned Assets', icon: HardDrive },
+            { id: 'meetings', label: 'Meetings Scheduler', icon: Video },
+            { id: 'reports', label: 'Data Reports', icon: FileText },
+            { id: 'announcements', label: 'Announcements', icon: Megaphone },
             { id: 'profile', label: 'Manager Profile', icon: User },
+            { id: 'settings', label: 'Settings', icon: SettingsIcon },
           ].map(item => {
             const isActive = activeTab === item.id;
             return (
