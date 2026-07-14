@@ -146,7 +146,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
   });
 
   const visibleMenuItems = isMobile
-    ? rawVisibleMenuItems.filter(item => ['attendance', 'settings'].includes(item.id))
+    ? rawVisibleMenuItems.filter(item => ['attendance', 'settings', 'payroll'].includes(item.id))
     : rawVisibleMenuItems;
 
   useEffect(() => {

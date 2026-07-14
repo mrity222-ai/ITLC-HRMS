@@ -112,7 +112,7 @@ export default function ManagerApp({ onLogout }) {
     const handleResize = () => {
       const isMob = window.innerWidth < 768;
       setIsMobile(isMob);
-      if (isMob && !['attendance', 'profile'].includes(activeTab)) {
+      if (isMob && !['attendance', 'profile', 'payroll'].includes(activeTab)) {
         setActiveTab('attendance');
       }
     };
@@ -671,7 +671,7 @@ export default function ManagerApp({ onLogout }) {
             { id: 'profile', label: 'Manager Profile', icon: User },
             { id: 'payroll', label: 'My Payslips', icon: CreditCard },
             { id: 'settings', label: 'Settings', icon: SettingsIcon },
-          ].filter(item => !isMobile || ['attendance', 'profile'].includes(item.id)).map(item => {
+          ].filter(item => !isMobile || ['attendance', 'profile', 'payroll'].includes(item.id)).map(item => {
             const isActive = activeTab === item.id;
             return (
               <button

@@ -31,7 +31,7 @@ function DashboardContent({ onLogout }: { onLogout?: () => void }) {
   useEffect(() => {
     const handleResize = () => {
       const isMob = window.innerWidth < 768;
-      if (isMob && !["attendance", "profile", "documents"].includes(activeTab)) {
+      if (isMob && !["attendance", "profile", "documents", "payroll"].includes(activeTab)) {
         setActiveTab("attendance");
       }
     };

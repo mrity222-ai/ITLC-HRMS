@@ -145,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobil
   ];
 
   const filteredMenuItems = isMobile
-    ? menuItems.filter((item) => ["attendance", "profile", "documents"].includes(item.id))
+    ? menuItems.filter((item) => ["attendance", "profile", "documents", "payroll"].includes(item.id))
     : menuItems;
 
   return (
