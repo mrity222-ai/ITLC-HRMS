@@ -137,13 +137,17 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
     return () => media.removeEventListener('change', listener);
   }, []);
 
-  const visibleMenuItems = menuItems.filter(item => {
+  const rawVisibleMenuItems = menuItems.filter(item => {
     // Core menus that are always visible
     if (['dashboard', 'people', 'reports', 'notifications', 'settings', 'security', 'support', 'subscription'].includes(item.id)) return true;
     
     // For all other modules, ONLY SHOW if explicitly enabled by superowner
     return featureFlags[item.id] === true;
   });
+
+  const visibleMenuItems = isMobile
+    ? rawVisibleMenuItems.filter(item => ['attendance', 'settings'].includes(item.id))
+    : rawVisibleMenuItems;
 
   useEffect(() => {
     console.log("=== SIDEBAR DIAGNOSTICS ===");

@@ -23,9 +23,22 @@ import { NotificationsCenter } from "./modules/NotificationsCenter";
 import { Settings } from "./modules/Settings";
 
 function DashboardContent({ onLogout }: { onLogout?: () => void }) {
-  const { activeTab, profile } = useHRMS();
+  const { activeTab, setActiveTab, profile } = useHRMS();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Guard active tab on mobile viewports
+  useEffect(() => {
+    const handleResize = () => {
+      const isMob = window.innerWidth < 768;
+      if (isMob && !["attendance", "profile", "documents"].includes(activeTab)) {
+        setActiveTab("attendance");
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [activeTab, setActiveTab]);
 
   // Render the appropriate panel based on active state tab
   const renderActiveModule = () => {

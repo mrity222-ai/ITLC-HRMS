@@ -34,6 +34,14 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
   const { activeTab, setActiveTab, activeSubTab, setActiveSubTab, notifications, leaveRequests, tickets, profile } = useHRMS();
 
+  const [isMobile, setIsMobile] = useState(false);
+  React.useEffect(() => {
+    const checkScreen = () => setIsMobile(window.innerWidth < 768);
+    checkScreen();
+    window.addEventListener('resize', checkScreen);
+    return () => window.removeEventListener('resize', checkScreen);
+  }, []);
+
   // Badge counters
   const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
   const pendingLeavesCount = leaveRequests.filter((r) => r.status === "Pending").length;
@@ -136,6 +144,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobil
     { id: "settings", label: "Settings", icon: SettingsIcon },
   ];
 
+  const filteredMenuItems = isMobile
+    ? menuItems.filter((item) => ["attendance", "profile", "documents"].includes(item.id))
+    : menuItems;
+
   return (
     <aside
       className={cn(
@@ -164,7 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobil
 
       {/* Navigation Menu */}
       <nav className="flex-1 py-4 overflow-y-auto px-2 space-y-1 scrollbar-none">
-        {menuItems.map((item) => {
+        {filteredMenuItems.map((item) => {
           const isActive = activeTab === item.id;
           const isExpanded = expandedMenus[item.id];
           const Icon = item.icon;

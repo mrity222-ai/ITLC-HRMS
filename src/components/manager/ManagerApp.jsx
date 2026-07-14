@@ -106,6 +106,21 @@ const compressImage = (base64Str, maxWidth = 800, maxHeight = 800) => {
 
 export default function ManagerApp({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isMob = window.innerWidth < 768;
+      setIsMobile(isMob);
+      if (isMob && !['attendance', 'profile'].includes(activeTab)) {
+        setActiveTab('attendance');
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeTab]);
+
   const [managerProfile, setManagerProfile] = useState(null);
   const [documentsVault, setDocumentsVault] = useState([]);
   const [uploadingDocId, setUploadingDocId] = useState(null);
@@ -638,7 +653,7 @@ export default function ManagerApp({ onLogout }) {
             { id: 'announcements', label: 'Announcements', icon: Megaphone },
             { id: 'profile', label: 'Manager Profile', icon: User },
             { id: 'settings', label: 'Settings', icon: SettingsIcon },
-          ].map(item => {
+          ].filter(item => !isMobile || ['attendance', 'profile'].includes(item.id)).map(item => {
             const isActive = activeTab === item.id;
             return (
               <button

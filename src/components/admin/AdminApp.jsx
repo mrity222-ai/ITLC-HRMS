@@ -70,6 +70,12 @@ export default function App({ onLogout }) {
     media.addEventListener('change', listener);
     return () => media.removeEventListener('change', listener);
   }, []);
+
+  useEffect(() => {
+    if (isMobile && !['attendance', 'settings', 'attendance-dashboard', 'attendance-logs', 'attendance-grid', 'attendance-my', 'attendance-shift', 'attendance-reports'].includes(activeTab)) {
+      setActiveTab('attendance-my');
+    }
+  }, [isMobile, activeTab]);
   const [employees, setEmployees] = useState([]);
   const [profile, setProfile] = useState({
     name: 'Marcus Vance',
