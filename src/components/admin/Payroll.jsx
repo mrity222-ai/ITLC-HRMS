@@ -21,6 +21,54 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const [loadingAtt, setLoadingAtt] = useState(false);
   const [payrollHistory, setPayrollHistory] = useState([]);
 
+  // Editable Payroll Configurations
+  const [basicSalaryPercent, setBasicSalaryPercent] = useState(50.0);
+  const [hraPercent, setHraPercent] = useState(40.0);
+  const [pfPercent, setPfPercent] = useState(12.0);
+  const [esiPercent, setEsiPercent] = useState(1.75);
+  const [tdsPercent, setTdsPercent] = useState(15.0);
+  const [totalWorkingDays, setTotalWorkingDays] = useState(22);
+  const [loadingCompany, setLoadingCompany] = useState(false);
+
+  useEffect(() => {
+    const loadCompanyPayrollSettings = async () => {
+      setLoadingCompany(true);
+      try {
+        const comp = await api.getAdminCompany();
+        if (comp) {
+          if (comp.basicSalaryPercent !== undefined) setBasicSalaryPercent(comp.basicSalaryPercent);
+          if (comp.hraPercent !== undefined) setHraPercent(comp.hraPercent);
+          if (comp.pfPercent !== undefined) setPfPercent(comp.pfPercent);
+          if (comp.esiPercent !== undefined) setEsiPercent(comp.esiPercent);
+          if (comp.tdsPercent !== undefined) setTdsPercent(comp.tdsPercent);
+          if (comp.totalWorkingDays !== undefined) setTotalWorkingDays(comp.totalWorkingDays);
+        }
+      } catch (err) {
+        console.error("Failed to load company payroll settings:", err);
+      } finally {
+        setLoadingCompany(false);
+      }
+    };
+    loadCompanyPayrollSettings();
+  }, []);
+
+  const handleSavePayrollSettings = async () => {
+    try {
+      await api.updateAdminCompany({
+        basicSalaryPercent,
+        hraPercent,
+        pfPercent,
+        esiPercent,
+        tdsPercent,
+        totalWorkingDays
+      });
+      alert("Payroll configurations saved successfully!");
+    } catch (err) {
+      alert("Failed to save payroll configurations.");
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     const fetchPayroll = async () => {
       try {
@@ -65,7 +113,6 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const presentCount = attendance.filter(a => a.status === 'Present' || a.status === 'Late').length;
   const halfDayCount = attendance.filter(a => a.status === 'Half-day').length;
   const activeDays = presentCount + (halfDayCount * 0.5);
-  const totalWorkingDays = 22;
   const payoutRatio = attendance.length === 0 ? 1.0 : Math.min(1.0, activeDays / totalWorkingDays);
 
   const baseSalary = (selectedEmp && typeof selectedEmp.salary === 'string') 
@@ -75,9 +122,11 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     : 5000;
   const adjustedBaseSalary = baseSalary * payoutRatio;
 
-  const pf = Math.round(adjustedBaseSalary * 0.12);
-  const esi = Math.round(adjustedBaseSalary * 0.0175);
-  const tax = Math.round((adjustedBaseSalary + Number(bonus)) * 0.15); // 15% flat rate
+  const basicPay = adjustedBaseSalary * (basicSalaryPercent / 100);
+  const hra = basicPay * (hraPercent / 100);
+  const pf = Math.round(basicPay * (pfPercent / 100));
+  const esi = Math.round(basicPay * (esiPercent / 100));
+  const tax = Math.round((adjustedBaseSalary + Number(bonus)) * (tdsPercent / 100));
   const netPay = Math.round(adjustedBaseSalary + Number(bonus) - Number(deductions) - pf - esi - tax);
 
   const handleDownloadPayslip = () => {
@@ -91,8 +140,8 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         employeeName: selectedEmp.name,
         month: 'July',
         year: 2026,
-        basic: adjustedBaseSalary,
-        hra: 0,
+        basic: basicPay,
+        hra: hra,
         allowances: Number(bonus),
         deductions: pf + esi + tax + Number(deductions),
         netSalary: netPay,
@@ -113,9 +162,10 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         const empBase = (typeof emp.salary === 'string') 
           ? parseFloat(emp.salary.replace('$', '').replace('₹', '').replace(/,/g, '')) / 12 
           : (typeof emp.salary === 'number' ? emp.salary / 12 : 5000);
-        const empPf = Math.round(empBase * 0.12);
-        const empEsi = Math.round(empBase * 0.0175);
-        const empTax = Math.round(empBase * 0.15);
+        const empBasicPay = empBase * (basicSalaryPercent / 100);
+        const empPf = Math.round(empBasicPay * (pfPercent / 100));
+        const empEsi = Math.round(empBasicPay * (esiPercent / 100));
+        const empTax = Math.round(empBase * (tdsPercent / 100));
         const empNet = Math.round(empBase - empPf - empEsi - empTax);
         totalAmount += empNet;
         
@@ -124,8 +174,8 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
           employeeName: emp.name,
           month: 'July',
           year: 2026,
-          basic: empBase,
-          hra: 0,
+          basic: empBasicPay,
+          hra: empBasicPay * (hraPercent / 100),
           allowances: 0,
           deductions: empPf + empEsi + empTax,
           netSalary: empNet,
@@ -347,23 +397,53 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                   <tr>
                     <td style={{ fontWeight: 700 }}>Basic Pay</td>
                     <td>Earning</td>
-                    <td className="number-font">50% of CTC</td>
+                    <td className="number-font">
+                      <input 
+                        type="number" 
+                        value={basicSalaryPercent} 
+                        onChange={(e) => setBasicSalaryPercent(parseFloat(e.target.value) || 0)} 
+                        style={{ width: 80, padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'inherit', marginRight: 6 }} 
+                      />
+                      % of CTC
+                    </td>
                     <td><span className="badge badge-success">Active</span></td>
                   </tr>
                   <tr>
                     <td style={{ fontWeight: 700 }}>House Rent Allowance (HRA)</td>
                     <td>Earning</td>
-                    <td className="number-font">40% of Basic Pay</td>
+                    <td className="number-font">
+                      <input 
+                        type="number" 
+                        value={hraPercent} 
+                        onChange={(e) => setHraPercent(parseFloat(e.target.value) || 0)} 
+                        style={{ width: 80, padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'inherit', marginRight: 6 }} 
+                      />
+                      % of Basic Pay
+                    </td>
                     <td><span className="badge badge-success">Active</span></td>
                   </tr>
                   <tr>
                     <td style={{ fontWeight: 700 }}>Provident Fund (PF)</td>
                     <td>Deduction</td>
-                    <td className="number-font">12% of Basic Pay</td>
+                    <td className="number-font">
+                      <input 
+                        type="number" 
+                        value={pfPercent} 
+                        onChange={(e) => setPfPercent(parseFloat(e.target.value) || 0)} 
+                        style={{ width: 80, padding: '4px 8px', borderRadius: 8, border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'inherit', marginRight: 6 }} 
+                      />
+                      % of Basic Pay
+                    </td>
                     <td><span className="badge badge-success">Active</span></td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+              <button onClick={handleSavePayrollSettings} className="premium-btn premium-btn-success">
+                Save Component Mappings
+              </button>
             </div>
           </motion.div>
         )}
@@ -396,6 +476,22 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
               <p style={{ fontSize: '0.9rem', color: 'var(--color-text-tertiary)', maxWidth: 450, margin: '0 auto', lineHeight: 1.5 }}>
                 Disburse compensation across all active bank wires. Total aggregate volume estimation is **{cSymbol}240K** for this cycle.
               </p>
+            </div>
+
+            <div style={{ width: '100%', maxWidth: 360, padding: 20, border: '1px solid var(--color-border)', borderRadius: 14, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <label className="premium-label" style={{ margin: 0, display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Total Working Days in Cycle</label>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input 
+                  type="number" 
+                  value={totalWorkingDays} 
+                  onChange={(e) => setTotalWorkingDays(parseInt(e.target.value) || 0)} 
+                  className="premium-input" 
+                  style={{ flex: 1, height: 38 }}
+                />
+                <button onClick={handleSavePayrollSettings} className="premium-btn premium-btn-secondary" style={{ padding: '0 16px', height: 38, fontSize: '0.8rem' }}>
+                  Save
+                </button>
+              </div>
             </div>
 
             <button onClick={handleRunBulkPayroll} className="premium-btn premium-btn-primary" style={{ padding: '12px 32px' }}>
@@ -470,18 +566,42 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
-              <div style={{ padding: 18, border: '1px solid var(--color-border)', borderRadius: 14 }}>
-                <span className="premium-label" style={{ fontSize: '0.65rem' }}>TDS Flat Rate</span>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: 6 }} className="number-font">15.00%</div>
+              <div style={{ padding: 18, border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span className="premium-label" style={{ fontSize: '0.65rem' }}>TDS Flat Rate (%)</span>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  value={tdsPercent} 
+                  onChange={(e) => setTdsPercent(parseFloat(e.target.value) || 0)} 
+                  className="premium-input" 
+                />
               </div>
-              <div style={{ padding: 18, border: '1px solid var(--color-border)', borderRadius: 14 }}>
-                <span className="premium-label" style={{ fontSize: '0.65rem' }}>PF Contribution</span>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: 6 }} className="number-font">12.00%</div>
+              <div style={{ padding: 18, border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span className="premium-label" style={{ fontSize: '0.65rem' }}>PF Contribution (%)</span>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  value={pfPercent} 
+                  onChange={(e) => setPfPercent(parseFloat(e.target.value) || 0)} 
+                  className="premium-input" 
+                />
               </div>
-              <div style={{ padding: 18, border: '1px solid var(--color-border)', borderRadius: 14 }}>
-                <span className="premium-label" style={{ fontSize: '0.65rem' }}>ESI Medical</span>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: 6 }} className="number-font">1.75%</div>
+              <div style={{ padding: 18, border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span className="premium-label" style={{ fontSize: '0.65rem' }}>ESI Medical (%)</span>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  value={esiPercent} 
+                  onChange={(e) => setEsiPercent(parseFloat(e.target.value) || 0)} 
+                  className="premium-input" 
+                />
               </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+              <button onClick={handleSavePayrollSettings} className="premium-btn premium-btn-success">
+                Update Statutory Compliance
+              </button>
             </div>
           </motion.div>
         )}
