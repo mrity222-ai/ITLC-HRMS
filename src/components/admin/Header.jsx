@@ -146,29 +146,31 @@ export default function Header({
       <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14, flexShrink: 0 }}>
         
         {/* AI Assistant Button */}
-        <motion.button
-          onClick={toggleAiAssistant}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)',
-            border: '1px solid rgba(79, 70, 229, 0.2)',
-            padding: isMobile ? '8px' : '8px 14px',
-            borderRadius: 12,
-            color: 'var(--color-primary)',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 4px 15px rgba(79, 70, 229, 0.05)'
-          }}
-        >
-          <Bot size={16} />
-          {!isMobile && <span>Ask AI</span>}
-          {!isMobile && <Sparkles size={12} style={{ color: 'var(--color-accent)' }} />}
-        </motion.button>
+        {!isMobile && (
+          <motion.button
+            onClick={toggleAiAssistant}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)',
+              border: '1px solid rgba(79, 70, 229, 0.2)',
+              padding: '8px 14px',
+              borderRadius: 12,
+              color: 'var(--color-primary)',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(79, 70, 229, 0.05)'
+            }}
+          >
+            <Bot size={16} />
+            <span>Ask AI</span>
+            <Sparkles size={12} style={{ color: 'var(--color-accent)' }} />
+          </motion.button>
+        )}
 
         {/* Quick Actions Dropdown */}
         <div style={{ position: 'relative' }}>
