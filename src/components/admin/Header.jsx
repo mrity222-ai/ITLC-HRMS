@@ -173,67 +173,69 @@ export default function Header({
         )}
 
         {/* Quick Actions Dropdown */}
-        <div style={{ position: 'relative' }}>
-          <button 
-            onClick={() => setShowQuickActions(!showQuickActions)}
-            className="premium-btn premium-btn-secondary"
-            style={{ padding: isMobile ? '8px' : '8px 14px', display: 'flex', gap: 6, alignItems: 'center' }}
-          >
-            <PlusCircle size={16} />
-            {!isMobile && <span>Actions</span>}
-            <ChevronDown size={14} />
-          </button>
-          
-          <AnimatePresence>
-            {showQuickActions && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: '110%',
-                  width: 200,
-                  background: 'white',
-                  borderRadius: 12,
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
-                  border: '1px solid rgba(226, 232, 240, 0.8)',
-                  padding: 8,
-                  zIndex: 100,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 4
-                }}
-              >
-                <button 
-                  onClick={() => { setActiveTab('employees'); setShowQuickActions(false); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: 'none', background: 'transparent', width: '100%', textAlign: 'left', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)' }}
-                  className="quick-action-item"
+        {!isMobile && (
+          <div style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setShowQuickActions(!showQuickActions)}
+              className="premium-btn premium-btn-secondary"
+              style={{ padding: '8px 14px', display: 'flex', gap: 6, alignItems: 'center' }}
+            >
+              <PlusCircle size={16} />
+              <span>Actions</span>
+              <ChevronDown size={14} />
+            </button>
+            
+            <AnimatePresence>
+              {showQuickActions && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: '110%',
+                    width: 200,
+                    background: 'white',
+                    borderRadius: 12,
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
+                    border: '1px solid rgba(226, 232, 240, 0.8)',
+                    padding: 8,
+                    zIndex: 100,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4
+                  }}
                 >
-                  <PlusCircle size={14} style={{ color: 'var(--color-primary)' }} />
-                  Add Employee
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('leave'); setShowQuickActions(false); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: 'none', background: 'transparent', width: '100%', textAlign: 'left', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)' }}
-                  className="quick-action-item"
-                >
-                  <CheckSquare size={14} style={{ color: 'var(--color-success)' }} />
-                  Approve Leaves
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('payroll'); setShowQuickActions(false); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: 'none', background: 'transparent', width: '100%', textAlign: 'left', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)' }}
-                  className="quick-action-item"
-                >
-                  <FileText size={14} style={{ color: 'var(--color-accent)' }} />
-                  Process Payroll
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                  <button 
+                    onClick={() => { setActiveTab('employees'); setShowQuickActions(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: 'none', background: 'transparent', width: '100%', textAlign: 'left', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)' }}
+                    className="quick-action-item"
+                  >
+                    <PlusCircle size={14} style={{ color: 'var(--color-primary)' }} />
+                    Add Employee
+                  </button>
+                  <button 
+                    onClick={() => { setActiveTab('leave'); setShowQuickActions(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: 'none', background: 'transparent', width: '100%', textAlign: 'left', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)' }}
+                    className="quick-action-item"
+                  >
+                    <CheckSquare size={14} style={{ color: 'var(--color-success)' }} />
+                    Approve Leaves
+                  </button>
+                  <button 
+                    onClick={() => { setActiveTab('payroll'); setShowQuickActions(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: 'none', background: 'transparent', width: '100%', textAlign: 'left', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)' }}
+                    className="quick-action-item"
+                  >
+                    <FileText size={14} style={{ color: 'var(--color-accent)' }} />
+                    Process Payroll
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* Notifications Icon with Dropdown */}
         <div style={{ position: 'relative' }}>

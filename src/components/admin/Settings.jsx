@@ -57,6 +57,9 @@ export default function CompanySettings() {
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
   const [radius, setRadius] = useState(500);
+  const [workdayStart, setWorkdayStart] = useState('09:00');
+  const [workdayEnd, setWorkdayEnd] = useState('17:00');
+  const [branchHQCoordinates, setBranchHQCoordinates] = useState('San Francisco, CA');
 
   // Admin Profile states
   const [adminName, setAdminName] = useState('');
@@ -77,6 +80,9 @@ export default function CompanySettings() {
           setLat(details.lat !== undefined && details.lat !== null ? details.lat.toString() : '');
           setLng(details.lng !== undefined && details.lng !== null ? details.lng.toString() : '');
           setRadius(details.radius !== undefined && details.radius !== null ? details.radius : 500);
+          setWorkdayStart(details.workdayStart || '09:00');
+          setWorkdayEnd(details.workdayEnd || '17:00');
+          setBranchHQCoordinates(details.branchHQCoordinates || 'San Francisco, CA');
         }
       } catch (err) {
         console.error('Failed to load company details:', err);
@@ -109,7 +115,10 @@ export default function CompanySettings() {
         currency,
         lat: lat === '' ? null : Number(lat),
         lng: lng === '' ? null : Number(lng),
-        radius: radius === '' ? 500 : Number(radius)
+        radius: radius === '' ? 500 : Number(radius),
+        workdayStart,
+        workdayEnd,
+        branchHQCoordinates
       });
       setSuccess(true);
       
@@ -439,15 +448,15 @@ export default function CompanySettings() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, flex: 2 }}>
               <div className="premium-form-group">
                 <label className="premium-label">Standard Workday Start</label>
-                <input type="time" defaultValue="09:00" className="premium-input" />
+                <input type="time" value={workdayStart} onChange={(e) => setWorkdayStart(e.target.value)} className="premium-input" />
               </div>
               <div className="premium-form-group">
                 <label className="premium-label">Standard Workday End</label>
-                <input type="time" defaultValue="17:00" className="premium-input" />
+                <input type="time" value={workdayEnd} onChange={(e) => setWorkdayEnd(e.target.value)} className="premium-input" />
               </div>
               <div className="premium-form-group">
                 <label className="premium-label">Branch HQ Coordinates</label>
-                <input type="text" defaultValue="San Francisco, CA" className="premium-input" />
+                <input type="text" value={branchHQCoordinates} onChange={(e) => setBranchHQCoordinates(e.target.value)} className="premium-input" />
               </div>
             </div>
           </div>
