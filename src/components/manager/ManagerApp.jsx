@@ -1718,6 +1718,84 @@ export default function ManagerApp({ onLogout }) {
                   </Card>
                 </motion.div>
               )}
+              
+              {/* ------------------------------------------------------------------
+                  TAB: MEETINGS SCHEDULER
+                  ------------------------------------------------------------------ */}
+              {activeTab === 'meetings' && (
+                <motion.div
+                  key="meetings"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <Video className="h-5 w-5 text-primary" /> Meetings Scheduler
+                      </h2>
+                      <p className="text-xs text-muted-foreground">Schedule online video conferences and sync with your team members.</p>
+                    </div>
+                    <Button size="sm" variant="primary" onClick={() => setShowMeetingModal(true)}>
+                      <Plus className="h-4.5 w-4.5" /> Schedule Meeting
+                    </Button>
+                  </div>
+
+                  <Card className="p-6 bg-card border border-border">
+                    <div className="space-y-4">
+                      {meetings.length === 0 ? (
+                        <div className="text-center py-12 text-sm text-muted-foreground flex flex-col items-center justify-center gap-3">
+                          <Video className="h-10 w-10 text-muted-foreground/40" />
+                          <div>
+                            <p className="font-bold text-foreground">No meetings scheduled</p>
+                            <p className="text-xs mt-1">Get started by creating a Google Meet or Zoom link for your team.</p>
+                          </div>
+                          <Button size="sm" variant="primary" onClick={() => setShowMeetingModal(true)} className="mt-2">
+                            Schedule First Meeting
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[...meetings].reverse().map((meeting) => (
+                            <div key={meeting.id} className="p-4 rounded-xl border border-border bg-secondary/15 hover:bg-secondary/25 transition-all space-y-3 flex flex-col justify-between">
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-start gap-2">
+                                  <h4 className="font-bold text-sm text-foreground leading-snug">{meeting.title}</h4>
+                                  <Badge variant={meeting.platform === 'Google Meet' ? 'info' : 'warning'} className="text-[9px] font-extrabold uppercase shrink-0">
+                                    {meeting.platform}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">{meeting.agenda}</p>
+                              </div>
+                              
+                              <div className="pt-3 border-t border-border/60 flex justify-between items-center text-xs">
+                                <div className="space-y-1">
+                                  <div className="text-muted-foreground flex items-center gap-1">
+                                    <Calendar className="h-3 w-3 text-primary" /> {meeting.date}
+                                  </div>
+                                  <div className="text-muted-foreground flex items-center gap-1">
+                                    <Clock className="h-3 w-3 text-primary" /> {meeting.time}
+                                  </div>
+                                </div>
+                                
+                                <a 
+                                  href={meeting.link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all select-none"
+                                >
+                                  Join Meeting <ChevronRight className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
 
             </AnimatePresence>
           )}
