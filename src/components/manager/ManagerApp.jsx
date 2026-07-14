@@ -1808,6 +1808,177 @@ export default function ManagerApp({ onLogout }) {
                 </motion.div>
               )}
 
+              {/* ------------------------------------------------------------------
+                  TAB: DATA REPORTS
+                  ------------------------------------------------------------------ */}
+              {activeTab === 'reports' && (
+                <motion.div
+                  key="reports"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" /> Data Reports
+                    </h2>
+                    <p className="text-xs text-muted-foreground">Export team performance, attendance, and expense records to spreadsheet files.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card className="p-6 bg-card border border-border flex flex-col justify-between h-48">
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-sm text-foreground">Attendance Records</h3>
+                        <p className="text-xs text-muted-foreground">Download the complete attendance sheet for all team members under your supervision.</p>
+                      </div>
+                      <Button variant="primary" size="sm" onClick={() => exportToCSV(attendance, 'Team_Attendance.csv')} className="w-full">
+                        Download Attendance Report
+                      </Button>
+                    </Card>
+
+                    <Card className="p-6 bg-card border border-border flex flex-col justify-between h-48">
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-sm text-foreground">Leave Balances & Logs</h3>
+                        <p className="text-xs text-muted-foreground">Export all leave requests, approval history, and balances ledger for your team.</p>
+                      </div>
+                      <Button variant="primary" size="sm" onClick={() => exportToCSV(leaves, 'Team_Leaves.csv')} className="w-full">
+                        Download Leaves Report
+                      </Button>
+                    </Card>
+
+                    <Card className="p-6 bg-card border border-border flex flex-col justify-between h-48">
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-sm text-foreground">Expense Claims Ledger</h3>
+                        <p className="text-xs text-muted-foreground">Download the itemized claims list, payout amounts, and status reports for team expenses.</p>
+                      </div>
+                      <Button variant="primary" size="sm" onClick={() => exportToCSV(expenses, 'Team_Expenses.csv')} className="w-full">
+                        Download Expenses Report
+                      </Button>
+                    </Card>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ------------------------------------------------------------------
+                  TAB: ANNOUNCEMENTS
+                  ------------------------------------------------------------------ */}
+              {activeTab === 'announcements' && (
+                <motion.div
+                  key="announcements"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <Megaphone className="h-5 w-5 text-primary" /> Announcements Board
+                      </h2>
+                      <p className="text-xs text-muted-foreground">Publish notices, alerts, and system-wide declarations to your direct team members.</p>
+                    </div>
+                    <Button size="sm" variant="primary" onClick={() => setShowAnnouncementModal(true)}>
+                      <Plus className="h-4.5 w-4.5" /> Post Announcement
+                    </Button>
+                  </div>
+
+                  <Card className="p-6 bg-card border border-border">
+                    <div className="space-y-4">
+                      {announcements.length === 0 ? (
+                        <div className="text-center py-12 text-sm text-muted-foreground flex flex-col items-center justify-center gap-3">
+                          <Megaphone className="h-10 w-10 text-muted-foreground/40" />
+                          <div>
+                            <p className="font-bold text-foreground">No announcements posted yet</p>
+                            <p className="text-xs mt-1">Keep your team aligned by posting a new notice.</p>
+                          </div>
+                          <Button size="sm" variant="primary" onClick={() => setShowAnnouncementModal(true)} className="mt-2">
+                            Post First Notice
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {[...announcements].reverse().map((ann) => (
+                            <div key={ann.id} className="p-4 rounded-xl border border-border bg-secondary/15 space-y-2 hover:bg-secondary/25 transition-all text-left">
+                              <div className="flex justify-between items-center gap-2">
+                                <h4 className="font-bold text-sm text-foreground">{ann.title}</h4>
+                                <Badge variant={ann.type === 'Alert' ? 'danger' : 'info'} className="text-[9px] font-extrabold uppercase">
+                                  {ann.type || 'Notice'}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-foreground/90 leading-relaxed">{ann.content}</p>
+                              <div className="pt-2 flex justify-between items-center text-[10px] text-muted-foreground border-t border-border/40 mt-1">
+                                <span>Sent via: {ann.sendEmail ? '📧 Email' : ''}{ann.sendEmail && ann.sendPush ? ' & ' : ''}{ann.sendPush ? '📱 Push' : 'Dashboard Only'}</span>
+                                <span className="font-mono text-primary">{ann.createdAt ? new Date(ann.createdAt).toLocaleDateString() : 'Today'}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* ------------------------------------------------------------------
+                  TAB: SETTINGS
+                  ------------------------------------------------------------------ */}
+              {activeTab === 'settings' && (
+                <motion.div
+                  key="settings"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="max-w-2xl mx-auto space-y-6"
+                >
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                      <SettingsIcon className="h-5 w-5 text-primary" /> Settings Panel
+                    </h2>
+                    <p className="text-xs text-muted-foreground">Manage your workspace preferences, profile settings, and notification alerts.</p>
+                  </div>
+
+                  <Card className="p-6 bg-card border border-border space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-extrabold uppercase text-foreground tracking-wider pb-2 border-b border-border">Notification Rules</h3>
+                      <div className="space-y-4 text-xs">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input type="checkbox" defaultChecked className="rounded border-border text-primary focus:ring-primary w-4 h-4 bg-secondary/30" />
+                          <div>
+                            <span className="font-bold text-foreground block">Email notifications on check-in</span>
+                            <span className="text-[10px] text-muted-foreground mt-0.5 block">Send me an alert when a team member marks attendance.</span>
+                          </div>
+                        </label>
+
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input type="checkbox" defaultChecked className="rounded border-border text-primary focus:ring-primary w-4 h-4 bg-secondary/30" />
+                          <div>
+                            <span className="font-bold text-foreground block">Leave request approvals</span>
+                            <span className="text-[10px] text-muted-foreground mt-0.5 block">Send me immediate alerts when leave applications are submitted.</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-border">
+                      <h3 className="text-xs font-extrabold uppercase text-foreground tracking-wider pb-2 border-b border-border">Application Status</h3>
+                      <div className="grid grid-cols-2 gap-4 text-xs">
+                        <div className="p-3 bg-secondary/15 rounded-xl border border-border">
+                          <span className="text-muted-foreground block text-[10px] uppercase font-bold">App Role</span>
+                          <span className="font-bold text-foreground block mt-1">Manager / Administrator</span>
+                        </div>
+                        <div className="p-3 bg-secondary/15 rounded-xl border border-border">
+                          <span className="text-muted-foreground block text-[10px] uppercase font-bold">Sync Status</span>
+                          <span className="text-success font-bold block mt-1 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-success animate-ping"></span> Live & Connected
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+
             </AnimatePresence>
           )}
         </main>
