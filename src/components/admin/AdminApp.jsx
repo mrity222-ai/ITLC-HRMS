@@ -122,6 +122,10 @@ export default function App({ onLogout }) {
         const tickets = await api.getAdminTickets();
         const openT = tickets.filter(t => t.status === 'open' || t.status === 'Open');
 
+        // Fetch pending correction requests
+        const corrections = await api.getManagerCorrections().catch(() => []);
+        const pendingC = corrections.filter(c => c.status === 'Pending');
+
         // Generate Admin Notifications
         const generated = [];
         const readIds = JSON.parse(localStorage.getItem("hrms_admin_read_notification_ids") || "[]");
@@ -164,6 +168,20 @@ export default function App({ onLogout }) {
             time: "New",
             type: "info",
             badgeColor: "#3B82F6",
+            read
+          });
+        });
+
+        pendingC.forEach(c => {
+          const id = `NTF-admin-correction-${c.id}`;
+          const read = readIds.includes(id);
+          generated.push({
+            id,
+            title: "Correction Request Submitted",
+            message: `${c.employeeName || 'An employee'} requested attendance correction for ${c.date}.`,
+            time: "New",
+            type: "info",
+            badgeColor: "#8B5CF6",
             read
           });
         });
@@ -257,6 +275,7 @@ export default function App({ onLogout }) {
       case 'attendance':
       case 'attendance-dashboard':
       case 'attendance-logs':
+      case 'attendance-corrections':
       case 'attendance-grid':
       case 'attendance-my':
       case 'attendance-shift':
