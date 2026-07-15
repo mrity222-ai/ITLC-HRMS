@@ -1157,6 +1157,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  async updateAdminAttendance(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/attendance/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerCompanyEmployees(companyId: string) {
     const res = await fetch(`${API_URL}/superowner/companies/${companyId}/employees`, {
       method: 'GET',

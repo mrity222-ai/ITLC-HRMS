@@ -29,6 +29,7 @@ const menuItems = [
     subItems: [
       { id: 'attendance-dashboard', label: 'Dashboard' },
       { id: 'attendance-logs', label: 'Daily Logs' },
+      { id: 'attendance-corrections', label: 'Correction Requests' },
       { id: 'attendance-grid', label: 'Monthly Grid' },
       { id: 'attendance-my', label: 'My Attendance' },
       { id: 'attendance-shift', label: 'Shift Setup' },

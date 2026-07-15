@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Square, Calendar, Clock, UserCheck, AlertTriangle, 
-  MapPin, CheckCircle, FileSpreadsheet, List, Table, User, ShieldAlert, Sliders, FileText, LogOut
+  MapPin, CheckCircle, FileSpreadsheet, List, Table, User, ShieldAlert, Sliders, FileText, LogOut, Pencil
 } from 'lucide-react';
 
 const shiftSchedule = [
@@ -47,27 +47,38 @@ export default function Attendance({ subTab = 'dashboard' }) {
 
   const [companyDetails, setCompanyDetails] = useState(null);
 
+  // Correction requests and manual override states
+  const [corrections, setCorrections] = useState([]);
+  const [loadingCorrections, setLoadingCorrections] = useState(false);
+  const [editingLog, setEditingLog] = useState(null);
+  const [editStatus, setEditStatus] = useState('Present');
+  const [editCheckIn, setEditCheckIn] = useState('');
+  const [editCheckOut, setEditCheckOut] = useState('');
+
   const todayDate = new Date().toISOString().split('T')[0];
   const todayOwnRecord = ownLogs.find(r => r.date === todayDate);
 
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      const [data, personalData, company, corrData] = await Promise.all([
+        api.getAdminAttendance(),
+        api.getEmployeeAttendance(),
+        api.getAdminCompany(),
+        api.getManagerCorrections().catch(() => [])
+      ]);
+      setLogs(data || []);
+      setOwnLogs(personalData || []);
+      setCompanyDetails(company || null);
+      setCorrections(corrData || []);
+    } catch (err) {
+      console.error("Failed to fetch admin attendance logs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchLogs = async () => {
-      setLoading(true);
-      try {
-        const [data, personalData, company] = await Promise.all([
-          api.getAdminAttendance(),
-          api.getEmployeeAttendance(),
-          api.getAdminCompany()
-        ]);
-        setLogs(data || []);
-        setOwnLogs(personalData || []);
-        setCompanyDetails(company || null);
-      } catch (err) {
-        console.error("Failed to fetch admin attendance logs:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchLogs();
   }, [subTab]);
 
@@ -167,6 +178,52 @@ export default function Attendance({ subTab = 'dashboard' }) {
       } catch (err) {
         alert("Failed to punch out: " + err.message);
       }
+    }
+  };
+
+  const handleProcessCorrection = async (id, status) => {
+    try {
+      await api.updateManagerCorrection(id, status, "Processed by Admin");
+      alert(`Correction request has been ${status.toLowerCase()} successfully!`);
+      fetchLogs();
+    } catch (err) {
+      alert("Failed to process correction request: " + err.message);
+    }
+  };
+
+  const handleStartEditLog = (log) => {
+    setEditingLog(log);
+    setEditStatus(log.status || 'Present');
+    setEditCheckIn(log.checkIn || '09:00:00');
+    setEditCheckOut(log.checkOut || '18:00:00');
+  };
+
+  const handleSaveDirectEdit = async () => {
+    if (!editingLog) return;
+    try {
+      let workHours = '08:00:00';
+      if (editCheckIn && editCheckOut) {
+        const [inH, inM, inS] = editCheckIn.split(':').map(Number);
+        const [outH, outM, outS] = editCheckOut.split(':').map(Number);
+        const totalSecs = (outH * 3600 + outM * 60 + (outS || 0)) - (inH * 3600 + inM * 60 + (inS || 0));
+        if (totalSecs > 0) {
+          const h = Math.floor(totalSecs / 3600);
+          const m = Math.floor((totalSecs % 3600) / 60);
+          const s = totalSecs % 60;
+          workHours = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+        }
+      }
+      await api.updateAdminAttendance(editingLog.id, {
+        status: editStatus,
+        checkIn: editCheckIn,
+        checkOut: editCheckOut,
+        workHours
+      });
+      alert("Attendance record updated successfully!");
+      setEditingLog(null);
+      fetchLogs();
+    } catch (err) {
+      alert("Failed to update attendance record: " + err.message);
     }
   };
 
@@ -322,6 +379,7 @@ export default function Attendance({ subTab = 'dashboard' }) {
                       <th>Punch Out Time</th>
                       <th>Work Hours</th>
                       <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -336,6 +394,90 @@ export default function Attendance({ subTab = 'dashboard' }) {
                           <span className={`badge ${log.status === 'Present' || log.status === 'On Time' ? 'badge-success' : log.status === 'Late' ? 'badge-warning' : 'badge-danger'}`}>
                             {log.status || 'Present'}
                           </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button 
+                            onClick={() => handleStartEditLog(log)}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)' }}
+                            title="Edit Attendance Log"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* SUB-VIEW: Correction Requests */}
+        {subTab === 'corrections' && (
+          <motion.div
+            key="corrections"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="premium-card"
+            style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}
+          >
+            <div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Employee Correction Requests</h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Pending attendance fixes and adjustments submitted by employees</span>
+            </div>
+
+            <div className="premium-table-container">
+              {corrections.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 24, fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+                  No correction requests found.
+                </div>
+              ) : (
+                <table className="premium-table">
+                  <thead>
+                    <tr>
+                      <th>Employee Name</th>
+                      <th>Date</th>
+                      <th>Requested In</th>
+                      <th>Requested Out</th>
+                      <th>Reason</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {corrections.map((corr) => (
+                      <tr key={corr.id}>
+                        <td style={{ fontWeight: 600 }}>{corr.employeeName}</td>
+                        <td className="number-font" style={{ fontSize: '0.8rem' }}>{corr.date}</td>
+                        <td className="number-font" style={{ fontSize: '0.8rem', color: 'var(--color-success)' }}>{corr.requestedCheckIn || '--:--:--'}</td>
+                        <td className="number-font" style={{ fontSize: '0.8rem', color: 'var(--color-danger)' }}>{corr.requestedCheckOut || '--:--:--'}</td>
+                        <td style={{ fontSize: '0.8rem', maxWidth: 200, whiteSpace: 'normal', wordBreak: 'break-word' }}>{corr.reason}</td>
+                        <td>
+                          <span className={`badge ${corr.status === 'Approved' ? 'badge-success' : corr.status === 'Pending' ? 'badge-warning' : 'badge-danger'}`}>
+                            {corr.status || 'Pending'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          {corr.status === 'Pending' && (
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                              <button 
+                                onClick={() => handleProcessCorrection(corr.id, 'Approved')}
+                                className="premium-btn premium-btn-success"
+                                style={{ padding: '4px 10px', fontSize: '0.7rem' }}
+                              >
+                                Approve
+                              </button>
+                              <button 
+                                onClick={() => handleProcessCorrection(corr.id, 'Rejected')}
+                                className="premium-btn premium-btn-danger"
+                                style={{ padding: '4px 10px', fontSize: '0.7rem' }}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -523,6 +665,86 @@ export default function Attendance({ subTab = 'dashboard' }) {
         )}
 
       </AnimatePresence>
+
+      {editingLog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div className="premium-card" style={{ width: '100%', maxWidth: 450, padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 4 }}>Edit Attendance Record</h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)' }}>Overriding logs for <strong>{editingLog.employeeName}</strong> on {editingLog.date}</p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label className="premium-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Attendance Status</label>
+                <select 
+                  value={editStatus} 
+                  onChange={(e) => setEditStatus(e.target.value)} 
+                  className="premium-input"
+                  style={{ width: '100%', height: 42, padding: '0 12px' }}
+                >
+                  <option value="Present">Present</option>
+                  <option value="Late">Late</option>
+                  <option value="Half-day">Half-day</option>
+                  <option value="Absent">Absent</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: 16 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label className="premium-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Punch In (HH:MM:SS)</label>
+                  <input 
+                    type="text" 
+                    value={editCheckIn} 
+                    onChange={(e) => setEditCheckIn(e.target.value)} 
+                    className="premium-input" 
+                    placeholder="09:00:00"
+                  />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label className="premium-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Punch Out (HH:MM:SS)</label>
+                  <input 
+                    type="text" 
+                    value={editCheckOut} 
+                    onChange={(e) => setEditCheckOut(e.target.value)} 
+                    className="premium-input" 
+                    placeholder="18:00:00"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
+              <button 
+                onClick={() => setEditingLog(null)} 
+                className="premium-btn premium-btn-secondary"
+                style={{ padding: '10px 20px' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveDirectEdit} 
+                className="premium-btn premium-btn-primary"
+                style={{ padding: '10px 24px' }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
