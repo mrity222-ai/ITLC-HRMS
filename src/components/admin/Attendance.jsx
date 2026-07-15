@@ -80,6 +80,8 @@ export default function Attendance({ subTab = 'dashboard' }) {
 
   useEffect(() => {
     fetchLogs();
+    const interval = setInterval(fetchLogs, 5000);
+    return () => clearInterval(interval);
   }, [subTab]);
 
   useEffect(() => {
