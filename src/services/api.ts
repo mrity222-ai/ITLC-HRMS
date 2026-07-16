@@ -218,6 +218,13 @@ export const api = {
     });
     return handleResponse(res);
   },
+  async deleteAdminJob(id: string) {
+    const res = await fetch(`${API_URL}/admin/jobs/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
 
   // ===== TRAININGS =====
   async getAdminTrainings() {

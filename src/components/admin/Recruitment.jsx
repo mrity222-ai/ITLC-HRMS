@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Briefcase, UserCheck, Calendar, ArrowRight, UserPlus, FileText, Plus, Star } from 'lucide-react';
+import { Briefcase, UserCheck, Calendar, ArrowRight, UserPlus, FileText, Plus, Star, Edit2, Trash2 } from 'lucide-react';
 
 const initialOpenings = [];
 
@@ -28,10 +28,21 @@ export default function Recruitment({ subTab = 'dashboard' }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Form states
+  // Form states for Add Job
   const [newTitle, setNewTitle] = useState('');
   const [newDept, setNewDept] = useState('Engineering');
   const [newType, setNewType] = useState('Full-time');
+  const [newLocation, setNewLocation] = useState('Remote');
+  const [newVacancies, setNewVacancies] = useState(1);
+
+  // States for Edit Job Mode
+  const [editingJob, setEditingJob] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDept, setEditDept] = useState('Engineering');
+  const [editType, setEditType] = useState('Full-time');
+  const [editLocation, setEditLocation] = useState('Remote');
+  const [editVacancies, setEditVacancies] = useState(1);
+  const [editStatus, setEditStatus] = useState('Active');
 
   const handleAddJob = async (e) => {
     e.preventDefault();
@@ -41,16 +52,59 @@ export default function Recruitment({ subTab = 'dashboard' }) {
         title: newTitle,
         department: newDept,
         type: newType,
-        location: 'Remote',
-        vacancies: 1,
+        location: newLocation,
+        vacancies: Number(newVacancies),
         status: 'Active'
       });
       const list = await api.getAdminJobs();
       setOpenings(list);
       setNewTitle('');
+      setNewLocation('Remote');
+      setNewVacancies(1);
       setShowAddOpening(false);
     } catch (err) {
       alert("Failed to create job opening");
+    }
+  };
+
+  const handleDeleteJob = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this job opening?")) return;
+    try {
+      await api.deleteAdminJob(id);
+      const list = await api.getAdminJobs();
+      setOpenings(list);
+    } catch (err) {
+      alert("Failed to delete job opening");
+    }
+  };
+
+  const handleEditJobSelect = (job) => {
+    setEditingJob(job);
+    setEditTitle(job.title || '');
+    setEditDept(job.department || 'Engineering');
+    setEditType(job.type || 'Full-time');
+    setEditLocation(job.location || 'Remote');
+    setEditVacancies(job.vacancies || 1);
+    setEditStatus(job.status || 'Active');
+  };
+
+  const handleUpdateJob = async (e) => {
+    e.preventDefault();
+    if (!editingJob) return;
+    try {
+      await api.updateAdminJob(editingJob.id, {
+        title: editTitle,
+        department: editDept,
+        type: editType,
+        location: editLocation,
+        vacancies: Number(editVacancies),
+        status: editStatus
+      });
+      const list = await api.getAdminJobs();
+      setOpenings(list);
+      setEditingJob(null);
+    } catch (err) {
+      alert("Failed to update job opening");
     }
   };
 
@@ -91,9 +145,10 @@ export default function Recruitment({ subTab = 'dashboard' }) {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="premium-card" 
-                style={{ padding: 20 }}
+                style={{ padding: 24, border: '1px solid var(--color-border)', borderRadius: '16px' }}
               >
-                <form onSubmit={handleAddJob} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, alignItems: 'end' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: 14 }}>Create Job Posting</h4>
+                <form onSubmit={handleAddJob} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, alignItems: 'end' }}>
                   <div className="premium-form-group" style={{ marginBottom: 0 }}>
                     <label className="premium-label">Role Title</label>
                     <input 
@@ -115,9 +170,114 @@ export default function Recruitment({ subTab = 'dashboard' }) {
                       <option value="HR">HR</option>
                     </select>
                   </div>
+                  <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                    <label className="premium-label">Job Type</label>
+                    <select value={newType} onChange={(e) => setNewType(e.target.value)} className="premium-input">
+                      <option value="Full-time">Full-time</option>
+                      <option value="Part-time">Part-time</option>
+                      <option value="Contract">Contract</option>
+                      <option value="Internship">Internship</option>
+                    </select>
+                  </div>
+                  <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                    <label className="premium-label">Location</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={newLocation} 
+                      onChange={(e) => setNewLocation(e.target.value)} 
+                      className="premium-input" 
+                    />
+                  </div>
+                  <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                    <label className="premium-label">Vacancies</label>
+                    <input 
+                      type="number" 
+                      required 
+                      min="1" 
+                      value={newVacancies} 
+                      onChange={(e) => setNewVacancies(e.target.value)} 
+                      className="premium-input" 
+                    />
+                  </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button type="submit" className="premium-btn premium-btn-primary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Save</button>
                     <button type="button" onClick={() => setShowAddOpening(false)} className="premium-btn premium-btn-secondary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Cancel</button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+
+            {editingJob && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="premium-card" 
+                style={{ padding: 24, border: '1px solid var(--color-primary-glow)', borderRadius: '16px' }}
+              >
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: 14, color: 'var(--color-primary)' }}>Edit Job Posting</h4>
+                <form onSubmit={handleUpdateJob} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, alignItems: 'end' }}>
+                  <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                    <label className="premium-label">Role Title</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={editTitle} 
+                      onChange={(e) => setEditTitle(e.target.value)} 
+                      className="premium-input" 
+                    />
+                  </div>
+                  <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                    <label className="premium-label">Department</label>
+                    <select value={editDept} onChange={(e) => setEditDept(e.target.value)} className="premium-input">
+                      <option value="Engineering">Engineering</option>
+                      <option value="Design">Design</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Sales">Sales</option>
+                      <option value="HR">HR</option>
+                    </select>
+                  </div>
+                  <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                    <label className="premium-label">Job Type</label>
+                    <select value={editType} onChange={(e) => setEditType(e.target.value)} className="premium-input">
+                      <option value="Full-time">Full-time</option>
+                      <option value="Part-time">Part-time</option>
+                      <option value="Contract">Contract</option>
+                      <option value="Internship">Internship</option>
+                    </select>
+                  </div>
+                  <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                    <label className="premium-label">Location</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={editLocation} 
+                      onChange={(e) => setEditLocation(e.target.value)} 
+                      className="premium-input" 
+                    />
+                  </div>
+                  <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                    <label className="premium-label">Vacancies</label>
+                    <input 
+                      type="number" 
+                      required 
+                      min="1" 
+                      value={editVacancies} 
+                      onChange={(e) => setEditVacancies(e.target.value)} 
+                      className="premium-input" 
+                    />
+                  </div>
+                  <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                    <label className="premium-label">Status</label>
+                    <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="premium-input">
+                      <option value="Active">Active</option>
+                      <option value="Closed">Closed</option>
+                      <option value="Draft">Draft</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button type="submit" className="premium-btn premium-btn-primary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Update</button>
+                    <button type="button" onClick={() => setEditingJob(null)} className="premium-btn premium-btn-secondary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Cancel</button>
                   </div>
                 </form>
               </motion.div>
@@ -129,18 +289,28 @@ export default function Recruitment({ subTab = 'dashboard' }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                       <h4 style={{ fontSize: '0.9rem', fontWeight: 700 }}>{job.title}</h4>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{job.department} • {job.type}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{job.department} • {job.type} • {job.location || 'Remote'}</span>
                     </div>
                     <span className={`badge ${job.status === 'Active' ? 'badge-success' : 'badge-primary'}`}>{job.status}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                      Candidates: <strong className="number-font" style={{ color: 'var(--color-text-primary)' }}>{job.candidates}</strong>
+                      Candidates: <strong className="number-font" style={{ color: 'var(--color-text-primary)' }}>{job.candidates || 0}</strong>
                     </span>
-                    <button onClick={() => alert(`Reviewing applications for ${job.title}`)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 700 }}>
-                      <span>Review</span>
-                      <ArrowRight size={14} />
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button onClick={() => handleEditJobSelect(job)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600 }}>
+                        <Edit2 size={12} />
+                        <span>Edit</span>
+                      </button>
+                      <button onClick={() => handleDeleteJob(job.id)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600 }}>
+                        <Trash2 size={12} />
+                        <span>Delete</span>
+                      </button>
+                      <button onClick={() => alert(`Reviewing applications for ${job.title}`)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 700 }}>
+                        <span>Review</span>
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
