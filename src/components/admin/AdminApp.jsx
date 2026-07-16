@@ -93,6 +93,7 @@ export default function App({ onLogout }) {
           role: prof.role,
           avatar: prof.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
           companyName: prof.companyName || 'Antigravity',
+          companyLogo: prof.companyLogo || '',
           currency: comp?.currency || 'USD'
         });
         let mods = comp?.modulesEnabled || {};
@@ -372,6 +373,7 @@ export default function App({ onLogout }) {
         mobileOpen={mobileSidebarOpen}
         setMobileOpen={setMobileSidebarOpen}
         companyName={profile.companyName}
+        companyLogo={profile.companyLogo}
         featureFlags={featureFlags}
       />
 

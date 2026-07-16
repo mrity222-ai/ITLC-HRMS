@@ -19,6 +19,7 @@ export interface EmployeeProfile {
   reportingManager: string;
   employmentType: string;
   companyName?: string;
+  companyLogo?: string;
   documents?: any[];
   companyDetails?: {
     lat?: number | null;
@@ -341,6 +342,7 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
           reportingManager: prof.reportingManager || "None",
           employmentType: "Full-Time Permanent",
           companyName: prof.companyName || "ITLC HRMS",
+          companyLogo: prof.companyLogo || "",
           documents: prof.documents || [],
           companyDetails: prof.companyDetails || null
         });

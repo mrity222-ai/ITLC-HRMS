@@ -126,7 +126,7 @@ const menuItems = [
   { id: 'support', label: 'Support', icon: HeartHandshake },
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, handleLogout, mobileOpen, setMobileOpen, companyName, featureFlags = {} }) {
+export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, handleLogout, mobileOpen, setMobileOpen, companyName, companyLogo, featureFlags = {} }) {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [isMobile, setIsMobile] = useState(false);
 
@@ -213,16 +213,21 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
               width: 36,
               height: 36,
               borderRadius: 10,
-              background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
+              background: companyLogo ? 'rgba(0,0,0,0.02)' : 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: 'white',
               fontWeight: 800,
               fontSize: 18,
-              boxShadow: '0 4px 10px rgba(79, 70, 229, 0.3)'
+              boxShadow: companyLogo ? 'none' : '0 4px 10px rgba(79, 70, 229, 0.3)',
+              overflow: 'hidden'
             }}>
-              {companyName ? companyName[0].toUpperCase() : 'A'}
+              {companyLogo ? (
+                <img src={companyLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                companyName ? companyName[0].toUpperCase() : 'A'
+              )}
             </div>
             <div>
               <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em', background: 'linear-gradient(90deg, #0F172A 0%, #475569 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{companyName || 'Antigravity'}</span>
@@ -235,15 +240,20 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
             width: 36,
             height: 36,
             borderRadius: 10,
-            background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
+            background: companyLogo ? 'rgba(0,0,0,0.02)' : 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
             fontWeight: 800,
             fontSize: 18,
+            overflow: 'hidden'
           }}>
-            {companyName ? companyName[0].toUpperCase() : 'A'}
+            {companyLogo ? (
+              <img src={companyLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : (
+              companyName ? companyName[0].toUpperCase() : 'A'
+            )}
           </div>
         )}
         

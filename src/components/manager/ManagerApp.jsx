@@ -694,8 +694,12 @@ export default function ManagerApp({ onLogout }) {
       >
         {/* Brand Header */}
         <div className="h-16 flex items-center gap-3 px-4 border-b border-border select-none">
-          <div className="p-1.5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <ShieldCheck className="h-6 w-6" />
+          <div className="p-1 rounded-lg bg-primary/5 text-primary flex items-center justify-center shrink-0 w-9 h-9 overflow-hidden">
+            {managerProfile?.companyLogo ? (
+              <img src={managerProfile.companyLogo} alt="Logo" className="w-full h-full object-contain" />
+            ) : (
+              <ShieldCheck className="h-5 w-5" />
+            )}
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-foreground leading-none text-base tracking-wide">{managerProfile?.companyName || "ITLC HRMS"}</span>

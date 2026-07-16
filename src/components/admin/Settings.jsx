@@ -46,6 +46,7 @@ const compressImage = (base64Str, maxWidth = 800, maxHeight = 800) => {
 export default function CompanySettings() {
   const [compName, setCompName] = useState('');
   const [compEmail, setCompEmail] = useState('');
+  const [compLogo, setCompLogo] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [gst, setGst] = useState('');
@@ -73,6 +74,7 @@ export default function CompanySettings() {
         if (details) {
           setCompName(details.name || '');
           setCompEmail(details.email || '');
+          setCompLogo(details.logo || '');
           setPhone(details.phone || '');
           setAddress(details.address || '');
           setGst(details.gst || '');
@@ -109,6 +111,7 @@ export default function CompanySettings() {
     try {
       await api.updateAdminCompany({
         name: compName,
+        logo: compLogo,
         phone,
         address,
         gst,
@@ -191,6 +194,82 @@ export default function CompanySettings() {
               className="premium-input" 
               placeholder="e.g. ITLC HRMS"
             />
+          </div>
+
+          <div className="premium-form-group">
+            <label className="premium-label">Company Brand Logo</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4 }}>
+              <div style={{
+                width: 60,
+                height: 60,
+                borderRadius: 12,
+                border: '1px dashed var(--color-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                backgroundColor: 'rgba(0,0,0,0.02)'
+              }}>
+                {compLogo ? (
+                  <img src={compLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                ) : (
+                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)' }}>No Logo</span>
+                )}
+              </div>
+              <div style={{ flex: 1 }}>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        const compressed = await compressImage(event.target.result);
+                        setCompLogo(compressed);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  style={{ display: 'none' }}
+                  id="company-logo-file"
+                />
+                <label 
+                  htmlFor="company-logo-file"
+                  style={{
+                    display: 'inline-block',
+                    padding: '6px 12px',
+                    fontSize: '0.75rem',
+                    fontWeight: 650,
+                    borderRadius: 8,
+                    border: '1px solid var(--color-border)',
+                    backgroundColor: 'white',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-secondary)'
+                  }}
+                  className="hover:bg-slate-50 transition-colors"
+                >
+                  Upload Logo
+                </label>
+                {compLogo && (
+                  <button
+                    type="button"
+                    onClick={() => setCompLogo('')}
+                    style={{
+                      marginLeft: 8,
+                      fontSize: '0.72rem',
+                      color: '#EF4444',
+                      fontWeight: 650,
+                      cursor: 'pointer',
+                      background: 'none',
+                      border: 'none'
+                    }}
+                  >
+                    Remove Logo
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="premium-form-group">
