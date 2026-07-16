@@ -78,10 +78,13 @@ export default function App({ onLogout }) {
     }
   }, [isMobile, activeTab]);
   const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
-    name: 'Marcus Vance',
-    role: 'HR Super Admin',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+    name: '',
+    role: '',
+    avatar: '',
+    companyName: '',
+    companyLogo: ''
   });
 
   useEffect(() => {
@@ -194,6 +197,8 @@ export default function App({ onLogout }) {
         setNotifications(generated);
       } catch (err) {
         console.error("Error loading admin core records:", err);
+      } finally {
+        setLoading(false);
       }
     };
     loadAdminData();
@@ -350,6 +355,39 @@ export default function App({ onLogout }) {
         return <DashboardOverview employeesList={employees} notifications={notifications} setActiveTab={setActiveTab} currency={profile.currency} />;
     }
   };
+
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+      }}>
+        <div style={{
+          width: 50,
+          height: 50,
+          border: '4px solid #e2e8f0',
+          borderTop: '4px solid var(--color-primary, #4f46e5)',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          marginBottom: 16
+        }} />
+        <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 500 }}>
+          Loading workspace...
+        </span>
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}} />
+      </div>
+    );
+  }
 
   return (
     <div className={`flex h-screen overflow-hidden ${darkMode ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
