@@ -225,7 +225,7 @@ export default function CompanySettings() {
                     if (file) {
                       const reader = new FileReader();
                       reader.onload = async (event) => {
-                        const compressed = await compressImage(event.target.result);
+                        const compressed = await compressImage(event.target.result, 240, 240);
                         setCompLogo(compressed);
                       };
                       reader.readAsDataURL(file);
