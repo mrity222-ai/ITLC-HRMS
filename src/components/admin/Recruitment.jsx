@@ -41,6 +41,7 @@ export default function Recruitment({ subTab = 'dashboard' }) {
         title: newTitle,
         department: newDept,
         type: newType,
+        location: 'Remote',
         vacancies: 1,
         status: 'Active'
       });
