@@ -55,10 +55,13 @@ export default function App() {
       }
     } catch (e: any) {
       console.error("Failed to load profile:", e);
-      alert("Failed to load profile: " + (e.message || "Unknown error"));
-      localStorage.removeItem('hrms_jwt_token');
-      setView('login');
-      window.location.reload();
+      const isAuthError = e.message && (e.message.includes('401') || e.message.includes('Unauthorized') || e.message.includes('status: 401'));
+      if (isAuthError) {
+        localStorage.removeItem('hrms_jwt_token');
+        setView('login');
+      } else {
+        console.warn("Temporary network or server reboot issue. Retrying silently.");
+      }
     } finally {
       setIsLoading(false);
     }

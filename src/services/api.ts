@@ -28,9 +28,6 @@ const handleResponse = async (response: Response) => {
     const errorData = await response.json().catch(() => ({}));
     if (response.status === 401) {
       localStorage.removeItem('hrms_jwt_token');
-      if (typeof window !== 'undefined') {
-        window.location.href = '/';
-      }
     }
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
   }
