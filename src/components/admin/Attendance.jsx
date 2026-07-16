@@ -58,8 +58,8 @@ export default function Attendance({ subTab = 'dashboard' }) {
   const todayDate = new Date().toISOString().split('T')[0];
   const todayOwnRecord = ownLogs.find(r => r.date === todayDate);
 
-  const fetchLogs = async () => {
-    setLoading(true);
+  const fetchLogs = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const [data, personalData, company, corrData] = await Promise.all([
         api.getAdminAttendance(),
@@ -74,13 +74,13 @@ export default function Attendance({ subTab = 'dashboard' }) {
     } catch (err) {
       console.error("Failed to fetch admin attendance logs:", err);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLogs();
-    const interval = setInterval(fetchLogs, 5000);
+    fetchLogs(false);
+    const interval = setInterval(() => fetchLogs(true), 5000);
     return () => clearInterval(interval);
   }, [subTab]);
 
