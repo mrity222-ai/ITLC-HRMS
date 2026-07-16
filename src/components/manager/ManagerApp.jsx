@@ -160,7 +160,7 @@ export default function ManagerApp({ onLogout }) {
     const handleResize = () => {
       const isMob = window.innerWidth < 768;
       setIsMobile(isMob);
-      if (isMob && !['attendance', 'profile', 'payroll'].includes(activeTab)) {
+      if (isMob && !['attendance', 'profile', 'payroll', 'dashboard', 'team', 'leaves', 'tasks', 'performance', 'expenses', 'assets', 'meetings', 'announcements'].includes(activeTab)) {
         setActiveTab('attendance');
       }
     };
@@ -698,7 +698,7 @@ export default function ManagerApp({ onLogout }) {
             <ShieldCheck className="h-6 w-6" />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-foreground leading-none text-base tracking-wide">ITLC HRMS</span>
+            <span className="font-bold text-foreground leading-none text-base tracking-wide">{managerProfile?.companyName || "ITLC HRMS"}</span>
             <span className="text-[10px] text-muted-foreground mt-0.5 font-extrabold uppercase">Manager Portal</span>
           </div>
         </div>
@@ -720,7 +720,7 @@ export default function ManagerApp({ onLogout }) {
             { id: 'profile', label: 'Manager Profile', icon: User },
             { id: 'payroll', label: 'My Payslips', icon: CreditCard },
             { id: 'settings', label: 'Settings', icon: SettingsIcon },
-          ].filter(item => !isMobile || ['attendance', 'profile', 'payroll'].includes(item.id)).map(item => {
+          ].filter(item => !isMobile || ['attendance', 'profile', 'payroll', 'dashboard', 'team', 'leaves', 'tasks', 'performance', 'expenses', 'assets', 'meetings', 'announcements', 'reports', 'settings'].includes(item.id)).map(item => {
             const isActive = activeTab === item.id;
             return (
               <button
