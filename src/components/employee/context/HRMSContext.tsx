@@ -152,6 +152,7 @@ export interface NotificationItem {
   category: "leave" | "payroll" | "policy" | "training" | "announcement" | "helpdesk";
   read: boolean;
   date: string;
+  link?: string;
 }
 
 export interface UserSettings {
@@ -535,6 +536,35 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
             category: 'helpdesk',
             read: isRead,
             date: t.createdAt || new Date().toISOString().split('T')[0]
+          });
+        });
+
+        // Load meetings notifications
+        meetings.forEach((m: any) => {
+          const nId = `NTF-meeting-${m.id}`;
+          const isRead = readIds.includes(nId);
+          generatedNotifs.push({
+            id: nId,
+            title: `New Team Sync Scheduled`,
+            message: `"${m.title}" is scheduled for ${m.date} at ${m.time}. Click to join.`,
+            category: 'announcement',
+            read: isRead,
+            date: m.date || new Date().toISOString().split('T')[0],
+            link: m.link
+          });
+        });
+
+        // Load announcements notifications
+        announcements.forEach((a: any) => {
+          const nId = `NTF-announcement-${a.id}`;
+          const isRead = readIds.includes(nId);
+          generatedNotifs.push({
+            id: nId,
+            title: `Notice: ${a.title}`,
+            message: a.content,
+            category: 'announcement',
+            read: isRead,
+            date: a.date || new Date().toISOString().split('T')[0]
           });
         });
 

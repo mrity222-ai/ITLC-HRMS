@@ -117,10 +117,14 @@ export const NotificationsCenter: React.FC = () => {
               key={ntf.id}
               onClick={() => {
                 markNotificationRead(ntf.id);
-                if (ntf.category === "leave") setActiveTab("leaves");
-                if (ntf.category === "payroll") setActiveTab("payroll");
-                if (ntf.category === "training") setActiveTab("training");
-                if (ntf.category === "helpdesk") setActiveTab("helpdesk");
+                if (ntf.link) {
+                  window.open(ntf.link, '_blank');
+                } else {
+                  if (ntf.category === "leave") setActiveTab("leaves");
+                  if (ntf.category === "payroll") setActiveTab("payroll");
+                  if (ntf.category === "training") setActiveTab("training");
+                  if (ntf.category === "helpdesk") setActiveTab("helpdesk");
+                }
               }}
               className={cn(
                 "p-4 border flex gap-4 cursor-pointer transition-all items-start text-xs",

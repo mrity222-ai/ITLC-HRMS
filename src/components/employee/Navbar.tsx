@@ -83,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileSidebar }) => {
 
           {/* Dropdown Card */}
           {showNotifications && (
-            <div className="absolute right-0 top-11 w-80 md:w-96 bg-card border border-border rounded-xl shadow-2xl overflow-hidden z-50">
+            <div className="fixed inset-x-4 top-16 md:absolute md:right-0 md:top-11 md:w-96 bg-card border border-border rounded-xl shadow-2xl overflow-hidden z-50">
               <div className="px-4 py-3 border-b border-border flex justify-between items-center">
                 <span className="font-semibold text-sm">Notifications</span>
                 {unreadNotifications.length > 0 && (
@@ -103,10 +103,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileSidebar }) => {
                         key={ntf.id}
                         onClick={() => {
                           markNotificationRead(ntf.id);
-                          if (ntf.category === "leave") setActiveTab("leaves");
-                          if (ntf.category === "payroll") setActiveTab("payroll");
-                          if (ntf.category === "training") setActiveTab("training");
-                          if (ntf.category === "helpdesk") setActiveTab("helpdesk");
+                          if (ntf.link) {
+                            window.open(ntf.link, '_blank');
+                          } else {
+                            if (ntf.category === "leave") setActiveTab("leaves");
+                            if (ntf.category === "payroll") setActiveTab("payroll");
+                            if (ntf.category === "training") setActiveTab("training");
+                            if (ntf.category === "helpdesk") setActiveTab("helpdesk");
+                          }
                           setShowNotifications(false);
                         }}
                         className={cn(
