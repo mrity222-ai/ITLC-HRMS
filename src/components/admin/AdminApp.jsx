@@ -31,6 +31,7 @@ const initialNotifications = [];
 const initialMessages = [];
 
 import { api } from '../../services/api';
+import { applyThemeColor } from '../../utils/theme';
 
 export default function App({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -96,6 +97,9 @@ export default function App({ onLogout }) {
           companyLogo: prof.companyLogo || '',
           currency: comp?.currency || 'USD'
         });
+        if (comp && comp.themeColor) {
+          applyThemeColor(comp.themeColor);
+        }
         let mods = comp?.modulesEnabled || {};
         if (typeof mods === 'string') {
           try { mods = JSON.parse(mods); } catch (e) {}

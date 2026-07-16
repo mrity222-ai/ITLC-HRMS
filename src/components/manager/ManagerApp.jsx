@@ -13,6 +13,7 @@ import {
   BarChart, Bar
 } from 'recharts';
 import { api } from '../../services/api';
+import { applyThemeColor } from '../../utils/theme';
 import { Card, Button, Modal, Badge, Select, cn } from '../employee/UI';
 
 const DEFAULT_DOCUMENTS = [
@@ -254,6 +255,9 @@ export default function ManagerApp({ onLogout }) {
       if (profile) {
         setManagerProfile(profile);
         setDocumentsVault(profile.documents && profile.documents.length > 0 ? profile.documents : DEFAULT_DOCUMENTS);
+        if (profile.companyDetails && profile.companyDetails.themeColor) {
+          applyThemeColor(profile.companyDetails.themeColor);
+        }
       }
       setTeamMembers(team || []);
       setLeaves(leaveList || []);

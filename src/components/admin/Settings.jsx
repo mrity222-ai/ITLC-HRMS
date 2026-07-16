@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Save, Globe, Key, Clock, ShieldCheck, Phone, MapPin, Percent } from 'lucide-react';
 import { api } from '../../services/api';
+import { extractDominantColor } from '../../utils/theme';
 
 const compressImage = (base64Str, maxWidth = 800, maxHeight = 800) => {
   return new Promise((resolve) => {
@@ -47,6 +48,7 @@ export default function CompanySettings() {
   const [compName, setCompName] = useState('');
   const [compEmail, setCompEmail] = useState('');
   const [compLogo, setCompLogo] = useState('');
+  const [themeColor, setThemeColor] = useState('#4F46E5');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [gst, setGst] = useState('');
@@ -75,6 +77,7 @@ export default function CompanySettings() {
           setCompName(details.name || '');
           setCompEmail(details.email || '');
           setCompLogo(details.logo || '');
+          setThemeColor(details.themeColor || '#4F46E5');
           setPhone(details.phone || '');
           setAddress(details.address || '');
           setGst(details.gst || '');
@@ -112,6 +115,7 @@ export default function CompanySettings() {
       await api.updateAdminCompany({
         name: compName,
         logo: compLogo,
+        themeColor,
         phone,
         address,
         gst,
@@ -227,6 +231,12 @@ export default function CompanySettings() {
                       reader.onload = async (event) => {
                         const compressed = await compressImage(event.target.result, 240, 240);
                         setCompLogo(compressed);
+                        try {
+                          const extracted = await extractDominantColor(compressed);
+                          setThemeColor(extracted);
+                        } catch (err) {
+                          console.error("Failed to extract theme color:", err);
+                        }
                       };
                       reader.readAsDataURL(file);
                     }
@@ -269,6 +279,37 @@ export default function CompanySettings() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+
+          <div className="premium-form-group">
+            <label className="premium-label">Workspace Primary Theme Color</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+              <input 
+                type="color" 
+                value={themeColor} 
+                onChange={(e) => setThemeColor(e.target.value)} 
+                style={{
+                  width: 44,
+                  height: 38,
+                  padding: 2,
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  backgroundColor: 'white'
+                }}
+              />
+              <input 
+                type="text" 
+                value={themeColor} 
+                onChange={(e) => setThemeColor(e.target.value)} 
+                className="premium-input"
+                style={{ width: 100, height: 38, fontSize: '0.82rem', textAlign: 'center' }}
+                placeholder="#4F46E5"
+              />
+              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)' }}>
+                Auto-extracted from your logo or customized manually.
+              </span>
             </div>
           </div>
 

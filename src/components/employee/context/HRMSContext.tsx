@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { api } from "../../../services/api";
+import { applyThemeColor } from "../../../utils/theme";
 
 // Types
 export interface EmployeeProfile {
@@ -346,6 +347,10 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
           documents: prof.documents || [],
           companyDetails: prof.companyDetails || null
         });
+
+        if (prof.companyDetails && prof.companyDetails.themeColor) {
+          applyThemeColor(prof.companyDetails.themeColor);
+        }
 
         // Load Leaves
         const leavesList = await api.getEmployeeLeaves();
