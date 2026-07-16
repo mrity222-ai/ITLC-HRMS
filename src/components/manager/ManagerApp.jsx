@@ -215,6 +215,7 @@ export default function ManagerApp({ onLogout }) {
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showPerfModal, setShowPerfModal] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState(null);
 
   // New Forms values
   const [newTask, setNewTask] = useState({ title: '', description: '', assignedTo: '', priority: 'Medium', deadline: '' });
@@ -1353,7 +1354,7 @@ export default function ManagerApp({ onLogout }) {
                                 <h5 className="text-[11px] font-bold text-foreground">{task.title}</h5>
                                 <p className="text-[10px] text-muted-foreground line-clamp-2">{task.description}</p>
                                 {task.attachments && (
-                                  <div className="relative rounded overflow-hidden max-h-24 bg-secondary/15 flex items-center justify-center border border-border/50">
+                                  <div onClick={() => setPreviewImageUrl(task.attachments)} className="relative rounded overflow-hidden max-h-24 bg-secondary/15 flex items-center justify-center border border-border/50 hover:opacity-80 transition-opacity">
                                     <img src={task.attachments} alt="Task attachment" className="object-contain max-h-24 w-full" />
                                   </div>
                                 )}
@@ -1394,7 +1395,7 @@ export default function ManagerApp({ onLogout }) {
                                   <div>{task.title}</div>
                                   {task.attachments && (
                                     <div className="mt-1 flex gap-1 items-center text-[9px] text-primary">
-                                      <span>📷 Attachment Uploaded</span>
+                                      <button onClick={() => setPreviewImageUrl(task.attachments)} className="font-bold underline hover:opacity-80">📷 View Attachment</button>
                                     </div>
                                   )}
                                 </td>
@@ -2235,6 +2236,22 @@ export default function ManagerApp({ onLogout }) {
             )}
           </div>
         </Modal>
+      )}
+
+      {/* 0. Attachment Preview Modal */}
+      {previewImageUrl && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/85 p-4 transition-all" onClick={() => setPreviewImageUrl(null)}>
+          <div className="relative max-w-4xl max-h-[85vh] bg-card rounded-2xl overflow-hidden p-3 shadow-2xl flex flex-col items-center gap-4 border border-border" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full flex justify-between items-center border-b border-border pb-2 px-1">
+              <span className="text-xs font-bold text-foreground">Task Attachment Image</span>
+              <button onClick={() => setPreviewImageUrl(null)} className="text-muted-foreground hover:text-foreground text-sm font-bold">✕ Close</button>
+            </div>
+            <img src={previewImageUrl} alt="Attachment Preview" className="object-contain max-h-[65vh] max-w-full rounded-lg" />
+            <div className="flex gap-4 pb-1">
+              <a href={previewImageUrl} download="task_attachment.png" className="px-4 py-2 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90">Download Image</a>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 1. Assign Task Modal */}
