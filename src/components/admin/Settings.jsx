@@ -210,7 +210,7 @@ export default function CompanySettings() {
                 overflow: 'hidden',
                 backgroundColor: 'rgba(0,0,0,0.02)'
               }}>
-                {compLogo ? (
+                {compLogo && (compLogo.startsWith('data:image/') || compLogo.startsWith('http://') || compLogo.startsWith('https://')) ? (
                   <img src={compLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 ) : (
                   <span style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)' }}>No Logo</span>

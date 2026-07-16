@@ -695,7 +695,7 @@ export default function ManagerApp({ onLogout }) {
         {/* Brand Header */}
         <div className="h-16 flex items-center gap-3 px-4 border-b border-border select-none">
           <div className="p-1 rounded-lg bg-primary/5 text-primary flex items-center justify-center shrink-0 w-9 h-9 overflow-hidden">
-            {managerProfile?.companyLogo ? (
+            {managerProfile?.companyLogo && (managerProfile.companyLogo.startsWith('data:image/') || managerProfile.companyLogo.startsWith('http://') || managerProfile.companyLogo.startsWith('https://')) ? (
               <img src={managerProfile.companyLogo} alt="Logo" className="w-full h-full object-contain" />
             ) : (
               <ShieldCheck className="h-5 w-5" />

@@ -189,6 +189,8 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
     setActiveTab(menuId + '-dashboard');
   };
 
+  const hasValidLogo = companyLogo && (companyLogo.startsWith('data:image/') || companyLogo.startsWith('http://') || companyLogo.startsWith('https://'));
+
   return (
     <aside
       className={`fixed md:sticky z-50 md:z-30 flex flex-col overflow-hidden transition-all duration-300 bg-[var(--sidebar-bg)] border-r border-slate-200/80 h-screen inset-y-0 left-0 w-[260px] ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 ${collapsed ? 'md:w-20' : 'md:w-[280px]'} shrink-0`}
@@ -213,17 +215,17 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
               width: 36,
               height: 36,
               borderRadius: 10,
-              background: companyLogo ? 'rgba(0,0,0,0.02)' : 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
+              background: hasValidLogo ? 'rgba(0,0,0,0.02)' : 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: 'white',
               fontWeight: 800,
               fontSize: 18,
-              boxShadow: companyLogo ? 'none' : '0 4px 10px rgba(79, 70, 229, 0.3)',
+              boxShadow: hasValidLogo ? 'none' : '0 4px 10px rgba(79, 70, 229, 0.3)',
               overflow: 'hidden'
             }}>
-              {companyLogo ? (
+              {hasValidLogo ? (
                 <img src={companyLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               ) : (
                 companyName ? companyName[0].toUpperCase() : 'A'
@@ -240,7 +242,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
             width: 36,
             height: 36,
             borderRadius: 10,
-            background: companyLogo ? 'rgba(0,0,0,0.02)' : 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
+            background: hasValidLogo ? 'rgba(0,0,0,0.02)' : 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -249,7 +251,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
             fontSize: 18,
             overflow: 'hidden'
           }}>
-            {companyLogo ? (
+            {hasValidLogo ? (
               <img src={companyLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             ) : (
               companyName ? companyName[0].toUpperCase() : 'A'
