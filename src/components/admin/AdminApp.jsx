@@ -193,6 +193,23 @@ export default function App({ onLogout }) {
             read
           });
         });
+ 
+        // Add Subscription Limit warning notification
+        const activeEmpCount = list.length;
+        const maxEmpCount = comp?.maxEmployees || 50;
+        if (activeEmpCount >= maxEmpCount) {
+          const id = `NTF-admin-subscription-limit`;
+          const read = readIds.includes(id);
+          generated.push({
+            id,
+            title: "⚠️ Subscription Limit Reached",
+            message: `You have reached your limit of ${maxEmpCount} employees (${activeEmpCount}/${maxEmpCount}). Additions locked. Upgrade now to add more employees.`,
+            time: "Critical",
+            type: "warning",
+            badgeColor: "#EF4444",
+            read
+          });
+        }
 
         setNotifications(generated);
       } catch (err) {

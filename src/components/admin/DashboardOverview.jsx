@@ -186,6 +186,55 @@ export default function DashboardOverview({ employeesList = [], notifications = 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       
+      {/* Subscription Limit Warning Alert Banner */}
+      {company && totalEmployees >= company.maxEmployees && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)',
+            gap: 16,
+            flexWrap: 'wrap'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+            <div>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#ef4444', margin: 0 }}>
+                Subscription Plan Employee Limit Reached ({totalEmployees} / {company.maxEmployees})
+              </h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
+                Your workspace employee database is full. Please upgrade to a higher tier plan to register additional employees.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab && setActiveTab('subscription')}
+            className="premium-button"
+            style={{
+              padding: '8px 16px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              background: '#ef4444',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
+            }}
+          >
+            Upgrade Subscription Plan
+          </button>
+        </motion.div>
+      )}
+
       {/* 1. KPI Statistics Grid */}
       <motion.div 
         initial="hidden"
