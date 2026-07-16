@@ -24,6 +24,7 @@ import {
   BookOpen,
   Play,
   LogOut,
+  Video,
 } from "lucide-react";
 
 interface TaskItem {
@@ -54,6 +55,8 @@ export const DashboardOverview: React.FC = () => {
     notifications,
     payslips,
     attendanceHistory,
+    meetings,
+    announcements,
   } = useHRMS();
 
   const todayDateStr = new Date().toISOString().split("T")[0];
@@ -63,13 +66,14 @@ export const DashboardOverview: React.FC = () => {
 
   // Layout customization states
   const [isEditMode, setIsEditMode] = useState(false);
-  const [sectionOrder, setSectionOrder] = useState<string[]>(["attendance", "leave", "tasks", "lms", "news"]);
+  const [sectionOrder, setSectionOrder] = useState<string[]>(["attendance", "leave", "tasks", "lms", "news", "meetings"]);
   const [sectionTitles, setSectionTitles] = useState<Record<string, string>>({
     attendance: "Attendance Desk",
     leave: "Leave Summary",
     tasks: "Work Checklist",
     lms: "LMS Learning Desk",
     news: "Recent Notices Feed",
+    meetings: "Upcoming Team Syncs"
   });
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, boolean>>({
     attendance: true,
@@ -77,6 +81,7 @@ export const DashboardOverview: React.FC = () => {
     tasks: true,
     lms: true,
     news: true,
+    meetings: true
   });
 
   // Task list states
@@ -108,16 +113,25 @@ export const DashboardOverview: React.FC = () => {
     if (savedOrder) {
       let order = JSON.parse(savedOrder);
       order = order.filter((id: string) => id !== "payroll");
+      if (!order.includes("meetings")) {
+        order.push("meetings");
+      }
       setSectionOrder(order);
     }
     if (savedTitles) {
       const titles = JSON.parse(savedTitles);
       delete titles.payroll;
+      if (!titles.meetings) {
+        titles.meetings = "Upcoming Team Syncs";
+      }
       setSectionTitles(titles);
     }
     if (savedVisibility) {
       const visibility = JSON.parse(savedVisibility);
       delete visibility.payroll;
+      if (visibility.meetings === undefined) {
+        visibility.meetings = true;
+      }
       setSectionVisibility(visibility);
     }
     if (savedTasks) setTasks(JSON.parse(savedTasks));
@@ -158,13 +172,14 @@ export const DashboardOverview: React.FC = () => {
 
   // Reset customized layout
   const handleResetLayout = () => {
-    const defaultOrder = ["attendance", "leave", "tasks", "lms", "news"];
+    const defaultOrder = ["attendance", "leave", "tasks", "lms", "news", "meetings"];
     const defaultTitles = {
       attendance: "Attendance Desk",
       leave: "Leave Summary",
       tasks: "Work Checklist",
       lms: "LMS Learning Desk",
       news: "Recent Notices Feed",
+      meetings: "Upcoming Team Syncs"
     };
     const defaultVisibility = {
       attendance: true,
@@ -172,6 +187,7 @@ export const DashboardOverview: React.FC = () => {
       tasks: true,
       lms: true,
       news: true,
+      meetings: true
     };
 
     setSectionOrder(defaultOrder);
@@ -541,21 +557,75 @@ export const DashboardOverview: React.FC = () => {
         return (
           <div className="space-y-4">
             <div className="space-y-3 max-h-[195px] overflow-y-auto pr-1">
-              {notifications.slice(0, 3).map((n) => (
-                <div
-                  key={n.id}
-                  className="p-2.5 rounded-lg border border-border bg-secondary/15 space-y-1 text-xs"
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="text-[9px] text-primary uppercase font-bold font-mono tracking-wide">
-                      {n.category}
-                    </span>
-                    <span className="text-[8px] text-muted-foreground">{n.date.split(" ")[0]}</span>
+              {announcements && announcements.length > 0 ? (
+                announcements.slice(0, 3).map((ann) => (
+                  <div
+                    key={ann.id}
+                    className="p-2.5 rounded-lg border border-border bg-secondary/15 space-y-1 text-xs"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] text-primary uppercase font-bold font-mono tracking-wide">
+                        {ann.type || 'Notice'}
+                      </span>
+                      <span className="text-[8px] text-muted-foreground">{ann.date}</span>
+                    </div>
+                    <h5 className="font-bold text-foreground leading-normal line-clamp-1">{ann.title}</h5>
+                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-normal">{ann.content}</p>
+                    {ann.authorName && (
+                      <span className="text-[8px] text-muted-foreground block pt-0.5">By {ann.authorName}</span>
+                    )}
                   </div>
-                  <h5 className="font-bold text-foreground leading-normal line-clamp-1">{n.title}</h5>
-                  <p className="text-[10px] text-muted-foreground line-clamp-1 leading-normal">{n.message}</p>
+                ))
+              ) : (
+                <div className="text-center py-10 text-muted-foreground text-[11px]">
+                  No recent announcements.
                 </div>
-              ))}
+              )}
+            </div>
+          </div>
+        );
+
+      case "meetings":
+        return (
+          <div className="space-y-4">
+            <div className="space-y-3 max-h-[195px] overflow-y-auto pr-1">
+              {meetings && meetings.length > 0 ? (
+                meetings.slice(0, 3).map((meeting) => (
+                  <div
+                    key={meeting.id}
+                    className="p-3.5 rounded-xl border border-border bg-secondary/15 hover:bg-secondary/25 transition-all space-y-2 flex flex-col"
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <h4 className="font-bold text-xs text-foreground leading-snug truncate flex-1">
+                        {meeting.title}
+                      </h4>
+                      <Badge variant={meeting.platform === 'Google Meet' ? 'info' : 'warning'} className="text-[8px] font-extrabold uppercase shrink-0 py-0 px-1.5 h-4.5">
+                        {meeting.platform}
+                      </Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1 leading-normal">
+                      {meeting.agenda}
+                    </p>
+                    <div className="flex justify-between items-center pt-1 text-[9px] text-muted-foreground font-mono">
+                      <span>{meeting.date} at {meeting.time}</span>
+                      {meeting.link && (
+                        <a
+                          href={meeting.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline font-bold inline-flex items-center gap-0.5 shrink-0"
+                        >
+                          Join Sync
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10 text-muted-foreground text-[11px]">
+                  No upcoming meetings scheduled.
+                </div>
+              )}
             </div>
           </div>
         );
@@ -622,6 +692,8 @@ export const DashboardOverview: React.FC = () => {
         return <GraduationCap className="h-4.5 w-4.5 text-primary" />;
       case "news":
         return <Bell className="h-4.5 w-4.5 text-primary" />;
+      case "meetings":
+        return <Video className="h-4.5 w-4.5 text-primary" />;
       case "payroll":
         return <FileText className="h-4.5 w-4.5 text-primary" />;
       default:

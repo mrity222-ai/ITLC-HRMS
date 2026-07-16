@@ -1220,5 +1220,21 @@ export const api = {
       body: JSON.stringify(data)
     });
     return handleResponse(res);
+  },
+
+  async getEmployeeMeetings() {
+    const res = await fetch(`${API_URL}/employee/meetings`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async getEmployeeAnnouncements() {
+    const res = await fetch(`${API_URL}/employee/announcements`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
   }
 };

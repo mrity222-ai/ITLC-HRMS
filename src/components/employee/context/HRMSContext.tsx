@@ -64,6 +64,26 @@ export interface LeaveRequest {
   managerComment?: string;
 }
 
+export interface MeetingItem {
+  id: string;
+  title: string;
+  agenda: string;
+  date: string;
+  time: string;
+  platform: "Google Meet" | "Microsoft Teams" | "Zoom" | string;
+  link: string;
+  invitees: string;
+}
+
+export interface AnnouncementItem {
+  id: string;
+  title: string;
+  content: string;
+  type: string;
+  date?: string;
+  authorName?: string;
+}
+
 export interface Payslip {
   id: string;
   month: string;
@@ -199,6 +219,10 @@ interface HRMSContextType {
   completeCourse: (id: string) => void;
   passCourseExam: (id: string, score: number) => void;
   
+  // Meetings & Announcements
+  meetings: MeetingItem[];
+  announcements: AnnouncementItem[];
+  
   // Notifications
   notifications: NotificationItem[];
   markNotificationRead: (id: string) => void;
@@ -291,6 +315,8 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
   const [assets, setAssets] = useState<Asset[]>(defaultAssets);
   const [tickets, setTickets] = useState<HelpdeskTicket[]>(defaultTickets);
   const [courses, setCourses] = useState<Course[]>(defaultCourses);
+  const [meetings, setMeetings] = useState<MeetingItem[]>([]);
+  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>(defaultNotifications);
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
 
@@ -422,6 +448,26 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
           }
         } catch (e) {
           console.error("Failed to load attendance corrections from DB:", e);
+        }
+
+        // Load Meetings
+        try {
+          const mtgList = await api.getEmployeeMeetings();
+          if (Array.isArray(mtgList)) {
+            setMeetings(mtgList);
+          }
+        } catch (e) {
+          console.error("Failed to load meetings from DB:", e);
+        }
+
+        // Load Announcements
+        try {
+          const annList = await api.getEmployeeAnnouncements();
+          if (Array.isArray(annList)) {
+            setAnnouncements(annList);
+          }
+        } catch (e) {
+          console.error("Failed to load announcements from DB:", e);
         }
 
         // Dynamically build notifications from leaves, expenses, and tickets
@@ -1147,6 +1193,8 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
         updateCourseProgress,
         completeCourse,
         passCourseExam,
+        meetings,
+        announcements,
         notifications,
         markNotificationRead,
         markAllNotificationsRead,
