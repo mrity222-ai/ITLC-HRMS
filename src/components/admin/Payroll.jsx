@@ -29,26 +29,31 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const [tdsPercent, setTdsPercent] = useState(15.0);
   const [totalWorkingDays, setTotalWorkingDays] = useState(22);
   const [loadingCompany, setLoadingCompany] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [rechargeAmount, setRechargeAmount] = useState('');
+  const [isRecharging, setIsRecharging] = useState(false);
+
+  const loadCompanyPayrollSettings = async () => {
+    setLoadingCompany(true);
+    try {
+      const comp = await api.getAdminCompany();
+      if (comp) {
+        if (comp.basicSalaryPercent !== undefined) setBasicSalaryPercent(comp.basicSalaryPercent);
+        if (comp.hraPercent !== undefined) setHraPercent(comp.hraPercent);
+        if (comp.pfPercent !== undefined) setPfPercent(comp.pfPercent);
+        if (comp.esiPercent !== undefined) setEsiPercent(comp.esiPercent);
+        if (comp.tdsPercent !== undefined) setTdsPercent(comp.tdsPercent);
+        if (comp.totalWorkingDays !== undefined) setTotalWorkingDays(comp.totalWorkingDays);
+        if (comp.walletBalance !== undefined) setWalletBalance(comp.walletBalance);
+      }
+    } catch (err) {
+      console.error("Failed to load company payroll settings:", err);
+    } finally {
+      setLoadingCompany(false);
+    }
+  };
 
   useEffect(() => {
-    const loadCompanyPayrollSettings = async () => {
-      setLoadingCompany(true);
-      try {
-        const comp = await api.getAdminCompany();
-        if (comp) {
-          if (comp.basicSalaryPercent !== undefined) setBasicSalaryPercent(comp.basicSalaryPercent);
-          if (comp.hraPercent !== undefined) setHraPercent(comp.hraPercent);
-          if (comp.pfPercent !== undefined) setPfPercent(comp.pfPercent);
-          if (comp.esiPercent !== undefined) setEsiPercent(comp.esiPercent);
-          if (comp.tdsPercent !== undefined) setTdsPercent(comp.tdsPercent);
-          if (comp.totalWorkingDays !== undefined) setTotalWorkingDays(comp.totalWorkingDays);
-        }
-      } catch (err) {
-        console.error("Failed to load company payroll settings:", err);
-      } finally {
-        setLoadingCompany(false);
-      }
-    };
     loadCompanyPayrollSettings();
   }, []);
 
@@ -189,6 +194,94 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     } catch (err) {
       alert("Failed to run bulk payroll.");
       console.error(err);
+    }
+  };
+
+  const getEmpPayrollDetails = (emp) => {
+    const empBase = (typeof emp.salary === 'string') 
+      ? parseFloat(emp.salary.replace('$', '').replace('₹', '').replace(/,/g, '')) / 12 
+      : (typeof emp.salary === 'number' ? emp.salary / 12 : 5000);
+    const empBasicPay = empBase * (basicSalaryPercent / 100);
+    const empPf = Math.round(empBasicPay * (pfPercent / 100));
+    const empEsi = Math.round(empBasicPay * (esiPercent / 100));
+    const empTax = Math.round(empBase * (tdsPercent / 100));
+    const empNet = Math.round(empBase - empPf - empEsi - empTax);
+    return {
+      basic: empBasicPay,
+      hra: empBasicPay * (hraPercent / 100),
+      deductions: empPf + empEsi + empTax,
+      netSalary: empNet
+    };
+  };
+
+  const handleRechargeWallet = async (e) => {
+    e.preventDefault();
+    const amt = Number(rechargeAmount);
+    if (isNaN(amt) || amt <= 0) {
+      alert("Please enter a valid recharge amount.");
+      return;
+    }
+    setIsRecharging(true);
+    try {
+      const res = await api.rechargeAdminWallet(amt);
+      if (res.success) {
+        setWalletBalance(res.walletBalance);
+        setRechargeAmount('');
+        alert(`Successfully added ${cSymbol}${amt.toLocaleString()} to your HRMS Wallet!`);
+      }
+    } catch (err) {
+      alert("Failed to recharge wallet.");
+    } finally {
+      setIsRecharging(false);
+    }
+  };
+
+  const handleDisburseSingleSalary = async (emp) => {
+    const details = getEmpPayrollDetails(emp);
+    try {
+      const res = await api.disbursePayroll({
+        employeeId: emp.id,
+        employeeName: emp.name,
+        month: 'July',
+        year: 2026,
+        basic: details.basic,
+        hra: details.hra,
+        allowances: 0,
+        deductions: details.deductions,
+        netSalary: details.netSalary
+      });
+      if (res.success) {
+        setWalletBalance(res.walletBalance);
+        alert(`Salary of ${cSymbol}${details.netSalary.toLocaleString()} successfully disbursed to ${emp.name}!`);
+        const history = await api.getAdminPayroll();
+        setPayrollHistory(history);
+      }
+    } catch (err) {
+      alert(err.message || "Failed to disburse salary.");
+    }
+  };
+
+  const handleHoldSingleSalary = async (emp) => {
+    const details = getEmpPayrollDetails(emp);
+    try {
+      const res = await api.holdPayroll({
+        employeeId: emp.id,
+        employeeName: emp.name,
+        month: 'July',
+        year: 2026,
+        basic: details.basic,
+        hra: details.hra,
+        allowances: 0,
+        deductions: details.deductions,
+        netSalary: details.netSalary
+      });
+      if (res.success) {
+        alert(`Salary for ${emp.name} has been placed ON HOLD.`);
+        const history = await api.getAdminPayroll();
+        setPayrollHistory(history);
+      }
+    } catch (err) {
+      alert("Failed to hold salary.");
     }
   };
 
@@ -449,57 +542,215 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         )}
 
         {/* SUB-VIEW 3: Run Payroll */}
-        {subTab === 'run' && (
-          <motion.div
-            key="run"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="premium-card"
-            style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 24 }}
-          >
-            <div style={{
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              background: 'var(--color-success-light)',
-              color: 'var(--color-success)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <CheckCircle size={28} />
-            </div>
+        {subTab === 'run' && (() => {
+          const totalRequiredPayroll = employees.reduce((acc, emp) => {
+            const details = getEmpPayrollDetails(emp);
+            return acc + details.netSalary;
+          }, 0);
+          const getEmployeePayrollStatus = (empId) => {
+            const record = payrollHistory.find(r => r.employeeId === empId && r.month === 'July' && r.year === 2026);
+            return record ? record.status : 'Pending';
+          };
 
-            <div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 8 }}>Initialize Monthly Payroll Run</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-tertiary)', maxWidth: 450, margin: '0 auto', lineHeight: 1.5 }}>
-                Disburse compensation across all active bank wires. Total aggregate volume estimation is **{cSymbol}240K** for this cycle.
-              </p>
-            </div>
+          return (
+            <motion.div
+              key="run"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+            >
+              {/* Wallet and Payroll Summary Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+                
+                {/* HRMS Wallet */}
+                <div className="premium-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <DollarSign size={18} style={{ color: 'var(--color-primary)' }} />
+                      <span>HRMS Admin Wallet</span>
+                    </h3>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>Add money to disburse salaries to employees.</p>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(79, 70, 229, 0.05)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(79, 70, 229, 0.15)' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Wallet Balance</span>
+                    <strong style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                      {cSymbol}{walletBalance.toLocaleString()}
+                    </strong>
+                  </div>
+                  <form onSubmit={handleRechargeWallet} style={{ display: 'flex', gap: 10 }}>
+                    <input 
+                      type="number" 
+                      required 
+                      min="1"
+                      placeholder="Amount (e.g. 50000)"
+                      value={rechargeAmount}
+                      onChange={(e) => setRechargeAmount(e.target.value)}
+                      className="premium-input"
+                      style={{ flex: 1, height: 40 }}
+                    />
+                    <button 
+                      type="submit" 
+                      disabled={isRecharging} 
+                      className="premium-btn premium-btn-primary" 
+                      style={{ padding: '0 20px', height: 40, whiteSpace: 'nowrap' }}
+                    >
+                      {isRecharging ? 'Processing...' : 'Add Money'}
+                    </button>
+                  </form>
+                </div>
 
-            <div style={{ width: '100%', maxWidth: 360, padding: 20, border: '1px solid var(--color-border)', borderRadius: 14, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <label className="premium-label" style={{ margin: 0, display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>Total Working Days in Cycle</label>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <input 
-                  type="number" 
-                  value={totalWorkingDays} 
-                  onChange={(e) => setTotalWorkingDays(parseInt(e.target.value) || 0)} 
-                  className="premium-input" 
-                  style={{ flex: 1, height: 38 }}
-                />
-                <button onClick={handleSavePayrollSettings} className="premium-btn premium-btn-secondary" style={{ padding: '0 16px', height: 38, fontSize: '0.8rem' }}>
-                  Save
-                </button>
+                {/* Payroll Summary */}
+                <div className="premium-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 16 }}>
+                  <div>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Calculator size={18} style={{ color: 'var(--color-success)' }} />
+                      <span>Monthly Payroll Summary (July 2026)</span>
+                    </h3>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>Auto calculated net payable salary volume.</p>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                      <span style={{ color: 'var(--color-text-secondary)' }}>Total Employees & Managers:</span>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{employees.length}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                      <span style={{ color: 'var(--color-text-secondary)' }}>Total Net Payable:</span>
+                      <strong style={{ color: 'var(--color-text-primary)' }}>{cSymbol}{totalRequiredPayroll.toLocaleString()}</strong>
+                    </div>
+                  </div>
+
+                  {walletBalance < totalRequiredPayroll && (
+                    <div style={{ padding: '8px 12px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', fontSize: '0.75rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span>⚠️</span>
+                      <span>Warning: Wallet balance is insufficient to complete bulk salary runs.</span>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button 
+                      onClick={handleRunBulkPayroll} 
+                      disabled={walletBalance < totalRequiredPayroll || employees.length === 0} 
+                      className="premium-btn premium-btn-primary" 
+                      style={{ flex: 1, height: 42, justifyContent: 'center' }}
+                    >
+                      <CreditCard size={14} />
+                      <span>Disburse All Salaries</span>
+                    </button>
+                  </div>
+                </div>
+
               </div>
-            </div>
 
-            <button onClick={handleRunBulkPayroll} className="premium-btn premium-btn-primary" style={{ padding: '12px 32px' }}>
-              <CreditCard size={16} />
-              <span>Disburse Net Salaries</span>
-            </button>
-          </motion.div>
-        )}
+              {/* Horizontal Disbursal Checklist */}
+              <div className="premium-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>Salary Disbursal Checklist</h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
+                    Disburse individual employee or manager salary using the check (✔) and hold (✖) actions.
+                  </p>
+                </div>
+
+                <div 
+                  style={{ 
+                    display: 'flex', 
+                    gap: 16, 
+                    overflowX: 'auto', 
+                    paddingBottom: 12, 
+                    scrollbarWidth: 'thin'
+                  }}
+                >
+                  {employees.map(emp => {
+                    const status = getEmployeePayrollStatus(emp.id);
+                    const details = getEmpPayrollDetails(emp);
+                    return (
+                      <div 
+                        key={emp.id} 
+                        style={{ 
+                          minWidth: 260, 
+                          maxWidth: 260,
+                          padding: 16, 
+                          background: 'var(--color-bg-tertiary)', 
+                          border: '1px solid var(--color-border)', 
+                          borderRadius: 14,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: 12
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <img 
+                            src={emp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60'} 
+                            alt={emp.name} 
+                            style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover' }}
+                          />
+                          <div>
+                            <h4 style={{ fontSize: '0.85rem', fontWeight: 700, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>
+                              {emp.name}
+                            </h4>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
+                              {emp.role}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '6px 10px', borderRadius: 8 }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Net Salary:</span>
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--color-text-primary)' }} className="number-font">
+                            {cSymbol}{details.netSalary.toLocaleString()}
+                          </strong>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                          {status === 'Processed' ? (
+                            <span className="badge badge-success" style={{ width: '100%', textAlign: 'center', padding: '6px 0', fontSize: '0.75rem', fontWeight: 700 }}>
+                              ✔️ Paid
+                            </span>
+                          ) : status === 'On Hold' ? (
+                            <div style={{ display: 'flex', width: '100%', gap: 8 }}>
+                              <span className="badge badge-warning" style={{ flex: 1, textAlign: 'center', padding: '6px 0', fontSize: '0.75rem', fontWeight: 700 }}>
+                                ✖️ On Hold
+                              </span>
+                              <button 
+                                onClick={() => handleDisburseSingleSalary(emp)}
+                                className="premium-btn premium-btn-primary"
+                                style={{ padding: '6px 10px', fontSize: '0.7rem' }}
+                              >
+                                Pay
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: 10 }}>
+                              <button 
+                                onClick={() => handleHoldSingleSalary(emp)}
+                                className="premium-btn premium-btn-secondary" 
+                                style={{ flex: 1, padding: '6px 0', justifyContent: 'center', borderColor: '#ef4444', color: '#ef4444' }}
+                                title="Put Salary on Hold"
+                              >
+                                ✖ Hold
+                              </button>
+                              <button 
+                                onClick={() => handleDisburseSingleSalary(emp)}
+                                className="premium-btn premium-btn-primary" 
+                                style={{ flex: 1, padding: '6px 0', justifyContent: 'center', background: '#10b981', borderColor: '#10b981' }}
+                                title="Approve & Pay Salary"
+                              >
+                                ✔ Pay
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </motion.div>
+          );
+        })()}
 
         {/* SUB-VIEW 4: Payslips Console */}
         {subTab === 'payslips' && (

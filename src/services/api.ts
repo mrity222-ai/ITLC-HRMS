@@ -685,6 +685,30 @@ export const api = {
     });
     return handleResponse(res);
   },
+  async rechargeAdminWallet(amount: number) {
+    const res = await fetch(`${API_URL}/admin/company/wallet/recharge`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ amount })
+    });
+    return handleResponse(res);
+  },
+  async disbursePayroll(data: any) {
+    const res = await fetch(`${API_URL}/admin/payroll/disburse`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+  async holdPayroll(data: any) {
+    const res = await fetch(`${API_URL}/admin/payroll/hold`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
 
   async getEmployees() {
     const res = await fetch(`${API_URL}/admin/employees`, {
