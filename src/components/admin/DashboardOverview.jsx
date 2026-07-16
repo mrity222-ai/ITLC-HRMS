@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../../services/api';
 import { 
   Users, UserCheck, UserX, CalendarDays, Building2, MapPin, 
   Briefcase, Wallet, ArrowUpRight, ArrowDownRight, Gift, UserPlus, 
@@ -100,6 +101,7 @@ const recentActivities = [
 
 export default function DashboardOverview({ employeesList = [], notifications = [], setActiveTab, currency = 'USD' }) {
   const [loading, setLoading] = useState(true);
+  const [company, setCompany] = useState(null);
 
   const currencySymbol = (() => {
     switch (currency) {
@@ -112,10 +114,19 @@ export default function DashboardOverview({ employeesList = [], notifications = 
   })();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1200);
-    return () => clearTimeout(timer);
+    const fetchCompanyData = async () => {
+      try {
+        const data = await api.getAdminCompany();
+        if (data) {
+          setCompany(data);
+        }
+      } catch (err) {
+        console.error("Failed to load company details on dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCompanyData();
   }, []);
 
   const handleActionClick = (tabName) => {
@@ -513,7 +524,7 @@ export default function DashboardOverview({ employeesList = [], notifications = 
 
       {/* 6. Company Summary Dashboard */}
       <div className="premium-card" style={{ padding: 24, background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 20 }}>Corporate Suite Summary</h3>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 20 }}>Company Workspace Summary</h3>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -521,24 +532,26 @@ export default function DashboardOverview({ employeesList = [], notifications = 
         }}>
           <div>
             <span className="premium-label" style={{ fontSize: '0.65rem' }}>Enterprise name</span>
-            <div style={{ fontSize: '0.9rem', fontWeight: 700, marginTop: 4 }}>Antigravity Solutions</div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700, marginTop: 4 }}>{company?.name || 'ITLC HRMS'}</div>
           </div>
           <div>
             <span className="premium-label" style={{ fontSize: '0.65rem' }}>Active Plan</span>
-            <div style={{ fontSize: '0.9rem', fontWeight: 700, marginTop: 4, color: 'var(--color-primary)' }}>Enterprise Unlimited</div>
-          </div>
-          <div>
-            <span className="premium-label" style={{ fontSize: '0.65rem' }}>Cloud storage</span>
-            <div style={{ fontSize: '0.9rem', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <HardDrive size={14} style={{ color: 'var(--color-text-tertiary)' }} />
-              <span className="number-font" style={{ fontSize: '0.85rem' }}>5.4 GB / 50 GB</span>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700, marginTop: 4, color: 'var(--color-primary)', textTransform: 'capitalize' }}>
+              {company?.subscriptionPlanId || 'Starter'}
             </div>
           </div>
           <div>
-            <span className="premium-label" style={{ fontSize: '0.65rem' }}>AI Credits</span>
+            <span className="premium-label" style={{ fontSize: '0.65rem' }}>Max Employees Limit</span>
             <div style={{ fontSize: '0.9rem', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Cpu size={14} style={{ color: 'var(--color-text-tertiary)' }} />
-              <span className="number-font" style={{ fontSize: '0.85rem' }}>1,240 / 5,000</span>
+              <Users size={14} style={{ color: 'var(--color-text-tertiary)' }} />
+              <span className="number-font" style={{ fontSize: '0.85rem' }}>{employeesList.length} / {company?.maxEmployees || 100}</span>
+            </div>
+          </div>
+          <div>
+            <span className="premium-label" style={{ fontSize: '0.65rem' }}>Cloud storage limit</span>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <HardDrive size={14} style={{ color: 'var(--color-text-tertiary)' }} />
+              <span className="number-font" style={{ fontSize: '0.85rem' }}>{company?.storageLimit || 50} GB</span>
             </div>
           </div>
         </div>
