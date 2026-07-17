@@ -25,6 +25,7 @@ import {
   Eye,
 } from "lucide-react";
 import { cn } from "../UI";
+import { api } from "../../../services/api";
 
 interface CalendarEvent {
   id: string;
@@ -85,14 +86,34 @@ export const TrainingLMS: React.FC = () => {
 
   // Loading and Navigation states
   const [loading, setLoading] = useState(true);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(MOCK_CALENDAR_EVENTS);
   const activeSubTab = ["courses", "assigned", "progress", "certifications", "exams", "calendar", "completed"].includes(globalSubTab) ? globalSubTab : "courses";
   const setActiveSubTab = (tabId: string) => setGlobalSubTab(tabId);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
+    const fetchTrainings = async () => {
+      try {
+        const list = await api.getAdminTrainings();
+        if (list && list.length > 0) {
+          const events: CalendarEvent[] = list.map((t: any) => ({
+            id: t.id,
+            title: t.name,
+            type: "Workshop",
+            date: t.startDate || new Date().toISOString().split('T')[0],
+            time: "10:00 AM - 12:00 PM",
+            instructor: t.trainer || "Staff Trainer",
+            duration: "2 Hours",
+            description: t.description || "Training session for company workforce."
+          }));
+          setCalendarEvents(events);
+        }
+      } catch (err) {
+        console.error("Failed to load training events:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTrainings();
   }, []);
 
   // Search and Category filters
@@ -1201,7 +1222,7 @@ export const TrainingLMS: React.FC = () => {
                       const dayStr = day.toISOString().split("T")[0];
                       
                       // Filter events for this specific day
-                      const dayEvents = MOCK_CALENDAR_EVENTS.filter((evt) => evt.date === dayStr);
+                      const dayEvents = calendarEvents.filter((evt) => evt.date === dayStr);
 
                       return (
                         <div
@@ -1250,7 +1271,7 @@ export const TrainingLMS: React.FC = () => {
                     { name: "Sunday", dateStr: "2026-06-28", label: "Jun 28" }
                   ].map((day) => {
                     const isToday = day.dateStr === "2026-06-24";
-                    const dayEvents = MOCK_CALENDAR_EVENTS.filter(evt => evt.date === day.dateStr);
+                    const dayEvents = calendarEvents.filter(evt => evt.date === day.dateStr);
 
                     return (
                       <div key={day.dateStr} className={cn(
@@ -1304,7 +1325,7 @@ export const TrainingLMS: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                {MOCK_CALENDAR_EVENTS.map((evt) => (
+                {calendarEvents.map((evt) => (
                   <div
                     key={evt.id}
                     onClick={() => setSelectedEvent(evt)}

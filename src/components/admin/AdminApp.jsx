@@ -367,7 +367,7 @@ export default function App({ onLogout }) {
       case 'security':
         return <Security setActiveTab={setActiveTab} />;
       case 'ai-assistant':
-        return <AiFeatures setActiveTab={setActiveTab} />;
+        return <AiFeatures setActiveTab={setActiveTab} employees={employees} />;
       default:
         return <DashboardOverview employeesList={employees} notifications={notifications} setActiveTab={setActiveTab} currency={profile.currency} />;
     }

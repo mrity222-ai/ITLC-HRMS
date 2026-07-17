@@ -102,6 +102,9 @@ const recentActivities = [
 export default function DashboardOverview({ employeesList = [], notifications = [], setActiveTab, currency = 'USD' }) {
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [attendanceTrends, setAttendanceTrends] = useState(attendanceData);
+  const [payrollTrends, setPayrollTrends] = useState(payrollTrendData);
 
   const currencySymbol = (() => {
     switch (currency) {
@@ -114,19 +117,49 @@ export default function DashboardOverview({ employeesList = [], notifications = 
   })();
 
   useEffect(() => {
-    const fetchCompanyData = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const data = await api.getAdminCompany();
-        if (data) {
-          setCompany(data);
+        const [companyData, actData, attTrends, payTrends] = await Promise.all([
+          api.getAdminCompany(),
+          api.getAdminAuditLogs().catch(() => []),
+          api.getAttendanceTrends().catch(() => []),
+          api.getPayrollTrends().catch(() => [])
+        ]);
+
+        if (companyData) setCompany(companyData);
+        
+        if (actData && actData.length > 0) {
+          setActivities(actData.slice(0, 5).map((a) => {
+            let color = '#4F46E5';
+            if (a.category === 'HR') color = '#10B981';
+            if (a.category === 'Payroll') color = '#EC4899';
+            if (a.category === 'Billing') color = '#8B5CF6';
+            return {
+              type: a.category?.toLowerCase() || 'joined',
+              title: a.action,
+              time: new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              desc: a.details,
+              color
+            };
+          }));
+        } else {
+          setActivities(recentActivities);
+        }
+
+        if (attTrends && attTrends.length > 0) {
+          setAttendanceTrends(attTrends);
+        }
+        if (payTrends && payTrends.length > 0) {
+          setPayrollTrends(payTrends);
         }
       } catch (err) {
         console.error("Failed to load company details on dashboard:", err);
+        setActivities(recentActivities);
       } finally {
         setLoading(false);
       }
     };
-    fetchCompanyData();
+    fetchDashboardData();
   }, []);
 
   const handleActionClick = (tabName) => {
@@ -353,7 +386,7 @@ export default function DashboardOverview({ employeesList = [], notifications = 
 
           <div style={{ width: '100%', height: '75%' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={attendanceData} margin={{ top: 10, right: 10, left: -24, bottom: 0 }}>
+              <AreaChart data={attendanceTrends} margin={{ top: 10, right: 10, left: -24, bottom: 0 }}>
                 <defs>
                   <linearGradient id="attendanceGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.2}/>
@@ -362,13 +395,11 @@ export default function DashboardOverview({ employeesList = [], notifications = 
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                 <XAxis dataKey="day" tick={{ fontSize: 12, fill: 'var(--color-text-tertiary)' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: 'var(--color-text-tertiary)' }} axisLine={false} tickLine={false} domain={[80, 100]} />
+                <YAxis tick={{ fontSize: 12, fill: 'var(--color-text-tertiary)' }} axisLine={false} tickLine={false} domain={[0, 100]} />
                 <Tooltip contentStyle={{ background: 'var(--glass-bg)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 12 }} />
                 
                 {/* Goal Reference line */}
                 <ReferenceLine y={95} stroke="var(--color-success)" strokeWidth={1.5} strokeDasharray="3 3" />
-                {/* Average Reference line */}
-                <ReferenceLine y={91.5} stroke="var(--color-warning)" strokeWidth={1} strokeDasharray="3 3" />
                 
                 <Area type="monotone" dataKey="attendance" stroke="var(--color-primary)" strokeWidth={2.5} fillOpacity={1} fill="url(#attendanceGrad)" dot={{ r: 4, strokeWidth: 1 }} activeDot={{ r: 6 }} />
               </AreaChart>
@@ -392,19 +423,19 @@ export default function DashboardOverview({ employeesList = [], notifications = 
 
           <div style={{ width: '100%', height: '75%' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={payrollTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={payrollTrends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: 'var(--color-text-tertiary)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 12, fill: 'var(--color-text-tertiary)' }} axisLine={false} tickLine={false} />
                 <Tooltip 
                   contentStyle={{ background: 'var(--glass-bg)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 12 }}
-                  formatter={(value, name) => [`${currencySymbol}${value}K`, name]}
+                  formatter={(value, name) => [`${currencySymbol}${value}`, name]}
                 />
                 <Bar dataKey="Net" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Net Payroll">
-                  {payrollTrendData.map((entry, index) => (
+                  {payrollTrends.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={entry.month === 'Jun' ? 'url(#activePayrollGrad)' : 'var(--color-primary)'} 
+                      fill="var(--color-primary)"  
                       opacity={entry.month === 'Jun' ? 1 : 0.8}
                     />
                   ))}
@@ -499,7 +530,7 @@ export default function DashboardOverview({ employeesList = [], notifications = 
               zIndex: 1
             }} />
 
-            {recentActivities.map((act, i) => (
+            {activities.map((act, i) => (
               <div key={i} style={{ display: 'flex', gap: 16, position: 'relative', zIndex: 2 }}>
                 <div style={{
                   width: 36,

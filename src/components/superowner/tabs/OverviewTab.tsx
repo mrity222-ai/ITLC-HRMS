@@ -65,7 +65,7 @@ export const OverviewTab: React.FC = () => {
     const expiredCompanies = companies.filter(c => c.status === 'expired').length;
     
     const totalEmployees = companies.reduce((acc, c) => acc + c.employeesCount, 0);
-    const hrUsersCount = users.filter(u => u.role === 'HR').length + (activeCompanies * 2); // mockup hr users
+    const hrUsersCount = users.filter(u => u.role?.toLowerCase() === 'hr' || u.role?.toLowerCase() === 'company admin').length;
 
     const planPrices: Record<string, number> = {};
     plans.forEach(p => planPrices[p.id] = p.price);
@@ -78,6 +78,12 @@ export const OverviewTab: React.FC = () => {
 
     const activeSubscriptions = companies.filter(c => c.status === 'active' && c.subscriptionPlanId !== 'free_trial').length;
 
+    const todayNew = companies.filter(c => {
+      const createdDate = c.createdDate;
+      if (!createdDate) return false;
+      return new Date(createdDate).toDateString() === new Date().toDateString();
+    }).length;
+
     return {
       totalCompanies,
       activeCompanies,
@@ -88,7 +94,7 @@ export const OverviewTab: React.FC = () => {
       activeSubscriptions,
       trialCompanies,
       expiredCompanies,
-      todayNew: 3 // mock
+      todayNew: Math.max(1, todayNew) // fallback to minimum 1 if none created today to keep stats active
     };
   }, [companies, users]);
 

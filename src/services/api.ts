@@ -708,6 +708,28 @@ export const api = {
       body: JSON.stringify(data)
     });
     return handleResponse(res);
+    return handleResponse(res);
+  },
+  async getAdminAuditLogs() {
+    const res = await fetch(`${API_URL}/admin/audit-logs`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+  async getPayrollTrends() {
+    const res = await fetch(`${API_URL}/admin/payroll/trends`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+  async getAttendanceTrends() {
+    const res = await fetch(`${API_URL}/admin/attendance/trends`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
   },
 
   async getEmployees() {

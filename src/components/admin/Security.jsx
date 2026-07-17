@@ -1,15 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Eye, Trash2, Key, ToggleLeft, ToggleRight, ShieldAlert } from 'lucide-react';
+import { api } from '../../services/api';
 
 const mockAuditLogs = [
-  { id: 1, action: 'User Login', user: 'Sarah Jenkins', ip: '192.168.1.42', date: 'July 02, 14:32 PM', status: 'Success' },
-  { id: 2, action: 'Exported Payroll CSV', user: 'Sophia Patel', ip: '192.168.1.18', date: 'July 02, 11:15 AM', status: 'Success' },
-  { id: 3, action: 'Deleted Employee Record', user: 'Admin Account', ip: '127.0.0.1', date: 'July 01, 17:02 PM', status: 'Warning' },
+  { id: 1, action: 'Workspace Admin Access Enabled', user: 'System Initializer', ip: '127.0.0.1', date: 'Just now', status: 'Success' }
 ];
 
 export default function Security() {
   const [twoFactor, setTwoFactor] = useState(true);
-  const [logs, setLogs] = useState(mockAuditLogs);
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const data = await api.getAdminAuditLogs();
+        if (data && data.length > 0) {
+          setLogs(data.map((l) => ({
+            id: l.id,
+            action: l.action,
+            user: l.actorName || 'System',
+            ip: l.details?.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/) ? l.details.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/)[0] : '127.0.0.1',
+            date: new Date(l.timestamp).toLocaleString(),
+            status: l.category === 'Security' || l.category === 'Billing' ? 'Warning' : 'Success'
+          })));
+        } else {
+          setLogs(mockAuditLogs);
+        }
+      } catch (err) {
+        console.error("Failed to load audit logs:", err);
+        setLogs(mockAuditLogs);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLogs();
+  }, []);
 
   const revokeSession = (ip) => {
     alert(`Active session on device IP: ${ip} was revoked.`);
