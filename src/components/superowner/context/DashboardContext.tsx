@@ -60,7 +60,7 @@ interface DashboardContextType {
   addLog: (action: string, details: string, category: ActivityLog['category'], actor?: string) => void;
   selectedCurrency: string;
   setSelectedCurrency: (currency: string) => void;
-  formatAmount: (amountInUSD: number) => string;
+  formatAmount: (amountInUSD: number, paymentCurrency?: string) => string;
   isFormDirty: boolean;
   setIsFormDirty: (dirty: boolean) => void;
   analyticsData: any;
@@ -219,9 +219,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [selectedCurrency]);
 
-  const formatAmount = (amountInUSD: number) => {
+  const formatAmount = (amountInUSD: number, paymentCurrency?: string) => {
+    let normalizedUSD = amountInUSD;
+    if (paymentCurrency && paymentCurrency !== 'USD') {
+      const pDetails = CURRENCY_DETAILS[paymentCurrency];
+      const pRate = pDetails ? pDetails.rate : 1.0;
+      normalizedUSD = amountInUSD / pRate;
+    }
     const details = CURRENCY_DETAILS[selectedCurrency] || CURRENCY_DETAILS.USD;
-    const converted = amountInUSD * details.rate;
+    const converted = normalizedUSD * details.rate;
     if (selectedCurrency === 'JPY') {
       return `${details.symbol}${Math.round(converted).toLocaleString()}`;
     }

@@ -610,7 +610,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
                   <tr key={h.id} style={{ borderBottom: '1px solid #e2e8f0', color: '#0f172a' }}>
                     <td style={{ padding: '12px', fontWeight: 600, fontFamily: 'monospace' }}>{h.invoiceNumber}</td>
                     <td style={{ padding: '12px' }}>{new Date(h.date).toLocaleDateString()}</td>
-                    <td style={{ padding: '12px', fontWeight: 700 }}>{SYMBOLS[currency] || '$'}{(h.amount * (RATES[currency] || 1)).toFixed(0)}</td>
+                    <td style={{ padding: '12px', fontWeight: 700 }}>{SYMBOLS[currency] || '$'}{(() => { const baseUSD = h.currency && h.currency !== 'USD' ? (h.amount / (RATES[h.currency] || 1)) : h.amount; return (baseUSD * (RATES[currency] || 1)).toFixed(0); })()}</td>
                     <td style={{ padding: '12px', textTransform: 'capitalize' }}>{h.gateway.replace('_', ' ')}</td>
                     <td style={{ padding: '12px' }}>
                       <span style={{

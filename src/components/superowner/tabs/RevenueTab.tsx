@@ -4,7 +4,7 @@ import {
   DollarSign, TrendingUp, Download, CreditCard, CheckCircle, 
   Clock, AlertCircle, FileText, ArrowRight, Building, HelpCircle
 } from 'lucide-react';
-import { useDashboard } from '../context/DashboardContext';
+import { useDashboard, CURRENCY_DETAILS } from '../context/DashboardContext';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, BarChart, Bar, Cell
@@ -25,8 +25,17 @@ export const RevenueTab: React.FC = () => {
     const annualRev = monthlyRev * 12;
 
     // Payments summary from seed data
+    const getAmountInUSD = (amount: number, currency: string) => {
+      if (currency && currency !== 'USD') {
+        const details = CURRENCY_DETAILS[currency];
+        const rate = details ? details.rate : 1.0;
+        return amount / rate;
+      }
+      return amount;
+    };
+
     const successfulPayments = payments.filter(p => p.status === 'successful');
-    const totalCollected = successfulPayments.reduce((sum, p) => sum + p.amount, 0);
+    const totalCollected = successfulPayments.reduce((sum, p) => sum + getAmountInUSD(p.amount, p.currency), 0);
 
     const pendingCount = payments.filter(p => p.status === 'pending').length;
     const failedCount = payments.filter(p => p.status === 'failed').length;
@@ -44,7 +53,7 @@ export const RevenueTab: React.FC = () => {
             logo: comp?.logo || 'bg-indigo-500'
           };
         }
-        companyTotals[p.companyId].total += p.amount;
+        companyTotals[p.companyId].total += getAmountInUSD(p.amount, p.currency);
       }
     });
 
@@ -295,7 +304,7 @@ export const RevenueTab: React.FC = () => {
                 <tr key={p.id} className="hover:bg-white/2 transition">
                   <td className="py-3 px-4 font-mono text-xs text-slate-400 font-medium">{p.invoiceNumber}</td>
                   <td className="py-3 px-4 font-semibold text-white">{p.companyName}</td>
-                  <td className="py-3 px-4 font-mono font-bold text-white">{formatAmount(p.amount)}</td>
+                  <td className="py-3 px-4 font-mono font-bold text-white">{formatAmount(p.amount, p.currency)}</td>
                   <td className="py-3 px-4 capitalize font-mono text-xs text-indigo-300">{p.gateway.replace('_', ' ')}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2.5 py-0.5 rounded text-[10px] uppercase tracking-wide border ${

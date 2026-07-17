@@ -46,6 +46,8 @@ export interface Payment {
   status: 'successful' | 'pending' | 'failed';
   timestamp: string;
   invoiceNumber: string;
+  currency?: string;
+  date?: string;
 }
 
 export interface User {

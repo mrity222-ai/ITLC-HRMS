@@ -307,7 +307,7 @@ export const PaymentsTab: React.FC = () => {
                 <tr key={p.id} className="hover:bg-white/2 transition">
                   <td className="py-3 px-4 font-mono text-xs text-slate-400">{p.invoiceNumber}</td>
                   <td className="py-3 px-4 font-semibold text-white">{p.companyName}</td>
-                  <td className="py-3 px-4 font-mono font-bold text-white">{formatAmount(p.amount)}</td>
+                  <td className="py-3 px-4 font-mono font-bold text-white">{formatAmount(p.amount, p.currency)}</td>
                   <td className="py-3 px-4 capitalize font-mono text-xs text-indigo-300">{p.gateway.replace('_', ' ')}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2.5 py-0.5 rounded text-[10px] uppercase tracking-wide border ${
