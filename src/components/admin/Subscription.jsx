@@ -24,7 +24,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currency, setCurrency] = useState(() => localStorage.getItem('admin_subscription_currency') || 'USD');
+  const [currency, setCurrency] = useState(() => localStorage.getItem('admin_subscription_currency') || 'INR');
   const [gateway, setGateway] = useState('stripe'); // 'stripe', 'razorpay', 'paypal', 'credit_card', 'upi', 'bank_transfer'
   const [plans, setPlans] = useState(INITIAL_PLANS);
 
@@ -516,8 +516,8 @@ export default function Subscription({ onSubscriptionUpdate }) {
               )}
 
               {gateway === 'upi' && (() => {
-                const planAmount = Number((selectedPlan.price * RATES[currency]).toFixed(0));
-                const upiUri = `upi://pay?pa=${realUpiId}&pn=ITLC_HRMS&am=${planAmount}&cu=INR`;
+                const planAmountInr = Number((selectedPlan.price * RATES['INR']).toFixed(0));
+                const upiUri = `upi://pay?pa=${realUpiId}&pn=ITLC_HRMS&am=${planAmountInr}&cu=INR`;
                 const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiUri)}`;
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12, alignItems: 'center' }}>
@@ -527,7 +527,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
                       <strong style={{ fontSize: '0.85rem', color: '#4f46e5', display: 'block', marginBottom: 8 }}>{realUpiId}</strong>
                       <div style={{ margin: '8px auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                         <img src={qrCodeUrl} alt="UPI QR Code" style={{ width: 140, height: 140, border: '1px solid #cbd5e1', borderRadius: 6, padding: 6, background: '#fff' }} />
-                        <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700 }}>Amount: {formatPrice(selectedPlan.price)}</span>
+                        <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700 }}>Scanned Amount: ₹{planAmountInr.toLocaleString()} ({formatPrice(selectedPlan.price)})</span>
                       </div>
                     </div>
                     <input type="text" placeholder="Enter UPI UTR / Transaction Ref ID (12 digits)" value={upiTxnId} onChange={e => setUpiTxnId(e.target.value)} style={{ width: '100%', padding: 8, border: '1px solid #cbd5e1', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }} />

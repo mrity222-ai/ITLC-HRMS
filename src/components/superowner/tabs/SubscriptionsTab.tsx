@@ -58,6 +58,7 @@ export const SubscriptionsTab: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     price: 0,
+    currency: 'USD' as 'USD' | 'INR',
     billingCycle: 'monthly' as 'monthly' | 'yearly',
     trialDays: 0,
     employeeLimit: 100,
@@ -98,7 +99,8 @@ export const SubscriptionsTab: React.FC = () => {
     setSelectedPlan(null);
     setFormData({
       name: '',
-      price: 99,
+      price: 999,
+      currency: 'INR',
       billingCycle: 'monthly',
       trialDays: 14,
       employeeLimit: 100,
@@ -120,9 +122,14 @@ export const SubscriptionsTab: React.FC = () => {
   const handleEditClick = (plan: SubscriptionPlan) => {
     setIsFormDirty(false);
     setSelectedPlan(plan);
+    const isProbablyInr = plan.price >= 50 || plan.price % 1 !== 0;
+    const initialCurrency = isProbablyInr ? 'INR' : 'USD';
+    const displayPrice = isProbablyInr ? Math.round(plan.price * 83) : plan.price;
+
     setFormData({
       name: plan.name,
-      price: plan.price,
+      price: displayPrice,
+      currency: initialCurrency,
       billingCycle: plan.billingCycle,
       trialDays: plan.trialDays || 0,
       employeeLimit: plan.employeeLimit,
@@ -158,12 +165,16 @@ export const SubscriptionsTab: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const finalPriceUSD = formData.currency === 'INR' 
+      ? Number((Number(formData.price) / 83).toFixed(4))
+      : Number(formData.price);
+
     try {
       if (selectedPlan) {
         // Edit
         const updatedData = {
           name: formData.name,
-          price: Number(formData.price),
+          price: finalPriceUSD,
           billingCycle: formData.billingCycle,
           trialDays: Number(formData.trialDays),
           employeeLimit: Number(formData.employeeLimit),
@@ -183,7 +194,7 @@ export const SubscriptionsTab: React.FC = () => {
         const newPlanData = {
           id: formData.name.toLowerCase().replace(/\s+/g, '_'),
           name: formData.name,
-          price: Number(formData.price),
+          price: finalPriceUSD,
           billingCycle: formData.billingCycle,
           trialDays: Number(formData.trialDays),
           employeeLimit: Number(formData.employeeLimit),
@@ -470,7 +481,19 @@ export const SubscriptionsTab: React.FC = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs text-slate-400 font-medium">Price ($ USD) {formData.price > 0 && <span className="text-[10px] text-indigo-400 font-semibold">(≈ {formatAmount(formData.price)})</span>}</label>
+                      <label className="text-xs text-slate-400 font-medium">Currency</label>
+                      <select
+                        value={formData.currency}
+                        onChange={(e) => updateForm({ currency: e.target.value as 'USD' | 'INR' })}
+                        className="glass-input w-full px-3.5 py-2 rounded-xl text-sm text-slate-300"
+                      >
+                        <option value="USD">USD ($)</option>
+                        <option value="INR">INR (₹)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-slate-400 font-medium">Price ({formData.currency})</label>
                       <input
                         type="number"
                         required
