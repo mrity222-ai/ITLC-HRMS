@@ -25,11 +25,11 @@ export default function Security() {
             status: l.category === 'Security' || l.category === 'Billing' ? 'Warning' : 'Success'
           })));
         } else {
-          setLogs(mockAuditLogs);
+          setLogs([]);
         }
       } catch (err) {
         console.error("Failed to load audit logs:", err);
-        setLogs(mockAuditLogs);
+        setLogs([]);
       } finally {
         setLoading(false);
       }

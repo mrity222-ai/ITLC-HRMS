@@ -17,7 +17,7 @@ export default function AiFeatures({ employees = [] }) {
   // Dynamic predictions from database employees list
   const predictions = (() => {
     if (!employees || employees.length === 0) {
-      return mockLeavePredictions;
+      return [];
     }
     return employees.map((emp) => {
       const hash = (emp.name.charCodeAt(0) * 7 + (emp.name.charCodeAt(1) || 12) * 3) % 91;
@@ -140,30 +140,36 @@ export default function AiFeatures({ employees = [] }) {
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {predictions.map((pred, idx) => (
-              <div key={idx} style={{
-                padding: 16,
-                borderRadius: 16,
-                border: '1px solid #E2E8F0',
-                background: '#F8FAFC',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 700 }}>{pred.name}</h4>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{pred.role}</span>
-                  </div>
-                  <span className={`badge ${pred.risk === 'High Risk' ? 'badge-danger' : 'badge-success'}`}>
-                    Burnout: {pred.burnOutIndex}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.75rem', padding: 8, background: 'white', borderRadius: 8, border: '1px dashed #CBD5E1', color: 'var(--color-text-secondary)' }}>
-                  <strong>Recommendation:</strong> {pred.recommendation}
-                </div>
+            {predictions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--color-text-tertiary)', fontSize: '0.85rem' }}>
+                No active employee predictions available. Onboard employees to forecast attrition.
               </div>
-            ))}
+            ) : (
+              predictions.map((pred, idx) => (
+                <div key={idx} style={{
+                  padding: 16,
+                  borderRadius: 16,
+                  border: '1px solid #E2E8F0',
+                  background: '#F8FAFC',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700 }}>{pred.name}</h4>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{pred.role}</span>
+                    </div>
+                    <span className={`badge ${pred.risk === 'High Risk' ? 'badge-danger' : 'badge-success'}`}>
+                      Burnout: {pred.burnOutIndex}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', margin: 0, color: 'var(--color-text-secondary)' }}>
+                    <strong>Risk:</strong> {pred.risk} — {pred.recommendation}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

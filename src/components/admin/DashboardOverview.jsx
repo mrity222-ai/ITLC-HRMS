@@ -103,8 +103,8 @@ export default function DashboardOverview({ employeesList = [], notifications = 
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState(null);
   const [activities, setActivities] = useState([]);
-  const [attendanceTrends, setAttendanceTrends] = useState(attendanceData);
-  const [payrollTrends, setPayrollTrends] = useState(payrollTrendData);
+  const [attendanceTrends, setAttendanceTrends] = useState([]);
+  const [payrollTrends, setPayrollTrends] = useState([]);
 
   const currencySymbol = (() => {
     switch (currency) {
@@ -143,18 +143,22 @@ export default function DashboardOverview({ employeesList = [], notifications = 
             };
           }));
         } else {
-          setActivities(recentActivities);
+          setActivities([]);
         }
 
         if (attTrends && attTrends.length > 0) {
           setAttendanceTrends(attTrends);
+        } else {
+          setAttendanceTrends([]);
         }
         if (payTrends && payTrends.length > 0) {
           setPayrollTrends(payTrends);
+        } else {
+          setPayrollTrends([]);
         }
       } catch (err) {
         console.error("Failed to load company details on dashboard:", err);
-        setActivities(recentActivities);
+        setActivities([]);
       } finally {
         setLoading(false);
       }
@@ -530,30 +534,36 @@ export default function DashboardOverview({ employeesList = [], notifications = 
               zIndex: 1
             }} />
 
-            {activities.map((act, i) => (
-              <div key={i} style={{ display: 'flex', gap: 16, position: 'relative', zIndex: 2 }}>
-                <div style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  background: 'var(--color-bg)',
-                  border: `3px solid ${act.color}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: act.color }} />
-                </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 20 }}>
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{act.title}</h4>
-                    <span className="number-font" style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>{act.time}</span>
-                  </div>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>{act.desc}</p>
-                </div>
+            {activities.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-tertiary)', fontSize: '0.85rem' }}>
+                No recent activity logs recorded yet.
               </div>
-            ))}
+            ) : (
+              activities.map((act, i) => (
+                <div key={i} style={{ display: 'flex', gap: 16, position: 'relative', zIndex: 2 }}>
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    background: 'var(--color-bg)',
+                    border: `3px solid ${act.color}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: act.color }} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 20 }}>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{act.title}</h4>
+                      <span className="number-font" style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>{act.time}</span>
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>{act.desc}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
