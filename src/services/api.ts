@@ -316,6 +316,14 @@ export const api = {
     const res = await fetch(`${API_URL}/admin/departments/${id}`, { method: 'DELETE', headers: getHeaders() });
     return handleResponse(res);
   },
+  async transferEmployees(sourceDeptId: number, targetDeptId: number, amount: number) {
+    const res = await fetch(`${API_URL}/admin/departments/transfer`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ sourceDeptId, targetDeptId, amount })
+    });
+    return handleResponse(res);
+  },
 
   // ===== DESIGNATIONS =====
   async getAdminDesignations() {

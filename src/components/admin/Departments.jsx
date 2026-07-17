@@ -123,7 +123,7 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
     }
   };
 
-  const handleTransfer = (e) => {
+  const handleTransfer = async (e) => {
     e.preventDefault();
     if (!selectedDept || !transferTarget) return;
     const amount = Number(transferAmount);
@@ -131,17 +131,15 @@ export default function Departments({ setActiveTab, currency = 'USD' }) {
       alert("Insufficient employee headcount in source department!");
       return;
     }
-    setDepartments(departments.map(d => {
-      if (d.id === selectedDept.id) {
-        return { ...d, employees: d.employees - amount };
-      }
-      if (d.id === Number(transferTarget)) {
-        return { ...d, employees: d.employees + amount };
-      }
-      return d;
-    }));
-    setViewMode('list');
-    alert(`Successfully transferred ${amount} employees to target department!`);
+    try {
+      await api.transferEmployees(selectedDept.id, Number(transferTarget), amount);
+      const data = await api.getAdminDepartments();
+      setDepartments(data);
+      setViewMode('list');
+      alert(`Successfully transferred ${amount} employees to target department!`);
+    } catch (err) {
+      alert(err.message || 'Failed to transfer employees');
+    }
   };
 
   const resetForm = () => {
