@@ -23,13 +23,23 @@ export default function AssetManagement({ subTab = 'inventory' }) {
         const list = await api.getAdminAssets();
         const mapped = list.map(a => ({
           id: a.id,
-          name: a.assetName || a.name || 'Unknown',
-          type: a.assetType || a.type || 'Accessory',
-          user: a.assignedName || a.assignedTo || 'None',
-          date: a.purchaseDate ? new Date(a.purchaseDate).toLocaleDateString() : 'N/A',
+          name: a.assetName || 'Unknown',
+          type: a.assetType || 'Accessory',
+          user: a.employeeName || 'None',
+          date: 'N/A',
           status: a.status || 'Available'
         }));
         setAssets(mapped);
+
+        const reqList = list.filter(a => a.status === 'Requested' || a.status === 'Return Pending').map(a => ({
+          id: a.id,
+          name: a.employeeName || 'Unknown Staff',
+          type: a.assetType || 'Device',
+          item: a.assetName,
+          reason: a.requestComment || 'Accessory upgrade needed',
+          status: a.status === 'Requested' ? 'Pending' : 'Return Pending'
+        }));
+        setRequests(reqList);
       } catch (err) {
         console.error("Failed to load assets:", err);
       }
@@ -71,8 +81,15 @@ export default function AssetManagement({ subTab = 'inventory' }) {
     }
   };
 
-  const handleApproveRequest = (id, newStatus) => {
-    setRequests(requests.map(req => req.id === id ? { ...req, status: newStatus } : req));
+  const handleApproveRequest = async (id, action) => {
+    try {
+      const dbStatus = action === 'Approved' ? 'Assigned' : 'Rejected';
+      await api.updateAdminAsset(id, { status: dbStatus });
+      setRequests(prev => prev.map(req => req.id === id ? { ...req, status: action } : req));
+      alert(`Asset request ${action.toLowerCase()} successfully!`);
+    } catch (err) {
+      alert("Failed to process request: " + err.message);
+    }
   };
 
   const filteredAssets = assets.filter(ast => 

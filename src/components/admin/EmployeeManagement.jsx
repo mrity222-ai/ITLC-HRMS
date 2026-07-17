@@ -370,6 +370,25 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   ]);
   const [noteInput, setNoteInput] = useState('');
   
+  const [departments, setDepartments] = useState([]);
+  const [autoGenerateId, setAutoGenerateId] = useState(true);
+  const [customId, setCustomId] = useState('');
+  const [portalPassword, setPortalPassword] = useState('');
+
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const depts = await api.getAdminDepartments();
+        if (depts && Array.isArray(depts)) {
+          setDepartments(depts);
+        }
+      } catch (err) {
+        console.error("Failed to load departments:", err);
+      }
+    };
+    loadDepartments();
+  }, []);
+
   // Form variables
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -437,6 +456,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     
     try {
       const result = await api.createEmployee({
+        id: autoGenerateId ? undefined : customId,
         name: newName,
         email: newEmail,
         role: newRole,
@@ -937,6 +957,37 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                   placeholder="e.g. John Doe"
                 />
               </div>
+
+              <div className="premium-form-group" style={{ border: '1px dashed rgba(255, 255, 255, 0.1)', padding: 12, borderRadius: 8, background: 'rgba(255, 255, 255, 0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: autoGenerateId ? 0 : 8 }}>
+                  <label className="premium-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={autoGenerateId} 
+                      onChange={(e) => setAutoGenerateId(e.target.checked)} 
+                    />
+                    <span>Auto-Generate Employee ID</span>
+                  </label>
+                  {autoGenerateId && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>
+                      Auto-generated on submission (e.g. EMP829302)
+                    </span>
+                  )}
+                </div>
+                {!autoGenerateId && (
+                  <div>
+                    <label className="premium-label" style={{ fontSize: '0.75rem', marginBottom: 4 }}>Custom Employee ID</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={customId} 
+                      onChange={(e) => setCustomId(e.target.value)} 
+                      className="premium-input" 
+                      placeholder="e.g. EMP-998"
+                    />
+                  </div>
+                )}
+              </div>
               <div className="premium-form-group">
                 <label className="premium-label">Email Address</label>
                 <input 
@@ -987,12 +1038,19 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                       onChange={(e) => setNewDept(e.target.value)} 
                       className="premium-input"
                     >
-                      <option value="Engineering">Engineering</option>
-                      <option value="Product Engineering">Product Engineering</option>
-                      <option value="Design">Design</option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="Sales">Sales</option>
-                      <option value="HR">HR</option>
+                      {departments.map((d) => (
+                        <option key={d.id} value={d.name}>{d.name}</option>
+                      ))}
+                      {departments.length === 0 && (
+                        <>
+                          <option value="Engineering">Engineering</option>
+                          <option value="Product Engineering">Product Engineering</option>
+                          <option value="Design">Design</option>
+                          <option value="Marketing">Marketing</option>
+                          <option value="Sales">Sales</option>
+                          <option value="HR">HR</option>
+                        </>
+                      )}
                     </select>
                   )}
                 </div>
@@ -1213,12 +1271,19 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                       />
                     ) : (
                       <select value={newDept} onChange={(e) => setNewDept(e.target.value)} className="premium-input">
-                        <option value="Engineering">Engineering</option>
-                        <option value="Product Engineering">Product Engineering</option>
-                        <option value="Design">Design</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Sales">Sales</option>
-                        <option value="HR">HR</option>
+                        {departments.map((d) => (
+                          <option key={d.id} value={d.name}>{d.name}</option>
+                        ))}
+                        {departments.length === 0 && (
+                          <>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Product Engineering">Product Engineering</option>
+                            <option value="Design">Design</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Sales">Sales</option>
+                            <option value="HR">HR</option>
+                          </>
+                        )}
                       </select>
                     )}
                   </div>
@@ -1374,7 +1439,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                   <div>
                     <h4 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>{selectedProfile.name}</h4>
                     <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', display: 'block', marginTop: 4 }}>
-                      Employee ID: EMP-2026-{selectedProfile.id + 400}
+                      Employee ID: {selectedProfile.id}
                     </span>
                     <span className="badge badge-info" style={{ marginTop: 8, fontSize: '0.65rem' }}>
                       {selectedProfile.department || 'Product Engineering'}
@@ -1398,7 +1463,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                 {/* Sidebar Navigation Options */}
                 <div className="premium-card" style={{ padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {[
-                    'Personal Info', 'Employment Details', 'Documents Vault', 'Bank Details'
+                    'Personal Info', 'Employment Details', 'Portal Credentials', 'Documents Vault', 'Bank Details'
                   ].map(tab => (
                     <button
                       key={tab}
@@ -1508,7 +1573,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, fontSize: '0.85rem' }}>
                         <div>
                           <span className="premium-label" style={{ fontSize: '0.65rem' }}>Employee ID</span>
-                          <div style={{ fontWeight: 600, marginTop: 4 }}>EMP-2026-{selectedProfile.id + 400}</div>
+                          <div style={{ fontWeight: 600, marginTop: 4 }}>{selectedProfile.id}</div>
                         </div>
                         <div>
                           <span className="premium-label" style={{ fontSize: '0.65rem' }}>Department</span>
@@ -1725,6 +1790,62 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                         border: '1px solid rgba(217, 119, 6, 0.2)'
                       }}>
                         * Payroll Compliance Lock: Bank details are verified and cannot be deleted or cleared. Please use the change request form to update account information.
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* TAB: Portal Credentials */}
+                  {activeProfileTab === 'Portal Credentials' && (
+                    <motion.div
+                      key="portal-credentials"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+                    >
+                      <div className="premium-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <h3 style={{ fontSize: '0.95rem', fontWeight: 800, borderBottom: '1px solid var(--color-border)', paddingBottom: 10 }}>Portal Login Credentials</h3>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: '0.85rem' }}>
+                          <div>
+                            <span className="premium-label" style={{ fontSize: '0.65rem' }}>Login User ID (Email)</span>
+                            <div style={{ fontWeight: 600, marginTop: 4 }}>{selectedProfile.email}</div>
+                          </div>
+
+                          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
+                            <span className="premium-label" style={{ fontSize: '0.65rem', marginBottom: 6, display: 'block' }}>Update Account Password</span>
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                              <input 
+                                type="password" 
+                                value={portalPassword} 
+                                onChange={(e) => setPortalPassword(e.target.value)} 
+                                className="premium-input" 
+                                style={{ maxWidth: 300 }}
+                                placeholder="Enter new password..." 
+                              />
+                              <button 
+                                onClick={async () => {
+                                  if (!portalPassword) {
+                                    alert("Please type a new password.");
+                                    return;
+                                  }
+                                  try {
+                                    await api.updateEmployee(selectedProfile.id, { password: portalPassword });
+                                    setPortalPassword('');
+                                    alert("Employee portal login password updated successfully!");
+                                  } catch (err) {
+                                    alert("Failed to update password: " + err.message);
+                                  }
+                                }} 
+                                className="premium-btn premium-btn-primary"
+                                style={{ padding: '10px 18px', fontSize: '0.8rem' }}
+                              >
+                                Save Password
+                              </button>
+                            </div>
+                          </div>
+
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -2020,7 +2141,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                   }}>
                     <div>
                       <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--color-text-tertiary, #94a3b8)', textTransform: 'uppercase', display: 'block' }}>Employee ID</span>
-                      <span style={{ fontWeight: 700, color: 'var(--color-text-secondary, #334155)', fontFamily: 'monospace' }}>EMP-2026-{selectedProfile.id + 400}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--color-text-secondary, #334155)', fontFamily: 'monospace' }}>{selectedProfile.id}</span>
                     </div>
                     <div>
                       <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--color-text-tertiary, #94a3b8)', textTransform: 'uppercase', display: 'block' }}>Department</span>
@@ -2050,7 +2171,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                       ))}
                     </div>
                     <span style={{ fontSize: '0.55rem', color: 'var(--color-text-tertiary, #94a3b8)', fontFamily: 'monospace', letterSpacing: 3 }}>
-                      *EMP-ID-{selectedProfile.id + 400}*
+                      *{selectedProfile.id}*
                     </span>
                   </div>
                 </div>

@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 export default function Performance({ employees, subTab = 'dashboard' }) {
   const [goals, setGoals] = useState(mockGoals);
   const [reviews, setReviews] = useState([]);
-  const [selectedEmpId, setSelectedEmpId] = useState(employees[0]?.id || 1);
+  const [selectedEmpId, setSelectedEmpId] = useState(employees[0]?.id || '');
   const [designScore, setDesignScore] = useState(4.2);
   const [deliveryScore, setDeliveryScore] = useState(4.5);
   const [teamworkScore, setTeamworkScore] = useState(4.0);
@@ -22,6 +22,25 @@ export default function Performance({ employees, subTab = 'dashboard' }) {
       try {
         const list = await api.getAdminPerformance();
         setReviews(list);
+
+        // Extract corporate goals from performance reviews in database
+        const corporateGoals = list.flatMap(r => {
+          if (Array.isArray(r.goals)) return r.goals;
+          if (typeof r.goals === 'string') {
+            try { return JSON.parse(r.goals); } catch (e) {}
+          }
+          return [];
+        });
+        
+        if (corporateGoals.length > 0) {
+          setGoals(corporateGoals);
+        } else {
+          setGoals([
+            { id: 1, title: 'Migrate legacy data layers to RDS clusters', target: 'Q3 Target', progress: 85, status: 'On Track' },
+            { id: 2, title: 'Achieve SOC2 Type II compliance audit clearance', target: 'Q4 Target', progress: 95, status: 'Exceeding' },
+            { id: 3, title: 'Deploy Flutter app build to Play Store', target: 'End of Month', progress: 40, status: 'Behind' }
+          ]);
+        }
       } catch (err) {
         console.error("Failed to load performance data:", err);
       }
@@ -29,7 +48,7 @@ export default function Performance({ employees, subTab = 'dashboard' }) {
     fetchPerformance();
   }, []);
 
-  const selectedEmp = employees.find(emp => emp.id === Number(selectedEmpId)) || employees[0];
+  const selectedEmp = employees.find(emp => String(emp.id) === String(selectedEmpId)) || employees[0];
   const overallRating = ((Number(designScore) + Number(deliveryScore) + Number(teamworkScore)) / 3).toFixed(1);
 
   const getPerformanceClass = (rating) => {
