@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, DollarSign, Calculator, Download, Percent, FileText, CheckCircle, ShieldCheck } from 'lucide-react';
+import { CreditCard, DollarSign, Calculator, Download, Percent, FileText, CheckCircle, ShieldCheck, User, Briefcase } from 'lucide-react';
 import { api } from '../../services/api';
 
 const mockPayslipHistory = [];
