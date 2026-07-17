@@ -642,7 +642,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
 
               </div>
 
-              {/* Vertical Disbursal Checklist */}
+              {/* Horizontal Disbursal Checklist */}
               <div className="premium-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
                   <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>Salary Disbursal Checklist</h3>
@@ -651,86 +651,104 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                   </p>
                 </div>
 
-                <div className="premium-table-container">
-                  <table className="premium-table">
-                    <thead>
-                      <tr>
-                        <th style={{ width: '50px', textAlign: 'center' }}>#</th>
-                        <th>Member</th>
-                        <th>Designation</th>
-                        <th>Calculated Net Salary</th>
-                        <th style={{ textAlign: 'right', paddingRight: '16px' }}>Actions / Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {employees.map((emp, index) => {
-                        const status = getEmployeePayrollStatus(emp.id);
-                        const details = getEmpPayrollDetails(emp);
-                        return (
-                          <tr key={emp.id}>
-                            <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--color-text-tertiary)' }} className="number-font">
-                              {index + 1}
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <img 
-                                  src={emp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60'} 
-                                  alt={emp.name} 
-                                  style={{ width: 32, height: 32, borderRadius: '8px', objectFit: 'cover' }}
-                                />
-                                <span style={{ fontWeight: 700 }}>{emp.name}</span>
-                              </div>
-                            </td>
-                            <td style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-                              {emp.role}
-                            </td>
-                            <td style={{ fontSize: '0.85rem', fontWeight: 800 }} className="number-font">
-                              {cSymbol}{details.netSalary.toLocaleString()}
-                            </td>
-                            <td style={{ textAlign: 'right', paddingRight: '16px' }}>
-                              {status === 'Processed' ? (
-                                <span className="badge badge-success" style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '8px' }}>
-                                  ✔️ Paid
-                                </span>
-                              ) : status === 'On Hold' ? (
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                                  <span className="badge badge-warning" style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '8px' }}>
-                                    ✖️ On Hold
-                                  </span>
-                                  <button 
-                                    onClick={() => handleDisburseSingleSalary(emp)}
-                                    className="premium-btn premium-btn-primary"
-                                    style={{ padding: '6px 12px', fontSize: '0.75rem', height: '30px' }}
-                                  >
-                                    Pay
-                                  </button>
-                                </div>
-                              ) : (
-                                <div style={{ display: 'inline-flex', gap: 8 }}>
-                                  <button 
-                                    onClick={() => handleHoldSingleSalary(emp)}
-                                    className="premium-btn premium-btn-secondary" 
-                                    style={{ padding: '4px 10px', fontSize: '0.75rem', height: '30px', borderColor: '#ef4444', color: '#ef4444' }}
-                                    title="Put Salary on Hold"
-                                  >
-                                    ✖ Hold
-                                  </button>
-                                  <button 
-                                    onClick={() => handleDisburseSingleSalary(emp)}
-                                    className="premium-btn premium-btn-primary" 
-                                    style={{ padding: '4px 10px', fontSize: '0.75rem', height: '30px', background: '#10b981', borderColor: '#10b981' }}
-                                    title="Approve & Pay Salary"
-                                  >
-                                    ✔ Pay
-                                  </button>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div style={{ 
+                  display: 'flex', 
+                  gap: 16, 
+                  overflowX: 'auto', 
+                  paddingBottom: 16,
+                  paddingTop: 4,
+                  scrollbarWidth: 'thin',
+                  msOverflowStyle: 'none'
+                }}>
+                  {employees.map((emp) => {
+                    const status = getEmployeePayrollStatus(emp.id);
+                    const details = getEmpPayrollDetails(emp);
+                    return (
+                      <div 
+                        key={emp.id} 
+                        className="premium-card" 
+                        style={{ 
+                          minWidth: 260, 
+                          maxWidth: 280, 
+                          padding: 20, 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'center', 
+                          gap: 14, 
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border)',
+                          flexShrink: 0,
+                          borderRadius: 16
+                        }}
+                      >
+                        {/* Avatar and Info */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, textAlign: 'center' }}>
+                          <img 
+                            src={emp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60'} 
+                            alt={emp.name} 
+                            style={{ width: 64, height: 64, borderRadius: 16, objectFit: 'cover' }}
+                          />
+                          <h4 style={{ fontSize: '0.9rem', fontWeight: 800, margin: 0 }}>{emp.name}</h4>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', fontWeight: 600 }}>{emp.role}</span>
+                        </div>
+
+                        {/* Salary Amount */}
+                        <div style={{ 
+                          background: 'rgba(79, 70, 229, 0.04)', 
+                          padding: '8px 16px', 
+                          borderRadius: '10px', 
+                          fontSize: '0.95rem', 
+                          fontWeight: 800, 
+                          color: 'var(--color-primary)',
+                          width: '100%',
+                          textAlign: 'center'
+                        }} className="number-font">
+                          {cSymbol}{details.netSalary.toLocaleString()}
+                        </div>
+
+                        {/* Actions & Status */}
+                        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: 10, marginTop: 'auto' }}>
+                          {status === 'Processed' ? (
+                            <span className="badge badge-success" style={{ padding: '8px 14px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              ✔️ Paid
+                            </span>
+                          ) : status === 'On Hold' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                              <span className="badge badge-warning" style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '8px', textAlign: 'center' }}>
+                                ✖️ On Hold
+                              </span>
+                              <button 
+                                onClick={() => handleDisburseSingleSalary(emp)}
+                                className="premium-btn premium-btn-primary"
+                                style={{ width: '100%', fontSize: '0.75rem', height: '32px', justifyContent: 'center' }}
+                              >
+                                Pay
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                              <button 
+                                onClick={() => handleHoldSingleSalary(emp)}
+                                className="premium-btn premium-btn-secondary" 
+                                style={{ flex: 1, padding: '4px 10px', fontSize: '0.75rem', height: '32px', borderColor: '#ef4444', color: '#ef4444', justifyContent: 'center' }}
+                                title="Put Salary on Hold"
+                              >
+                                ✖ Hold
+                              </button>
+                              <button 
+                                onClick={() => handleDisburseSingleSalary(emp)}
+                                className="premium-btn premium-btn-primary" 
+                                style={{ flex: 1, padding: '4px 10px', fontSize: '0.75rem', height: '32px', justifyContent: 'center', background: '#10b981', borderColor: '#10b981' }}
+                                title="Approve & Pay Salary"
+                              >
+                                ✔ Pay
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
