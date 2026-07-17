@@ -738,110 +738,168 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
 
             </div>
 
-            {/* Employee Cards Grid with internal scroll */}
-            <div style={{ maxHeight: '650px', overflowY: 'auto', paddingRight: '8px', paddingBottom: '16px' }} className="premium-scrollbar">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
-                {filteredEmployees.map((emp) => {
-                  if (!emp) return null;
-                  return (
-                    <div 
-                      key={emp.id} 
-                      className="premium-card" 
-                      style={{ 
-                        padding: 20, 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        alignItems: 'center', 
-                        textAlign: 'center',
-                        gap: 14,
-                        cursor: 'pointer',
-                        position: 'relative'
-                      }}
-                      onClick={() => { setSelectedProfile(emp); setViewMode('profile'); }}
-                    >
-                      {/* Status Badge */}
-                      <span className={`badge ${emp.status === 'Active' ? 'badge-success' : emp.status === 'On Leave' ? 'badge-warning' : 'badge-danger'}`} style={{ position: 'absolute', top: 12, right: 12, fontSize: '0.65rem' }}>
-                        {emp.status}
-                      </span>
-
-                      {/* Avatar */}
-                      <div style={{ width: 72, height: 72, borderRadius: '50%', border: '2px solid var(--color-border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10, backgroundColor: 'rgba(0,0,0,0.03)' }}>
-                        {emp.avatar ? (
-                          <img 
-                            src={emp.avatar} 
-                            alt={emp.name} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                          />
-                        ) : (
-                          <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
-                            {emp.name ? emp.name[0] : 'E'}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: 800 }}>{emp.name}</h4>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{emp.email}</p>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                        <span className="badge badge-info" style={{ fontSize: '0.65rem' }}>{emp.department}</span>
-                        <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>{emp.designation || emp.role}</span>
-                        {emp.role && emp.role !== 'Employee' && (
-                          <span className="badge badge-success" style={{ fontSize: '0.65rem', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.2)' }}>{emp.role}</span>
-                        )}
-                      </div>
-
-                      <div className="number-font" style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                        {emp.salary}
-                      </div>
-
-                      {/* Action row */}
-                      <div 
-                        style={{ 
-                          display: 'flex', 
-                          gap: 12, 
-                          width: '100%', 
-                          borderTop: '1px solid var(--color-border)', 
-                          paddingTop: 12,
-                          justifyContent: 'center'
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button 
+            {/* Employee Table matching user upload design */}
+            <div style={{ maxHeight: '650px', overflowY: 'auto', paddingBottom: '16px', background: 'var(--glass-bg)', borderRadius: '16px', border: '1px solid var(--color-border)' }} className="premium-scrollbar">
+              <div className="premium-table-container" style={{ margin: 0 }}>
+                <table className="premium-table">
+                  <thead>
+                    <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--color-border)' }}>
+                      <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}># ID</th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><User size={13} /> Name</span>
+                      </th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Briefcase size={13} /> Role</span>
+                      </th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Award size={13} /> Department</span>
+                      </th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ShieldCheck size={13} /> Status</span>
+                      </th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Mail size={13} /> Contact</span>
+                      </th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={13} /> Joined</span>
+                      </th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEmployees.map((emp) => {
+                      if (!emp) return null;
+                      return (
+                        <tr 
+                          key={emp.id} 
                           onClick={() => { setSelectedProfile(emp); setViewMode('profile'); }}
-                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 4 }}
-                          title="View Profile"
+                          style={{ cursor: 'pointer' }}
                         >
-                          <User size={15} />
-                        </button>
-                        <button 
-                          onClick={() => handleStartEdit(emp)}
-                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 4 }}
-                          title="Edit"
-                        >
-                          <Edit3 size={15} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteEmployee(emp.id)}
-                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: 4 }}
-                          title="Delete"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
+                          {/* ID */}
+                          <td style={{ fontWeight: 700 }} className="number-font">
+                            #{emp.id}
+                          </td>
 
-                    </div>
-                  );
-                })}
-                
-                {filteredEmployees.length === 0 && (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 0', color: 'var(--color-text-tertiary)' }}>
-                    No employees matching filters or search queries.
-                  </div>
-                )}
+                          {/* Name (Avatar + Name) */}
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div style={{ width: 32, height: 32, borderRadius: '8px', border: '1px solid var(--color-border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.03)' }}>
+                                {emp.avatar ? (
+                                  <img 
+                                    src={emp.avatar} 
+                                    alt={emp.name} 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                  />
+                                ) : (
+                                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
+                                    {emp.name ? emp.name[0] : 'E'}
+                                  </span>
+                                )}
+                              </div>
+                              <span style={{ fontWeight: 700 }}>{emp.name}</span>
+                            </div>
+                          </td>
+
+                          {/* Role */}
+                          <td style={{ fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+                            {emp.designation || emp.role}
+                          </td>
+
+                          {/* Department */}
+                          <td>
+                            {emp.department}
+                          </td>
+
+                          {/* Status Pill */}
+                          <td>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '4px 10px',
+                              borderRadius: '999px',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              background: emp.status === 'Active' ? 'rgba(34, 197, 94, 0.12)' : emp.status === 'On Leave' ? 'rgba(234, 179, 8, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                              color: emp.status === 'Active' ? '#22c55e' : emp.status === 'On Leave' ? '#eab308' : '#64748b'
+                            }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: emp.status === 'Active' ? '#22c55e' : emp.status === 'On Leave' ? '#eab308' : '#64748b' }} />
+                              <span>{emp.status}</span>
+                            </span>
+                          </td>
+
+                          {/* Contact */}
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
+                              <span style={{
+                                padding: '3px 10px',
+                                borderRadius: '999px',
+                                border: '1px solid rgba(79, 70, 229, 0.15)',
+                                background: 'rgba(79, 70, 229, 0.03)',
+                                color: 'var(--color-primary)',
+                                fontSize: '0.75rem',
+                                fontWeight: 500
+                              }}>{emp.email}</span>
+                              {emp.phone && (
+                                <span style={{
+                                  padding: '3px 10px',
+                                  borderRadius: '999px',
+                                  border: '1px solid rgba(79, 70, 229, 0.15)',
+                                  background: 'rgba(79, 70, 229, 0.03)',
+                                  color: 'var(--color-primary)',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 500
+                                }}>{emp.phone}</span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Joined */}
+                          <td style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                            {emp.joiningDate || '-'}
+                          </td>
+
+                          {/* Actions */}
+                          <td style={{ textAlign: 'right' }}>
+                            <div 
+                              style={{ display: 'inline-flex', gap: 8, justifyContent: 'flex-end', width: '100%' }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button 
+                                onClick={() => { setSelectedProfile(emp); setViewMode('profile'); }}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 4 }}
+                                title="View Profile"
+                              >
+                                <User size={15} />
+                              </button>
+                              <button 
+                                onClick={() => handleStartEdit(emp)}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 4 }}
+                                title="Edit"
+                              >
+                                <Edit3 size={15} />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteEmployee(emp.id)}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: 4 }}
+                                title="Delete"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
+                
+              {filteredEmployees.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-tertiary)' }}>
+                  No employees matching filters or search queries.
+                </div>
+              )}
             </div>
           </motion.div>
         )}
