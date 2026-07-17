@@ -195,9 +195,11 @@ export default function Subscription({ onSubscriptionUpdate }) {
           window.location.href = result.approvalUrl;
         }
       } else if (gateway === 'credit_card') {
-        const finalCardNumber = cardNumber || '4111 2222 3333 4444';
-        const finalExpiry = cardExpiry || '12/29';
-        const finalCvv = cardCvv || '123';
+        if (!cardNumber || !cardExpiry || !cardCvv) {
+          alert('Please enter complete Credit Card details.');
+          setIsProcessing(false);
+          return;
+        }
         
         // Show processing delay
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -207,9 +209,9 @@ export default function Subscription({ onSubscriptionUpdate }) {
           planName: selectedPlan.name,
           amount: amount,
           currency: currency,
-          cardNumber: finalCardNumber,
-          expiry: finalExpiry,
-          cvv: finalCvv
+          cardNumber: cardNumber,
+          expiry: cardExpiry,
+          cvv: cardCvv
         });
         if (result.success) {
           alert('Payment via Credit Card Direct successful!');
@@ -218,6 +220,12 @@ export default function Subscription({ onSubscriptionUpdate }) {
           if (onSubscriptionUpdate) onSubscriptionUpdate();
         }
       } else if (gateway === 'upi') {
+        if (!upiTxnId || !/^\d{12}$/.test(upiTxnId)) {
+          alert('Please enter a valid 12-digit numeric UPI Transaction ID (UTR) to verify payment.');
+          setIsProcessing(false);
+          return;
+        }
+        
         // Show detecting payment delay
         await new Promise(resolve => setTimeout(resolve, 2000));
         
@@ -226,7 +234,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
           planName: selectedPlan.name,
           amount: amount,
           currency: currency,
-          upiTxnId: upiTxnId || undefined
+          upiTxnId: upiTxnId
         });
         if (result.success) {
           alert('UPI Payment Verified successfully!');
@@ -235,6 +243,12 @@ export default function Subscription({ onSubscriptionUpdate }) {
           if (onSubscriptionUpdate) onSubscriptionUpdate();
         }
       } else if (gateway === 'bank_transfer') {
+        if (!wireRefNo || wireRefNo.trim().length < 8) {
+          alert('Please enter a valid Bank Wire / SWIFT reference number.');
+          setIsProcessing(false);
+          return;
+        }
+        
         // Show wire processing delay
         await new Promise(resolve => setTimeout(resolve, 2000));
         
@@ -243,7 +257,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
           planName: selectedPlan.name,
           amount: amount,
           currency: currency,
-          wireRefNo: wireRefNo || undefined
+          wireRefNo: wireRefNo
         });
         if (result.success) {
           alert('Bank Transfer wire processed and approved automatically!');
