@@ -1536,16 +1536,16 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                           </div>
                           <div>
                             <span className="premium-label" style={{ fontSize: '0.65rem' }}>Date of Birth</span>
-                            <div style={{ fontWeight: 600, marginTop: 4 }}>1992-08-24</div>
+                            <div style={{ fontWeight: 600, marginTop: 4 }}>{selectedProfile.dob || '1992-08-24'}</div>
                           </div>
                           <div>
                             <span className="premium-label" style={{ fontSize: '0.65rem' }}>Gender</span>
-                            <div style={{ fontWeight: 600, marginTop: 4 }}>Male</div>
+                            <div style={{ fontWeight: 600, marginTop: 4 }}>{selectedProfile.gender || 'Male'}</div>
                           </div>
                           <div style={{ gridColumn: 'span 2' }}>
                             <span className="premium-label" style={{ fontSize: '0.65rem' }}>Residential Address</span>
                             <div style={{ fontWeight: 600, marginTop: 4, lineHeight: 1.4 }}>
-                              482 Silver Lake Blvd, Los Angeles, CA 90026
+                              {selectedProfile.address || '482 Silver Lake Blvd, Los Angeles, CA 90026'}
                             </div>
                           </div>
                         </div>
@@ -1556,14 +1556,12 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                         <h3 style={{ fontSize: '0.95rem', fontWeight: 800, borderBottom: '1px solid var(--color-border)', paddingBottom: 10 }}>Emergency Contacts</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, fontSize: '0.85rem' }}>
                           <div>
-                            <span className="premium-label" style={{ fontSize: '0.65rem' }}>Primary Contact</span>
-                            <div style={{ fontWeight: 700, marginTop: 4 }}>Jane Wright (Spouse)</div>
-                            <div style={{ color: 'var(--color-text-secondary)', marginTop: 2 }}>+1 (555) 382-9029</div>
+                            <span className="premium-label" style={{ fontSize: '0.65rem' }}>Primary Contact Details</span>
+                            <div style={{ fontWeight: 600, marginTop: 4, lineHeight: 1.4 }}>{selectedProfile.primaryContact || 'Jane Wright (Spouse) - +1 (555) 382-9029'}</div>
                           </div>
                           <div>
-                            <span className="premium-label" style={{ fontSize: '0.65rem' }}>Secondary Contact</span>
-                            <div style={{ fontWeight: 700, marginTop: 4 }}>Robert Wright (Father)</div>
-                            <div style={{ color: 'var(--color-text-secondary)', marginTop: 2 }}>+1 (555) 492-0210</div>
+                            <span className="premium-label" style={{ fontSize: '0.65rem' }}>Secondary Contact Details</span>
+                            <div style={{ fontWeight: 600, marginTop: 4, lineHeight: 1.4 }}>{selectedProfile.secondaryContact || 'Robert Wright (Father) - +1 (555) 492-0210'}</div>
                           </div>
                         </div>
                       </div>
@@ -1592,7 +1590,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                         </div>
                         <div>
                           <span className="premium-label" style={{ fontSize: '0.65rem' }}>Designation</span>
-                          <div style={{ fontWeight: 600, marginTop: 4 }}>{selectedProfile.role || 'Senior Software Engineer'}</div>
+                          <div style={{ fontWeight: 600, marginTop: 4 }}>{selectedProfile.designation || selectedProfile.role || 'Senior Software Engineer'}</div>
                         </div>
                         <div>
                           <span className="premium-label" style={{ fontSize: '0.65rem' }}>Employment Type</span>
@@ -1600,7 +1598,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                         </div>
                         <div>
                           <span className="premium-label" style={{ fontSize: '0.65rem' }}>Joining Date</span>
-                          <div style={{ fontWeight: 600, marginTop: 4 }}>2023-03-15</div>
+                          <div style={{ fontWeight: 600, marginTop: 4 }}>{selectedProfile.joiningDate || selectedProfile.joining_date || '2023-03-15'}</div>
                         </div>
                         <div>
                           <span className="premium-label" style={{ fontSize: '0.65rem' }}>Reporting Manager</span>
