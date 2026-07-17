@@ -32,6 +32,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const [walletBalance, setWalletBalance] = useState(0);
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [isRecharging, setIsRecharging] = useState(false);
+  const [selectedEmpBreakdown, setSelectedEmpBreakdown] = useState(null);
 
   const loadCompanyPayrollSettings = async () => {
     setLoadingCompany(true);
@@ -667,10 +668,11 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                       <div 
                         key={emp.id} 
                         className="premium-card" 
+                        onClick={() => setSelectedEmpBreakdown(emp)}
                         style={{ 
                           minWidth: 320, 
                           maxWidth: 340, 
-                          padding: '12px 16px', 
+                          padding: '10px 14px', 
                           display: 'flex', 
                           flexDirection: 'row', 
                           alignItems: 'center', 
@@ -679,14 +681,15 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                           border: '1px solid var(--color-border)',
                           flexShrink: 0,
                           borderRadius: 12,
-                          height: 72
+                          cursor: 'pointer',
+                          height: 'auto'
                         }}
                       >
                         {/* Avatar */}
                         <img 
                           src={emp.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60'} 
                           alt={emp.name} 
-                          style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover' }}
+                          style={{ width: 42, height: 42, borderRadius: 10, objectFit: 'cover' }}
                         />
 
                         {/* Mid Info */}
@@ -701,7 +704,10 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                         </div>
 
                         {/* Actions */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <div 
+                          onClick={(e) => e.stopPropagation()} 
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+                        >
                           {status === 'Processed' ? (
                             <span className="badge badge-success" style={{ padding: '4px 8px', fontSize: '0.7rem', fontWeight: 700, borderRadius: '6px' }}>
                               ✔️ Paid
@@ -745,6 +751,94 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                   })}
                 </div>
               </div>
+
+              {/* Salary Breakdown Modal */}
+              {selectedEmpBreakdown && (() => {
+                const details = getEmpPayrollDetails(selectedEmpBreakdown);
+                return (
+                  <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    padding: 20
+                  }} onClick={() => setSelectedEmpBreakdown(null)}>
+                    <motion.div 
+                      initial={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      style={{
+                        background: 'var(--color-bg)',
+                        border: '1px solid var(--color-border)',
+                        padding: 24,
+                        borderRadius: 20,
+                        width: '100%',
+                        maxWidth: 420,
+                        position: 'relative',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 20
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <img 
+                          src={selectedEmpBreakdown.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60'} 
+                          alt={selectedEmpBreakdown.name} 
+                          style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'cover' }}
+                        />
+                        <div>
+                          <h4 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>{selectedEmpBreakdown.name}</h4>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>{selectedEmpBreakdown.role}</span>
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: 10 }}>
+                        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--color-text-secondary)' }}>Salary Breakdown (July 2026)</h3>
+                      </div>
+
+                      {/* Details Table */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--color-text-secondary)' }}>Basic Salary ({basicSalaryPercent}%):</span>
+                          <strong className="number-font">{cSymbol}{Math.round(details.basic).toLocaleString()}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--color-text-secondary)' }}>House Rent Allowance (HRA - {hraPercent}%):</span>
+                          <strong className="number-font">{cSymbol}{Math.round(details.hra).toLocaleString()}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444' }}>
+                          <span>Total Deductions (PF/ESI/Tax):</span>
+                          <strong className="number-font">-{cSymbol}{Math.round(details.deductions).toLocaleString()}</strong>
+                        </div>
+                        <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem' }}>
+                          <span style={{ fontWeight: 700 }}>Net Payable Salary:</span>
+                          <strong style={{ color: 'var(--color-primary)', fontWeight: 800 }} className="number-font">
+                            {cSymbol}{details.netSalary.toLocaleString()}
+                          </strong>
+                        </div>
+                      </div>
+
+                      {/* Footer Buttons */}
+                      <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                        <button 
+                          onClick={() => setSelectedEmpBreakdown(null)}
+                          className="premium-btn premium-btn-secondary"
+                          style={{ flex: 1, justifyContent: 'center', height: 38 }}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
+                );
+              })()}
 
             </motion.div>
           );
