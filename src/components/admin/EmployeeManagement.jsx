@@ -403,6 +403,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   const [localSearch, setLocalSearch] = useState('');
   const [activeProfileTab, setActiveProfileTab] = useState('Personal Info');
   const [newDob, setNewDob] = useState('');
+  const [newJoiningDate, setNewJoiningDate] = useState('');
   const [newGender, setNewGender] = useState('Male');
   const [newAddress, setNewAddress] = useState('');
   const [newPrimaryContact, setNewPrimaryContact] = useState('');
@@ -494,6 +495,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     setNewPhone(emp.phone || '');
     setNewSalary(emp.salary ? emp.salary.replace('$', '').replace('₹', '').replace(/,/g, '') : '');
     setNewDob(emp.dob || '1992-08-24');
+    setNewJoiningDate(emp.joiningDate || new Date().toISOString().split('T')[0]);
     setNewGender(emp.gender || 'Male');
     setNewAddress(emp.address || '482 Silver Lake Blvd, Los Angeles, CA 90026');
     setNewPrimaryContact(emp.primaryContact || 'Jane Wright (Spouse) - +1 (555) 382-9029');
@@ -524,6 +526,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
         phone: newPhone, 
         salary: `${cSymbol}${Number(newSalary).toLocaleString()}`,
         dob: newDob,
+        joiningDate: newJoiningDate,
         gender: newGender,
         address: newAddress,
         primaryContact: newPrimaryContact,
@@ -536,6 +539,9 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
       });
 
       setEmployees(employees.map(emp => emp.id === editingEmployee.id ? updated : emp));
+      if (selectedProfile && selectedProfile.id === editingEmployee.id) {
+        setSelectedProfile(updated);
+      }
       resetForm();
       setEditingEmployee(null);
       setViewMode('list');
@@ -570,6 +576,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     setNewPhone('');
     setNewSalary('');
     setNewDob('');
+    setNewJoiningDate('');
     setNewGender('Male');
     setNewAddress('');
     setNewPrimaryContact('');
@@ -1214,6 +1221,10 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                   <div className="premium-form-group">
                     <label className="premium-label">Date of Birth</label>
                     <input type="text" value={newDob} onChange={(e) => setNewDob(e.target.value)} className="premium-input" placeholder="e.g. 1992-08-24" />
+                  </div>
+                  <div className="premium-form-group">
+                    <label className="premium-label">Date of Joining</label>
+                    <input type="text" value={newJoiningDate} onChange={(e) => setNewJoiningDate(e.target.value)} className="premium-input" placeholder="e.g. 2026-06-01" />
                   </div>
                   <div className="premium-form-group">
                     <label className="premium-label">Gender</label>
