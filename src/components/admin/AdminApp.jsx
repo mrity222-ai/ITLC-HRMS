@@ -406,8 +406,34 @@ export default function App({ onLogout }) {
     );
   }
 
+  const isImpersonated = typeof window !== 'undefined' && localStorage.getItem('hrms_superowner_token') !== null;
+
+  const handleExitImpersonation = () => {
+    const superToken = localStorage.getItem('hrms_superowner_token');
+    if (superToken) {
+      localStorage.setItem('hrms_jwt_token', superToken);
+      localStorage.removeItem('hrms_superowner_token');
+      window.location.href = '/superowner';
+    }
+  };
+
   return (
-    <div className={`flex h-screen overflow-hidden ${darkMode ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
+    <div className={`flex flex-col h-screen w-screen overflow-hidden ${darkMode ? 'dark bg-slate-950' : 'bg-slate-50'}`}>
+      {isImpersonated && (
+        <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-bold py-2.5 px-4 flex items-center justify-between z-50 shadow-md shrink-0">
+          <span className="flex items-center gap-2">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+            ⚠️ Impersonation Mode: Currently viewing workspace as Company Admin for {profile.companyName}
+          </span>
+          <button 
+            onClick={handleExitImpersonation}
+            className="bg-white/20 hover:bg-white/30 border border-white/30 px-3 py-1 rounded text-[10px] tracking-wider uppercase font-black transition-all"
+          >
+            Exit Impersonation
+          </button>
+        </div>
+      )}
+      <div className="flex flex-1 h-full w-full overflow-hidden">
       
       {/* Mobile Drawer Overlay */}
       {mobileSidebarOpen && (
@@ -560,7 +586,7 @@ export default function App({ onLogout }) {
           </>
         )}
       </AnimatePresence>
-
+      </div>
     </div>
   );
 }

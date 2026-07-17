@@ -94,7 +94,7 @@ export const OverviewTab: React.FC = () => {
       activeSubscriptions,
       trialCompanies,
       expiredCompanies,
-      todayNew: Math.max(1, todayNew) // fallback to minimum 1 if none created today to keep stats active
+      todayNew
     };
   }, [companies, users]);
 

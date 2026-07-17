@@ -235,10 +235,26 @@ export const CompaniesTab: React.FC = () => {
   };
 
   // Impersonate
-  const handleLoginAs = (company: Company) => {
-    setImpersonatedCompany(company);
-    addToast(`Logged in as Admin for ${company.name}`, 'info');
-    addLog('Impersonated Login', `Super Owner logged in as Company Admin for ${company.name}.`, 'security');
+  const handleLoginAs = async (company: Company) => {
+    try {
+      const response = await api.impersonateCompany(company.id);
+      if (response && response.success && response.token) {
+        const superownerToken = localStorage.getItem('hrms_jwt_token');
+        if (superownerToken) {
+          localStorage.setItem('hrms_superowner_token', superownerToken);
+        }
+        localStorage.setItem('hrms_jwt_token', response.token);
+        
+        addToast(`Logged in as Admin for ${company.name}`, 'info');
+        addLog('Impersonated Login', `Super Owner logged in as Company Admin for ${company.name}.`, 'security');
+        
+        window.location.href = '/';
+      } else {
+        addToast('Impersonation token exchange failed', 'error');
+      }
+    } catch (err: any) {
+      addToast(err.message || 'Impersonation failed', 'error');
+    }
   };
 
   // Submit Modal Form

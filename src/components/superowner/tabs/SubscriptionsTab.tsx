@@ -228,10 +228,15 @@ export const SubscriptionsTab: React.FC = () => {
   };
 
   // Helper to change subscription plan for a specific company
-  const handleUpgradeDowngrade = (companyId: string, newPlanId: string, companyName: string) => {
-    setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, subscriptionPlanId: newPlanId } : c));
-    addToast(`${companyName} subscription modified`, 'success');
-    addLog('Subscription Updated', `Company "${companyName}" changed tier to "${plans.find(p => p.id === newPlanId)?.name}".`, 'subscription');
+  const handleUpgradeDowngrade = async (companyId: string, newPlanId: string, companyName: string) => {
+    try {
+      const updated = await api.updateCompany(companyId, { subscriptionPlanId: newPlanId });
+      setCompanies(prev => prev.map(c => c.id === companyId ? updated : c));
+      addToast(`${companyName} subscription modified`, 'success');
+      addLog('Subscription Updated', `Company "${companyName}" changed tier to "${plans.find(p => p.id === newPlanId)?.name}".`, 'subscription');
+    } catch (err: any) {
+      addToast(err.message || 'Failed to update subscription', 'error');
+    }
   };
 
   return (

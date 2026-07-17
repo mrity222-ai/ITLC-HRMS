@@ -389,6 +389,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async impersonateCompany(companyId: string) {
+    const res = await fetch(`${API_URL}/superowner/impersonate/${companyId}`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getPlans() {
     const res = await fetch(`${API_URL}/superowner/plans?t=${new Date().getTime()}`, {
       method: 'GET',
