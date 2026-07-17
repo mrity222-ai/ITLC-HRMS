@@ -237,7 +237,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
           upiTxnId: upiTxnId
         });
         if (result.success) {
-          alert('UPI Payment Verified successfully!');
+          alert('UPI Payment submitted successfully! It is pending verification by the Super Owner.');
           setIsModalOpen(false);
           await fetchBillingInfo();
           if (onSubscriptionUpdate) onSubscriptionUpdate();
@@ -260,7 +260,7 @@ export default function Subscription({ onSubscriptionUpdate }) {
           wireRefNo: wireRefNo
         });
         if (result.success) {
-          alert('Bank Transfer wire processed and approved automatically!');
+          alert('Bank Transfer request submitted successfully! It is pending verification by the Super Owner.');
           setIsModalOpen(false);
           await fetchBillingInfo();
           if (onSubscriptionUpdate) onSubscriptionUpdate();

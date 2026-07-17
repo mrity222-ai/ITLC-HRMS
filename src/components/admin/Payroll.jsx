@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CreditCard, DollarSign, Calculator, Download, Percent, FileText, CheckCircle, ShieldCheck, User, Briefcase } from 'lucide-react';
 import { api } from '../../services/api';
+import { downloadEmployeePayslip } from '../../utils/PaymentSlip';
 
 const mockPayslipHistory = [];
 
@@ -135,8 +136,30 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const tax = Math.round((adjustedBaseSalary + Number(bonus)) * (tdsPercent / 100));
   const netPay = Math.round(adjustedBaseSalary + Number(bonus) - Number(deductions) - pf - esi - tax);
 
-  const handleDownloadPayslip = () => {
-    alert(`Downloading Payslip for ${selectedEmp.name} (July 2026). PDF generated successfully!`);
+  const handleDownloadPayslip = async () => {
+    if (!selectedEmp) return;
+    try {
+      const company = await api.getAdminCompany();
+      downloadEmployeePayslip(
+        selectedEmp,
+        company || { name: 'ITLC Workspace' },
+        {
+          month: 'July',
+          year: 2026,
+          basic: basicPay,
+          hra: hra,
+          allowances: Number(bonus),
+          pf: pf,
+          esi: esi,
+          tax: tax,
+          deductions: pf + esi + tax + Number(deductions),
+          netSalary: netPay,
+          currency: currency
+        }
+      );
+    } catch (e) {
+      alert("Failed to generate payslip download");
+    }
   };
 
   const handleProcessSinglePayslip = async () => {
@@ -917,7 +940,42 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                       <td><span className="badge badge-success">{slip.status}</span></td>
                       <td style={{ textAlign: 'right' }}>
                         <button 
-                          onClick={() => alert(`Downloading pdf for slip: ${slip.id}`)}
+                          onClick={async () => {
+                            try {
+                              const emp = employees.find(e => e.id === slip.employeeId) || { name: slip.employeeName };
+                              const companyInfo = await api.getAdminCompany();
+                              const basicVal = Number(slip.basic || 0);
+                              const hraVal = Number(slip.hra || 0);
+                              const allowancesVal = Number(slip.allowances || 0);
+                              const deductionsVal = Number(slip.deductions || 0);
+                              const netVal = Number(slip.netSalary || 0);
+                              
+                              // Calculate PF/ESI/TDS values for details display
+                              const pfVal = Math.round(basicVal * 0.12);
+                              const esiVal = Math.round(basicVal * 0.0175);
+                              const taxVal = Math.round((basicVal + hraVal + allowancesVal) * 0.15);
+                              
+                              downloadEmployeePayslip(
+                                emp,
+                                companyInfo || { name: 'ITLC Workspace' },
+                                {
+                                  month: slip.month,
+                                  year: slip.year,
+                                  basic: basicVal,
+                                  hra: hraVal,
+                                  allowances: allowancesVal,
+                                  pf: pfVal,
+                                  esi: esiVal,
+                                  tax: taxVal,
+                                  deductions: deductionsVal,
+                                  netSalary: netVal,
+                                  currency: currency
+                                }
+                              );
+                            } catch (e) {
+                              alert("Failed to download payslip PDF.");
+                            }
+                          }}
                           style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)' }}
                         >
                           <Download size={15} />
