@@ -152,7 +152,7 @@ export default function App() {
   if (view === 'admin') {
     return (
       <div className="dashboard-theme flex-grow min-h-screen flex flex-col">
-        <AdminApp onLogout={handleLogout} />
+        <AdminApp loggedInEmail={loggedInEmail} onLogout={handleLogout} />
       </div>
     );
   }

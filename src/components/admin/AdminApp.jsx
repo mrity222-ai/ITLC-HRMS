@@ -33,7 +33,7 @@ const initialMessages = [];
 import { api } from '../../services/api';
 import { applyThemeColor } from '../../utils/theme';
 
-export default function App({ onLogout }) {
+export default function App({ onLogout, loggedInEmail }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsed, setCollapsed] = useState(false);
@@ -345,7 +345,7 @@ export default function App({ onLogout }) {
       case 'expenses':
         return <Expenses setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'support':
-        return <SupportTickets setActiveTab={setActiveTab} />;
+        return <SupportTickets setActiveTab={setActiveTab} loggedInEmail={loggedInEmail} />;
       case 'assets':
       case 'assets-inventory':
       case 'assets-allocate':

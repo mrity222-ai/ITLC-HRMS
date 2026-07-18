@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LifeBuoy, AlertCircle, CheckCircle, Clock, Send, MessageSquare, ChevronRight, RefreshCw, User } from 'lucide-react';
+import { LifeBuoy, AlertCircle, CheckCircle, Clock, Send, MessageSquare, ChevronRight, RefreshCw, User, Plus, X } from 'lucide-react';
 import { api } from '../../services/api';
 
-export default function SupportTickets() {
+export default function SupportTickets({ loggedInEmail }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -11,6 +11,14 @@ export default function SupportTickets() {
   const [replyText, setReplyText] = useState('');
   const [replyLoading, setReplyLoading] = useState(false);
   const [filterTab, setFilterTab] = useState('Active'); // Active vs Resolved
+  const [supportView, setSupportView] = useState('employee'); // 'employee' (manage team) vs 'platform' (contact Super Admin)
+
+  // Raise Platform Ticket Modal State
+  const [showRaiseModal, setShowRaiseModal] = useState(false);
+  const [ticketSubject, setTicketSubject] = useState('');
+  const [ticketPriority, setTicketPriority] = useState('medium');
+  const [ticketDescription, setTicketDescription] = useState('');
+  const [raiseLoading, setRaiseLoading] = useState(false);
 
   // Load tickets on mount
   const loadTickets = async () => {
@@ -18,11 +26,20 @@ export default function SupportTickets() {
     setError('');
     try {
       const list = await api.getAdminTickets();
-      // Ensure it's an array
       if (Array.isArray(list)) {
         setTickets(list);
-        if (list.length > 0 && !selectedTicketId) {
-          setSelectedTicketId(list[0].id);
+        
+        // Filter tickets based on current view
+        const currentEmail = loggedInEmail || localStorage.getItem('email') || '';
+        const viewFiltered = list.filter(t => {
+          const isPlatform = t.requesterEmail === currentEmail;
+          return supportView === 'platform' ? isPlatform : !isPlatform;
+        });
+
+        if (viewFiltered.length > 0) {
+          setSelectedTicketId(viewFiltered[0].id);
+        } else {
+          setSelectedTicketId(null);
         }
       }
     } catch (err) {
@@ -34,7 +51,7 @@ export default function SupportTickets() {
 
   useEffect(() => {
     loadTickets();
-  }, []);
+  }, [supportView]);
 
   const selectedTicket = tickets.find(t => t.id === selectedTicketId);
 
@@ -62,18 +79,16 @@ export default function SupportTickets() {
         senderRole: 'Admin',
         content: replyText,
         timestamp: new Date().toISOString(),
-        isAgent: true
+        isAgent: supportView === 'employee'
       };
       
       const updatedMessages = [...messages, newMsg];
       
-      // Update in DB
       const updatedTicket = await api.updateAdminTicket(selectedTicket.id, {
         messagesJson: JSON.stringify(updatedMessages),
         status: selectedTicket.status === 'open' ? 'pending' : selectedTicket.status
       });
 
-      // Update in local state list
       setTickets(prev => prev.map(t => t.id === selectedTicket.id ? updatedTicket : t));
       setReplyText('');
     } catch (err) {
@@ -90,10 +105,32 @@ export default function SupportTickets() {
       const updatedTicket = await api.updateAdminTicket(selectedTicket.id, {
         status: newStatus
       });
-      // Update in local state list
       setTickets(prev => prev.map(t => t.id === selectedTicket.id ? updatedTicket : t));
     } catch (err) {
       alert('Failed to update status: ' + err.message);
+    }
+  };
+
+  const handleCreatePlatformTicket = async (e) => {
+    e.preventDefault();
+    if (!ticketSubject.trim() || !ticketDescription.trim()) return;
+    setRaiseLoading(true);
+    try {
+      const newTicket = await api.createAdminTicket({
+        subject: ticketSubject,
+        priority: ticketPriority,
+        description: ticketDescription
+      });
+      setTickets(prev => [newTicket, ...prev]);
+      setSelectedTicketId(newTicket.id);
+      setShowRaiseModal(false);
+      setTicketSubject('');
+      setTicketDescription('');
+      alert('Platform support ticket raised successfully!');
+    } catch (err) {
+      alert('Failed to raise ticket: ' + err.message);
+    } finally {
+      setRaiseLoading(false);
     }
   };
 
@@ -124,11 +161,24 @@ export default function SupportTickets() {
     }
   };
 
-  // Filter list
+  // Filter list by support view & resolved/active state
+  const currentEmail = loggedInEmail || localStorage.getItem('email') || '';
   const filteredTickets = tickets.filter(t => {
+    const isPlatform = t.requesterEmail === currentEmail;
+    if (supportView === 'platform' && !isPlatform) return false;
+    if (supportView === 'employee' && isPlatform) return false;
+    
     const isClosed = t.status === 'resolved';
     return filterTab === 'Closed' ? isClosed : !isClosed;
   });
+
+  const isOutgoingMessage = (msg) => {
+    if (supportView === 'platform') {
+      return msg.senderRole === 'Admin';
+    } else {
+      return msg.isAgent || msg.senderRole === 'Admin' || msg.senderRole === 'Super Owner';
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, height: 'calc(100vh - 120px)' }}>
@@ -136,12 +186,27 @@ export default function SupportTickets() {
       <div className="premium-card" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 800, background: 'linear-gradient(90deg, #0F172A 0%, #475569 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Helpdesk & Support Center</h2>
-          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>Manage employee support requests, IT queries, and HR service tickets.</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+            {supportView === 'employee' 
+              ? 'Manage employee support requests, IT queries, and HR service tickets.'
+              : 'Submit support requests and tickets directly to the Super Admin platform team.'}
+          </p>
         </div>
-        <button onClick={loadTickets} className="premium-btn" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px' }}>
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          <span>Refresh</span>
-        </button>
+        
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button 
+            onClick={() => setSupportView(supportView === 'employee' ? 'platform' : 'employee')}
+            className="premium-btn" 
+            style={{ padding: '8px 16px', fontWeight: 700, borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+          >
+            {supportView === 'employee' ? 'Contact Platform Support' : 'Manage Employee Tickets'}
+          </button>
+          
+          <button onClick={loadTickets} className="premium-btn" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px' }}>
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -155,30 +220,42 @@ export default function SupportTickets() {
         
         {/* Left Side: Ticket List */}
         <div className="premium-card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Tab Filter switcher */}
-          <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', padding: '12px 16px', gap: 12, flexShrink: 0 }}>
-            {['Active', 'Closed'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setFilterTab(tab)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 8,
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: filterTab === tab ? 'var(--color-primary-light)' : 'transparent',
-                  color: filterTab === tab ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                  transition: 'all 0.2s'
-                }}
+          {/* Tab Filter switcher & Create button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', padding: '12px 16px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {['Active', 'Closed'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setFilterTab(tab)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: filterTab === tab ? 'var(--color-primary-light)' : 'transparent',
+                    color: filterTab === tab ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {tab} ({filteredTickets.filter(t => {
+                    const isClosed = t.status === 'resolved';
+                    return tab === 'Closed' ? isClosed : !isClosed;
+                  }).length})
+                </button>
+              ))}
+            </div>
+            {supportView === 'platform' && (
+              <button 
+                onClick={() => setShowRaiseModal(true)} 
+                className="premium-btn premium-btn-primary" 
+                style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4 }}
               >
-                {tab} Tickets ({tickets.filter(t => {
-                  const isClosed = t.status === 'resolved';
-                  return tab === 'Closed' ? isClosed : !isClosed;
-                }).length})
+                <Plus size={12} />
+                <span>Raise Ticket</span>
               </button>
-            ))}
+            )}
           </div>
 
           {/* Ticket Listing container */}
@@ -212,17 +289,19 @@ export default function SupportTickets() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-primary)' }}>{t.id}</span>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: priority.bg, color: priority.color, fontWeight: 700 }}>
+                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: priority.bg, color: priority.color, fontStyle: 'normal', fontWeight: 700 }}>
                           {priority.label}
                         </span>
-                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: status.bg, color: status.color, fontWeight: 700 }}>
+                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: status.bg, color: status.color, fontStyle: 'normal', fontWeight: 700 }}>
                           {status.label}
                         </span>
                       </div>
                     </div>
                     <div>
                       <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0F172A', marginBottom: 2 }}>{t.subject}</h4>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>From: {t.requesterName} ({t.requesterEmail})</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                        {supportView === 'employee' ? `From: ${t.requesterName}` : 'Raised to Super Owner'}
+                      </p>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>
                       <span>Created: {t.createdDate}</span>
@@ -252,7 +331,9 @@ export default function SupportTickets() {
                     <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>{selectedTicket.subject}</span>
                   </div>
                   <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
-                    Opened by <strong>{selectedTicket.requesterName}</strong> ({selectedTicket.requesterEmail}) on {selectedTicket.createdDate}
+                    {supportView === 'employee' 
+                      ? `Opened by ${selectedTicket.requesterName} (${selectedTicket.requesterEmail}) on ${selectedTicket.createdDate}`
+                      : `Raised to Super Owner on ${selectedTicket.createdDate}`}
                   </p>
                 </div>
                 
@@ -265,7 +346,7 @@ export default function SupportTickets() {
                       style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: '#10B981', color: '#10B981', background: '#ECFDF5' }}
                     >
                       <CheckCircle size={12} />
-                      <span>Resolve</span>
+                      <span>Resolve Ticket</span>
                     </button>
                   ) : (
                     <button
@@ -283,14 +364,14 @@ export default function SupportTickets() {
               {/* Message Thread Scroll Area */}
               <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16, background: '#F8FAFC' }}>
                 {getMessages(selectedTicket).map((msg, index) => {
-                  const isAdmin = msg.isAgent || msg.senderRole === 'Admin';
+                  const isOutgoing = isOutgoingMessage(msg);
                   return (
                     <div
                       key={msg.id || index}
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        alignItems: isAdmin ? 'flex-end' : 'flex-start',
+                        alignItems: isOutgoing ? 'flex-end' : 'flex-start',
                         gap: 4
                       }}
                     >
@@ -305,12 +386,12 @@ export default function SupportTickets() {
                         maxWidth: '80%',
                         padding: '12px 16px',
                         borderRadius: 16,
-                        borderBottomLeftRadius: isAdmin ? 16 : 4,
-                        borderBottomRightRadius: isAdmin ? 4 : 16,
-                        background: isAdmin ? 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)' : '#FFFFFF',
-                        color: isAdmin ? '#FFFFFF' : '#0F172A',
+                        borderBottomLeftRadius: isOutgoing ? 16 : 4,
+                        borderBottomRightRadius: isOutgoing ? 4 : 16,
+                        background: isOutgoing ? 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)' : '#FFFFFF',
+                        color: isOutgoing ? '#FFFFFF' : '#0F172A',
                         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
-                        border: isAdmin ? 'none' : '1px solid #E2E8F0',
+                        border: isOutgoing ? 'none' : '1px solid #E2E8F0',
                         fontSize: '0.8rem',
                         lineHeight: 1.5,
                         whiteSpace: 'pre-wrap'
@@ -329,7 +410,7 @@ export default function SupportTickets() {
                     rows={2}
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Write a message reply to help resolution..."
+                    placeholder={supportView === 'employee' ? "Reply to employee..." : "Write a message reply to Super Owner..."}
                     style={{
                       flex: 1,
                       padding: 12,
@@ -366,15 +447,99 @@ export default function SupportTickets() {
 
             </div>
           ) : (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'var(--color-text-secondary)', padding: 48 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justify: 'center', justifyContent: 'center', gap: 12, color: 'var(--color-text-secondary)', padding: 48 }}>
               <LifeBuoy size={48} style={{ opacity: 0.3 }} />
-              <h3 style={{ fontSize: '0.9rem', fontWeight: 700 }}>Select a Service Ticket</h3>
-              <p style={{ fontSize: '0.75rem', textAlign: 'center', maxWidth: 280 }}>Choose any open support ticket from the list on the left to start communicating or resolve it.</p>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                {supportView === 'employee' ? 'Select Employee Ticket' : 'Select Platform Ticket'}
+              </h3>
+              <p style={{ fontSize: '0.75rem', textAlign: 'center', maxWidth: 280 }}>
+                {supportView === 'employee' 
+                  ? 'Choose any open support ticket from the list on the left to start communicating or resolve it.'
+                  : 'Choose a ticket from the left to read replies from the Super Admin platform team.'}
+              </p>
             </div>
           )}
         </div>
 
       </div>
+
+      {/* Raise Support Ticket to Super Owner Modal */}
+      {showRaiseModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999
+        }}>
+          <div className="premium-card" style={{ padding: 24, width: 440, background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', justify: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>Raise Platform Ticket to Super Owner</h3>
+              <button 
+                onClick={() => setShowRaiseModal(false)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePlatformTicket} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Priority Level</label>
+                <select 
+                  value={ticketPriority} 
+                  onChange={(e) => setTicketPriority(e.target.value)}
+                  className="premium-input"
+                  style={{ width: '100%' }}
+                >
+                  <option value="low">Low Priority</option>
+                  <option value="medium">Medium Priority</option>
+                  <option value="high">High Priority</option>
+                  <option value="urgent">Urgent Priority</option>
+                </select>
+              </div>
+
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Subject / Issue Summary</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="e.g. Billing error on card checkout or dynamic shift timings issue" 
+                  value={ticketSubject} 
+                  onChange={(e) => setTicketSubject(e.target.value)} 
+                  className="premium-input" 
+                />
+              </div>
+
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Detailed Problem Description</label>
+                <textarea 
+                  required
+                  value={ticketDescription} 
+                  onChange={(e) => setTicketDescription(e.target.value)} 
+                  className="premium-input" 
+                  rows={4}
+                  placeholder="Please describe what is happening, error messages, and reproduction steps..."
+                  style={{ resize: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+                <button type="submit" disabled={raiseLoading} className="premium-btn premium-btn-primary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>
+                  {raiseLoading ? 'Submitting...' : 'Submit Support Ticket'}
+                </button>
+                <button type="button" onClick={() => setShowRaiseModal(false)} className="premium-btn premium-btn-secondary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

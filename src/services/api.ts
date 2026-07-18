@@ -1031,6 +1031,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  async createAdminTicket(data: any) {
+    const res = await fetch(`${API_URL}/admin/tickets`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   // ========================================================
   // EMPLOYEE INDIVIDUAL PROFILE APIs
   // ========================================================
