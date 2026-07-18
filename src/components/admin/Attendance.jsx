@@ -55,6 +55,11 @@ export default function Attendance({ subTab = 'dashboard' }) {
   const [editCheckIn, setEditCheckIn] = useState('');
   const [editCheckOut, setEditCheckOut] = useState('');
 
+  // Shift editing states
+  const [editingGeneralShift, setEditingGeneralShift] = useState(false);
+  const [editShiftStart, setEditShiftStart] = useState('');
+  const [editShiftEnd, setEditShiftEnd] = useState('');
+
   const todayDate = new Date().toISOString().split('T')[0];
   const todayOwnRecord = ownLogs.find(r => r.date === todayDate);
 
@@ -226,6 +231,42 @@ export default function Attendance({ subTab = 'dashboard' }) {
       fetchLogs();
     } catch (err) {
       alert("Failed to update attendance record: " + err.message);
+    }
+  };
+
+  const getGeneralShiftHours = () => {
+    if (!companyDetails) return '09:00 AM - 05:00 PM';
+    const start = companyDetails.workdayStart || '09:00';
+    const end = companyDetails.workdayEnd || '17:00';
+    
+    const to12h = (timeStr) => {
+      if (!timeStr) return '';
+      const [h, m] = timeStr.split(':');
+      const hrs = Number(h);
+      const ampm = hrs >= 12 ? 'PM' : 'AM';
+      const formattedHrs = (hrs % 12 || 12).toString().padStart(2, '0');
+      return `${formattedHrs}:${m} ${ampm}`;
+    };
+    
+    try {
+      return `${to12h(start)} - ${to12h(end)}`;
+    } catch (e) {
+      return `${start} - ${end}`;
+    }
+  };
+
+  const handleSaveGeneralShift = async (e) => {
+    e.preventDefault();
+    try {
+      await api.updateAdminCompany({
+        workdayStart: editShiftStart,
+        workdayEnd: editShiftEnd
+      });
+      alert("General Shift working hours updated successfully in the database!");
+      setEditingGeneralShift(false);
+      fetchLogs(true);
+    } catch (err) {
+      alert("Failed to update general shift: " + err.message);
     }
   };
 
@@ -530,36 +571,86 @@ export default function Attendance({ subTab = 'dashboard' }) {
             style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}
           >
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Monthly Attendance Grid</h3>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Color-coded present, absent and leave tracking</span>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+                Monthly Attendance Grid ({new Date().toLocaleString('default', { month: 'long', year: 'numeric' })})
+              </h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Color-coded present, absent and leave tracking for current month</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 10, textAlign: 'center', marginTop: 12 }}>
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
                 <div key={day} style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--color-text-tertiary)' }}>{day}</div>
               ))}
-              {Array(30).fill(0).map((_, idx) => {
-                const status = idx % 9 === 0 ? 'absent' : idx % 12 === 0 ? 'late' : 'present';
-                return (
+              {(() => {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const days = [];
+                
+                for (let d = 1; d <= daysInMonth; d++) {
+                  const dateObj = new Date(year, month, d);
+                  const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+                  const log = ownLogs.find(l => l.date === dateStr);
+                  const dayOfWeek = dateObj.getDay();
+                  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                  
+                  let displayColor = 'var(--color-text-tertiary)';
+                  let bg = 'rgba(0,0,0,0.02)';
+                  let label = 'N/A';
+
+                  if (log) {
+                    if (log.status === 'Present' || log.status === 'On Time') {
+                      displayColor = 'var(--color-success)';
+                      bg = 'var(--color-success-light)';
+                      label = 'Present';
+                    } else if (log.status === 'Late') {
+                      displayColor = 'var(--color-warning)';
+                      bg = 'var(--color-warning-light)';
+                      label = 'Late';
+                    } else {
+                      displayColor = 'var(--color-success)';
+                      bg = 'var(--color-success-light)';
+                      label = 'Present';
+                    }
+                  } else if (dateObj > now) {
+                    displayColor = 'var(--color-text-tertiary)';
+                    bg = 'rgba(0,0,0,0.01)';
+                    label = '-';
+                  } else if (isWeekend) {
+                    displayColor = 'var(--color-primary)';
+                    bg = 'var(--color-primary-light)';
+                    label = 'Weekend';
+                  } else {
+                    displayColor = 'var(--color-danger)';
+                    bg = 'var(--color-danger-light)';
+                    label = 'Absent';
+                  }
+
+                  days.push({ day: d, date: dateStr, displayColor, bg, label });
+                }
+
+                return days.map((dayItem) => (
                   <div 
-                    key={idx} 
+                    key={dayItem.day} 
+                    title={`${dayItem.date} - ${dayItem.label}`}
                     style={{
                       height: 50,
                       borderRadius: 10,
-                      background: status === 'present' ? 'var(--color-success-light)' : status === 'late' ? 'var(--color-warning-light)' : 'var(--color-danger-light)',
+                      background: dayItem.bg,
                       border: '1px solid var(--color-border)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '0.85rem',
                       fontWeight: 700,
-                      color: status === 'present' ? 'var(--color-success)' : status === 'late' ? 'var(--color-warning)' : 'var(--color-danger)'
+                      color: dayItem.displayColor
                     }}
                   >
-                    {idx + 1}
+                    {dayItem.day}
                   </div>
-                );
-              })}
+                ));
+              })()}
             </div>
           </motion.div>
         )}
@@ -642,19 +733,75 @@ export default function Attendance({ subTab = 'dashboard' }) {
                     <th>Shift Classification</th>
                     <th>Working Hours</th>
                     <th>Target Departments</th>
+                    <th style={{ textAlign: 'right' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {shiftSchedule.map(shift => (
+                  {[
+                    { id: 1, name: 'Standard General Shift', hours: getGeneralShiftHours(), department: 'Product, Marketing, HR', editable: true },
+                    { id: 2, name: 'Swing Shift', hours: '02:00 PM - 10:00 PM', department: 'Customer Support', editable: false },
+                    { id: 3, name: 'Night Shift', hours: '10:00 PM - 06:00 AM', department: 'Security & DevOps', editable: false },
+                  ].map(shift => (
                     <tr key={shift.id}>
                       <td style={{ fontWeight: 700 }}>{shift.name}</td>
                       <td className="number-font" style={{ fontSize: '0.85rem' }}>{shift.hours}</td>
                       <td><span className="badge badge-info">{shift.department}</span></td>
+                      <td style={{ textAlign: 'right' }}>
+                        {shift.editable && (
+                          <button 
+                            onClick={() => {
+                              setEditShiftStart(companyDetails?.workdayStart || '09:00');
+                              setEditShiftEnd(companyDetails?.workdayEnd || '17:00');
+                              setEditingGeneralShift(true);
+                            }}
+                            className="premium-btn"
+                            style={{ padding: '6px 12px', fontSize: '0.7rem', minWidth: 'auto' }}
+                          >
+                            Edit Hours
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            {/* General Shift Timing Edit Modal */}
+            {editingGeneralShift && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 9999
+              }}>
+                <div className="premium-card" style={{ padding: 24, width: 380, background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>Edit Shift Timing</h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Set company-wide General Shift check-in & check-out limits in 24-hour format.</p>
+                  
+                  <form onSubmit={handleSaveGeneralShift} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Shift Start Time (HH:MM)</label>
+                      <input type="text" required value={editShiftStart} onChange={(e) => setEditShiftStart(e.target.value)} className="premium-input" placeholder="e.g. 09:00" />
+                    </div>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Shift End Time (HH:MM)</label>
+                      <input type="text" required value={editShiftEnd} onChange={(e) => setEditShiftEnd(e.target.value)} className="premium-input" placeholder="e.g. 17:00" />
+                    </div>
+                    <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                      <button type="submit" className="premium-btn premium-btn-primary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Save Changes</button>
+                      <button type="button" onClick={() => setEditingGeneralShift(false)} className="premium-btn premium-btn-secondary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
