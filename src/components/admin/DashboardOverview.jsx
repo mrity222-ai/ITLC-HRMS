@@ -105,6 +105,9 @@ export default function DashboardOverview({ employeesList = [], notifications = 
   const [activities, setActivities] = useState([]);
   const [attendanceTrends, setAttendanceTrends] = useState([]);
   const [payrollTrends, setPayrollTrends] = useState([]);
+  const [presentToday, setPresentToday] = useState(0);
+  const [branchesCount, setBranchesCount] = useState(1);
+  const [jobsCount, setJobsCount] = useState(0);
 
   const currencySymbol = (() => {
     switch (currency) {
@@ -119,11 +122,14 @@ export default function DashboardOverview({ employeesList = [], notifications = 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [companyData, actData, attTrends, payTrends] = await Promise.all([
+        const [companyData, actData, attTrends, payTrends, attendanceLogs, branchesData, jobsData] = await Promise.all([
           api.getAdminCompany(),
           api.getAdminAuditLogs().catch(() => []),
           api.getAttendanceTrends().catch(() => []),
-          api.getPayrollTrends().catch(() => [])
+          api.getPayrollTrends().catch(() => []),
+          api.getAdminAttendanceLogs().catch(() => []),
+          api.getAdminBranches().catch(() => []),
+          api.getAdminJobs().catch(() => [])
         ]);
 
         if (companyData) setCompany(companyData);
@@ -156,6 +162,16 @@ export default function DashboardOverview({ employeesList = [], notifications = 
         } else {
           setPayrollTrends([]);
         }
+
+        // Calculate dynamic counts
+        const todayStr = new Date().toISOString().split('T')[0];
+        const presentCount = new Set((attendanceLogs || []).filter(log => log.date === todayStr).map(log => log.employeeId)).size;
+        setPresentToday(presentCount);
+
+        setBranchesCount(branchesData && branchesData.length > 0 ? branchesData.length : 1);
+
+        const openJobsCount = (jobsData || []).filter(j => j.status === 'Active' || j.status === 'open' || j.status === 'Open').length;
+        setJobsCount(openJobsCount);
       } catch (err) {
         console.error("Failed to load company details on dashboard:", err);
         setActivities([]);
@@ -211,12 +227,12 @@ export default function DashboardOverview({ employeesList = [], notifications = 
   // --- Real Content Grid Setup ---
   const kpiStatsData = [
     { label: 'Total Employees', value: totalEmployees, desc: 'Active records', change: `+${totalEmployees}`, positive: true, sparkline: sparklineData.employees, color: '#4F46E5', icon: Users },
-    { label: 'Present Today', value: activeEmployees, desc: 'Checked in today', change: `+${activeEmployees}`, positive: true, sparkline: sparklineData.present, color: '#10B981', icon: UserCheck },
-    { label: 'Absent Today', value: suspendedEmployees, desc: 'Not check-in logged', change: `-${suspendedEmployees}`, positive: true, sparkline: sparklineData.absent, color: '#EF4444', icon: UserX },
+    { label: 'Present Today', value: presentToday, desc: 'Checked in today', change: `+${presentToday}`, positive: true, sparkline: sparklineData.present, color: '#10B981', icon: UserCheck },
+    { label: 'Absent Today', value: Math.max(0, totalEmployees - presentToday - onLeaveEmployees), desc: 'Not check-in logged', change: `-${Math.max(0, totalEmployees - presentToday - onLeaveEmployees)}`, positive: true, sparkline: sparklineData.absent, color: '#EF4444', icon: UserX },
     { label: 'On Leave Today', value: onLeaveEmployees, desc: 'Approved absence', change: `+${onLeaveEmployees}`, positive: true, sparkline: sparklineData.leave, color: '#06B6D4', icon: CalendarDays },
     { label: 'Departments', value: uniqueDepts, desc: 'Operational blocks', change: `${uniqueDepts} total`, positive: true, sparkline: sparklineData.depts, color: '#8B5CF6', icon: Building2 },
-    { label: 'Branches', value: '1', desc: 'Global sites', change: 'Active', positive: true, sparkline: sparklineData.branches, color: '#2563EB', icon: MapPin },
-    { label: 'Open Positions', value: '2', desc: 'Recruiting postings', change: 'Active', positive: true, sparkline: sparklineData.positions, color: '#F59E0B', icon: Briefcase },
+    { label: 'Branches', value: branchesCount, desc: 'Global sites', change: 'Active', positive: true, sparkline: sparklineData.branches, color: '#2563EB', icon: MapPin },
+    { label: 'Open Positions', value: jobsCount, desc: 'Recruiting postings', change: 'Active', positive: true, sparkline: sparklineData.positions, color: '#F59E0B', icon: Briefcase },
     { label: 'Monthly Payroll', value: `${currencySymbol}${monthlyPayroll.toLocaleString()}`, desc: 'Compensation disbursals', change: 'Active', positive: true, sparkline: sparklineData.payroll, color: '#EC4899', icon: Wallet },
   ];
 
