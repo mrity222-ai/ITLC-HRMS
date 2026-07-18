@@ -33,13 +33,8 @@ const mockDailyLogs = [
 import { api } from '../../services/api';
 
 export default function Attendance({ subTab = 'dashboard' }) {
-  const [punchedIn, setPunchedIn] = useState(() => {
-    return localStorage.getItem('admin_punched_in') === 'true';
-  });
-  const [punchTime, setPunchTime] = useState(() => {
-    const saved = localStorage.getItem('admin_punch_time');
-    return saved ? new Date(saved) : null;
-  });
+  const [punchedIn, setPunchedIn] = useState(false);
+  const [punchTime, setPunchTime] = useState(null);
   const [workDuration, setWorkDuration] = useState('00:00:00');
   const [logs, setLogs] = useState([]);
   const [ownLogs, setOwnLogs] = useState([]);
@@ -97,21 +92,13 @@ export default function Attendance({ subTab = 'dashboard' }) {
         const tDate = new Date();
         tDate.setHours(h, m, s, 0);
         setPunchTime(tDate);
-        localStorage.setItem('admin_punched_in', 'true');
-        localStorage.setItem('admin_punch_time', tDate.toISOString());
       } else {
         setPunchedIn(false);
         setPunchTime(null);
-        localStorage.setItem('admin_punched_in', 'false');
-        localStorage.removeItem('admin_punch_time');
       }
     } else {
-      // Don't override localStorage if we are still loading or local storage has it active
-      const localPunched = localStorage.getItem('admin_punched_in') === 'true';
-      if (!localPunched) {
-        setPunchedIn(false);
-        setPunchTime(null);
-      }
+      setPunchedIn(false);
+      setPunchTime(null);
     }
   }, [ownLogs]);
   
@@ -157,8 +144,6 @@ export default function Attendance({ subTab = 'dashboard' }) {
           status: 'Present'
         });
         setOwnLogs(prev => [record, ...prev]);
-        localStorage.setItem('admin_punched_in', 'true');
-        localStorage.setItem('admin_punch_time', now.toISOString());
         alert("Attendance Marked Successfully");
       } catch (err) {
         alert("Failed to punch in: " + err.message);
@@ -179,8 +164,6 @@ export default function Attendance({ subTab = 'dashboard' }) {
           status: 'Present'
         });
         setOwnLogs(prev => prev.map(r => r.date === dateStr ? record : r));
-        localStorage.setItem('admin_punched_in', 'false');
-        localStorage.removeItem('admin_punch_time');
         alert("Punch Out Successful");
       } catch (err) {
         alert("Failed to punch out: " + err.message);
