@@ -799,6 +799,23 @@ export const api = {
     return handleResponse(res);
   },
 
+  async updateAdminLeaveDetails(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/leaves/edit/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async deleteAdminLeave(id: string) {
+    const res = await fetch(`${API_URL}/admin/leaves/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getManagerLeaves() {
     const res = await fetch(`${API_URL}/manager/leaves`, {
       method: 'GET',

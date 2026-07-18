@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Check, X, ShieldAlert, FileText, ChevronRight, PlusCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Check, X, ShieldAlert, FileText, ChevronRight, PlusCircle, AlertCircle, Pencil, Trash } from 'lucide-react';
 
 const initialLeaveBalances = [
   { type: 'Annual Leave', allocated: 24, taken: 10, remaining: 14, color: '#4F46E5' },
@@ -23,9 +23,20 @@ import { useEffect } from 'react';
 export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) {
   const [balances, setBalances] = useState(initialLeaveBalances);
   const [requests, setRequests] = useState([]);
+  const [myRequests, setMyRequests] = useState([]);
+  const [showApplyModal, setShowApplyModal] = useState(false);
   const [holidays, setHolidays] = useState(initialHolidays);
   const [policies, setPolicies] = useState(initialLeavePolicies);
   const [selectedLeaveDetails, setSelectedLeaveDetails] = useState(null);
+
+  // Edit Leave Request states
+  const [editingLeave, setEditingLeave] = useState(null);
+  const [editLeaveType, setEditLeaveType] = useState('Annual Leave');
+  const [editLeaveFrom, setEditLeaveFrom] = useState('');
+  const [editLeaveTo, setEditLeaveTo] = useState('');
+  const [editLeaveDays, setEditLeaveDays] = useState(1);
+  const [editLeaveReason, setEditLeaveReason] = useState('');
+  const [editLeaveStatus, setEditLeaveStatus] = useState('Pending');
 
   const [newHolidayName, setNewHolidayName] = useState('');
   const [newHolidayDate, setNewHolidayDate] = useState('');
@@ -62,6 +73,14 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
           attachment: req.attachment || ''
         }));
         setRequests(mapped);
+
+        // Fetch user's own leave requests
+        try {
+          const myList = await api.getEmployeeLeaves();
+          setMyRequests(myList || []);
+        } catch (myErr) {
+          console.error("Failed to load own leaves:", myErr);
+        }
 
         const hols = await api.getAdminHolidays();
         setHolidays(hols);
@@ -110,22 +129,130 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
     }
   };
 
-  const handleApply = (e) => {
+  const handleApply = async (e) => {
     e.preventDefault();
     if (!reason || !dates) return;
-    const newReq = {
-      id: requests.length + 1,
-      name: 'Marcus Vance',
-      type: leaveType,
-      range: dates,
-      days: Number(duration),
-      reason,
-      status: 'Pending'
-    };
-    setRequests([newReq, ...requests]);
-    setReason('');
-    setDates('');
-    alert("Leave request submitted successfully. Awaiting HR review.");
+    
+    let fromVal = '';
+    let toVal = '';
+    if (dates.includes(' - ')) {
+      const parts = dates.split(' - ');
+      fromVal = parts[0] || '';
+      toVal = parts[1] || '';
+    } else {
+      fromVal = dates;
+      toVal = dates;
+    }
+
+    try {
+      await api.createLeaveRequest({
+        type: leaveType,
+        fromDate: fromVal,
+        toDate: toVal,
+        totalDays: Number(duration),
+        reason
+      });
+      alert("Leave request submitted successfully. Awaiting review.");
+      setReason('');
+      setDates('');
+      setShowApplyModal(false);
+      
+      // Reload both lists
+      const [list, myList] = await Promise.all([
+        api.getAdminLeaves(),
+        api.getEmployeeLeaves().catch(() => [])
+      ]);
+      const mapped = list.map(req => ({
+        id: req.id,
+        name: req.employeeName,
+        type: req.type,
+        range: `${req.fromDate} - ${req.toDate}`,
+        days: req.totalDays,
+        reason: req.reason,
+        status: req.status,
+        managerStatus: req.managerStatus || 'Pending',
+        managerComment: req.managerComment || '',
+        attachment: req.attachment || ''
+      }));
+      setRequests(mapped);
+      setMyRequests(myList || []);
+    } catch (err) {
+      alert("Failed to submit leave request: " + err.message);
+    }
+  };
+
+  const handleStartEditLeave = (req) => {
+    let fromVal = '';
+    let toVal = '';
+    if (req.range && req.range.includes(' - ')) {
+      const parts = req.range.split(' - ');
+      fromVal = parts[0] || '';
+      toVal = parts[1] || '';
+    } else {
+      fromVal = req.range;
+      toVal = req.range;
+    }
+    setEditingLeave(req);
+    setEditLeaveType(req.type || 'Annual Leave');
+    setEditLeaveFrom(fromVal);
+    setEditLeaveTo(toVal);
+    setEditLeaveDays(req.days || 1);
+    setEditLeaveReason(req.reason || '');
+    setEditLeaveStatus(req.status || 'Pending');
+  };
+
+  const handleSaveEditLeave = async (e) => {
+    e.preventDefault();
+    if (!editingLeave) return;
+    try {
+      await api.updateAdminLeaveDetails(editingLeave.id, {
+        type: editLeaveType,
+        fromDate: editLeaveFrom,
+        toDate: editLeaveTo,
+        totalDays: editLeaveDays,
+        reason: editLeaveReason,
+        status: editLeaveStatus
+      });
+      alert("Leave request updated successfully!");
+      setEditingLeave(null);
+      
+      // Reload leave requests
+      const [list, myList] = await Promise.all([
+        api.getAdminLeaves(),
+        api.getEmployeeLeaves().catch(() => [])
+      ]);
+      const mapped = list.map(req => ({
+        id: req.id,
+        name: req.employeeName,
+        type: req.type,
+        range: `${req.fromDate} - ${req.toDate}`,
+        days: req.totalDays,
+        reason: req.reason,
+        status: req.status,
+        managerStatus: req.managerStatus || 'Pending',
+        managerComment: req.managerComment || '',
+        attachment: req.attachment || ''
+      }));
+      setRequests(mapped);
+      setMyRequests(myList || []);
+    } catch (err) {
+      alert("Failed to update leave request: " + err.message);
+    }
+  };
+
+  const handleDeleteLeave = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this leave request?")) return;
+    try {
+      await api.deleteAdminLeave(id);
+      alert("Leave request deleted successfully!");
+      setRequests(requests.filter(req => req.id !== id));
+      setMyRequests(myRequests.filter(req => req.id !== id));
+      if (selectedLeaveDetails && selectedLeaveDetails.id === id) {
+        setSelectedLeaveDetails(null);
+      }
+    } catch (err) {
+      alert("Failed to delete leave request: " + err.message);
+    }
   };
 
   return (
@@ -244,22 +371,40 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
                             </span>
                           </td>
                           <td style={{ textAlign: 'right' }}>
-                            {req.status === 'Pending' && (
-                              <div style={{ display: 'inline-flex', gap: 8 }} onClick={(e) => e.stopPropagation()}>
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Approved'); }}
-                                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-success)', padding: 4 }}
-                                >
-                                  <Check size={16} />
-                                </button>
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Rejected'); }}
-                                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: 4 }}
-                                >
-                                  <X size={16} />
-                                </button>
-                              </div>
-                            )}
+                            <div style={{ display: 'inline-flex', gap: 10 }} onClick={(e) => e.stopPropagation()}>
+                              {req.status === 'Pending' && (
+                                <>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Approved'); }}
+                                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-success)', padding: 4 }}
+                                    title="Approve"
+                                  >
+                                    <Check size={16} />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Rejected'); }}
+                                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: 4 }}
+                                    title="Reject"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </>
+                              )}
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleStartEditLeave(req); }}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 4 }}
+                                title="Edit Request"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteLeave(req.id); }}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}
+                                title="Delete Request"
+                              >
+                                <Trash size={14} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -330,22 +475,40 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
                           </span>
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          {req.status === 'Pending' && (
-                            <div style={{ display: 'inline-flex', gap: 8 }} onClick={(e) => e.stopPropagation()}>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Approved'); }}
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-success)', padding: 4 }}
-                              >
-                                <Check size={16} />
-                              </button>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Rejected'); }}
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: 4 }}
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          )}
+                          <div style={{ display: 'inline-flex', gap: 10 }} onClick={(e) => e.stopPropagation()}>
+                            {req.status === 'Pending' && (
+                              <>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Approved'); }}
+                                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-success)', padding: 4 }}
+                                  title="Approve"
+                                >
+                                  <Check size={16} />
+                                </button>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleAction(req.id, 'Rejected'); }}
+                                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: 4 }}
+                                  title="Reject"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </>
+                            )}
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleStartEditLeave(req); }}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 4 }}
+                              title="Edit Request"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleDeleteLeave(req.id); }}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}
+                              title="Delete Request"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -366,9 +529,25 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
             className="premium-card"
             style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}
           >
-            <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>My Balance Progress</h3>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>A visual breakdown of your current leave limits</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>My Balance Progress</h3>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>A visual breakdown of your current leave limits</span>
+              </div>
+              <button 
+                onClick={() => {
+                  setLeaveType('Annual Leave');
+                  setDuration('1');
+                  setDates(new Date().toISOString().split('T')[0]);
+                  setReason('');
+                  setShowApplyModal(true);
+                }} 
+                className="premium-btn premium-btn-primary" 
+                style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <PlusCircle size={14} />
+                <span>Apply Leave</span>
+              </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -387,6 +566,59 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
                 );
               })}
             </div>
+
+            <div style={{ marginTop: 24, borderTop: '1px solid var(--color-border)', paddingTop: 20 }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: 12 }}>My Leave Request History</h4>
+              <div className="premium-table-container">
+                <table className="premium-table">
+                  <thead>
+                    <tr>
+                      <th>Leave Type</th>
+                      <th>Duration</th>
+                      <th>Dates</th>
+                      <th>Reason</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {myRequests.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" style={{ textAlign: 'center', padding: 20, color: 'var(--color-text-tertiary)', fontSize: '0.85rem' }}>
+                          No personal leave requests found.
+                        </td>
+                      </tr>
+                    ) : (
+                      myRequests.map((req, idx) => (
+                        <tr key={req.id || idx}>
+                          <td style={{ fontWeight: 600 }}>{req.type}</td>
+                          <td className="number-font" style={{ fontSize: '0.85rem' }}>{req.totalDays} Days</td>
+                          <td className="number-font" style={{ fontSize: '0.8rem' }}>{req.fromDate} - {req.toDate}</td>
+                          <td style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{req.reason}</td>
+                          <td>
+                            <span className={`badge ${req.status === 'Approved' ? 'badge-success' : req.status === 'Pending' ? 'badge-warning' : 'badge-danger'}`}>
+                              {req.status}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            {req.status === 'Pending' && (
+                              <button 
+                                onClick={() => handleDeleteLeave(req.id)}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}
+                                title="Delete Leave Request"
+                              >
+                                <Trash size={14} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </motion.div>
         )}
 
@@ -755,6 +987,169 @@ export default function LeaveManagement({ subTab = 'dashboard', setActiveTab }) 
           </div>
         )}
       </AnimatePresence>
+
+      {/* Apply Leave Modal */}
+      {showApplyModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999
+        }}>
+          <div className="premium-card" style={{ padding: 24, width: 420, background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>Apply for Leave</h3>
+              <button 
+                onClick={() => setShowApplyModal(false)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleApply} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Leave Type</label>
+                <select 
+                  value={leaveType} 
+                  onChange={(e) => setLeaveType(e.target.value)} 
+                  className="premium-input"
+                  style={{ background: 'var(--color-bg-subtle)' }}
+                >
+                  <option value="Annual Leave">Annual Leave</option>
+                  <option value="Sick Leave">Sick Leave</option>
+                  <option value="Casual Leave">Casual Leave</option>
+                  <option value="Maternity/Paternity">Maternity/Paternity</option>
+                </select>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                  <label className="premium-label" style={{ fontSize: '0.65rem' }}>Start Date</label>
+                  <input 
+                    type="date" 
+                    required 
+                    onChange={(e) => {
+                      const fromDateStr = e.target.value;
+                      setDates(prev => prev.includes(' - ') ? `${fromDateStr} - ${prev.split(' - ')[1]}` : fromDateStr);
+                    }} 
+                    className="premium-input" 
+                  />
+                </div>
+                <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                  <label className="premium-label" style={{ fontSize: '0.65rem' }}>End Date</label>
+                  <input 
+                    type="date" 
+                    required 
+                    onChange={(e) => {
+                      const toDateStr = e.target.value;
+                      setDates(prev => prev.includes(' - ') ? `${prev.split(' - ')[0]} - ${toDateStr}` : `${prev} - ${toDateStr}`);
+                    }} 
+                    className="premium-input" 
+                  />
+                </div>
+              </div>
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Total Days</label>
+                <input type="number" required value={duration} onChange={(e) => setDuration(e.target.value)} className="premium-input" />
+              </div>
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Reason</label>
+                <textarea required value={reason} onChange={(e) => setReason(e.target.value)} className="premium-input" style={{ minHeight: 80 }} placeholder="e.g. Health checkup or vacation" />
+              </div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+                <button type="submit" className="premium-btn premium-btn-primary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Submit Request</button>
+                <button type="button" onClick={() => setShowApplyModal(false)} className="premium-btn premium-btn-secondary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Leave Request Modal */}
+      {editingLeave && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999
+        }}>
+          <div className="premium-card" style={{ padding: 24, width: 420, background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>Edit Leave Request</h3>
+              <button 
+                onClick={() => setEditingLeave(null)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditLeave} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Leave Type</label>
+                <select 
+                  value={editLeaveType} 
+                  onChange={(e) => setEditLeaveType(e.target.value)} 
+                  className="premium-input"
+                  style={{ background: 'var(--color-bg-subtle)' }}
+                >
+                  <option value="Annual Leave">Annual Leave</option>
+                  <option value="Sick Leave">Sick Leave</option>
+                  <option value="Casual Leave">Casual Leave</option>
+                  <option value="Maternity/Paternity">Maternity/Paternity</option>
+                </select>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                  <label className="premium-label" style={{ fontSize: '0.65rem' }}>Start Date</label>
+                  <input type="date" required value={editLeaveFrom} onChange={(e) => setEditLeaveFrom(e.target.value)} className="premium-input" />
+                </div>
+                <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                  <label className="premium-label" style={{ fontSize: '0.65rem' }}>End Date</label>
+                  <input type="date" required value={editLeaveTo} onChange={(e) => setEditLeaveTo(e.target.value)} className="premium-input" />
+                </div>
+              </div>
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Total Days</label>
+                <input type="number" required value={editLeaveDays} onChange={(e) => setEditLeaveDays(Number(e.target.value))} className="premium-input" />
+              </div>
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Reason</label>
+                <textarea required value={editLeaveReason} onChange={(e) => setEditLeaveReason(e.target.value)} className="premium-input" style={{ minHeight: 80 }} />
+              </div>
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Status</label>
+                <select 
+                  value={editLeaveStatus} 
+                  onChange={(e) => setEditLeaveStatus(e.target.value)} 
+                  className="premium-input"
+                  style={{ background: 'var(--color-bg-subtle)' }}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+                <button type="submit" className="premium-btn premium-btn-primary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Save Changes</button>
+                <button type="button" onClick={() => setEditingLeave(null)} className="premium-btn premium-btn-secondary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
