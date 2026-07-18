@@ -1040,6 +1040,74 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getAdminCandidates() {
+    const res = await fetch(`${API_URL}/admin/candidates`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createAdminCandidate(data: any) {
+    const res = await fetch(`${API_URL}/admin/candidates`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async updateAdminCandidate(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/candidates/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async deleteAdminCandidate(id: string) {
+    const res = await fetch(`${API_URL}/admin/candidates/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async getAdminInterviews() {
+    const res = await fetch(`${API_URL}/admin/interviews`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createAdminInterview(data: any) {
+    const res = await fetch(`${API_URL}/admin/interviews`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async updateAdminInterview(id: string, data: any) {
+    const res = await fetch(`${API_URL}/admin/interviews/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async deleteAdminInterview(id: string) {
+    const res = await fetch(`${API_URL}/admin/interviews/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   // ========================================================
   // EMPLOYEE INDIVIDUAL PROFILE APIs
   // ========================================================
