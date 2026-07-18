@@ -298,7 +298,7 @@ export default function App({ onLogout }) {
       case 'designations':
         return <Designations setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'organization':
-        return <Organization employees={employees} setActiveTab={setActiveTab} currency={profile.currency} />;
+        return <Organization employees={employees} setEmployees={setEmployees} setActiveTab={setActiveTab} currency={profile.currency} />;
       case 'attendance':
       case 'attendance-dashboard':
       case 'attendance-logs':
