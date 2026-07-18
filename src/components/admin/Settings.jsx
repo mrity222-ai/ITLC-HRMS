@@ -63,6 +63,9 @@ export default function CompanySettings() {
   const [workdayStart, setWorkdayStart] = useState('09:00');
   const [workdayEnd, setWorkdayEnd] = useState('17:00');
   const [branchHQCoordinates, setBranchHQCoordinates] = useState('San Francisco, CA');
+  const [razorpayKeyId, setRazorpayKeyId] = useState('');
+  const [razorpaySecret, setRazorpaySecret] = useState('');
+  const [stripeSecretKey, setStripeSecretKey] = useState('');
 
   // Admin Profile states
   const [adminName, setAdminName] = useState('');
@@ -88,6 +91,9 @@ export default function CompanySettings() {
           setWorkdayStart(details.workdayStart || '09:00');
           setWorkdayEnd(details.workdayEnd || '17:00');
           setBranchHQCoordinates(details.branchHQCoordinates || 'San Francisco, CA');
+          setRazorpayKeyId(details.razorpayKeyId || '');
+          setRazorpaySecret(details.razorpaySecret || '');
+          setStripeSecretKey(details.stripeSecretKey || '');
         }
       } catch (err) {
         console.error('Failed to load company details:', err);
@@ -125,7 +131,10 @@ export default function CompanySettings() {
         radius: radius === '' ? 500 : Number(radius),
         workdayStart,
         workdayEnd,
-        branchHQCoordinates
+        branchHQCoordinates,
+        razorpayKeyId,
+        razorpaySecret,
+        stripeSecretKey
       });
       setSuccess(true);
       
@@ -552,6 +561,43 @@ export default function CompanySettings() {
               disabled
               className="premium-input" 
             />
+          </div>
+
+          <div style={{ marginTop: 8, borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
+            <h4 style={{ fontSize: '0.8rem', fontWeight: 800, marginBottom: 12, color: 'var(--color-text-secondary)' }}>Tenant Custom Payment Gateway Settings</h4>
+            
+            <div className="premium-form-group">
+              <label className="premium-label">Razorpay Key ID</label>
+              <input 
+                type="text" 
+                value={razorpayKeyId} 
+                onChange={(e) => setRazorpayKeyId(e.target.value)} 
+                className="premium-input" 
+                placeholder="rzp_live_..."
+              />
+            </div>
+
+            <div className="premium-form-group">
+              <label className="premium-label">Razorpay Key Secret</label>
+              <input 
+                type="password" 
+                value={razorpaySecret} 
+                onChange={(e) => setRazorpaySecret(e.target.value)} 
+                className="premium-input" 
+                placeholder="Key Secret (if overriding default)"
+              />
+            </div>
+
+            <div className="premium-form-group">
+              <label className="premium-label">Stripe Secret Key</label>
+              <input 
+                type="password" 
+                value={stripeSecretKey} 
+                onChange={(e) => setStripeSecretKey(e.target.value)} 
+                className="premium-input" 
+                placeholder="sk_live_..."
+              />
+            </div>
           </div>
         </div>
 
