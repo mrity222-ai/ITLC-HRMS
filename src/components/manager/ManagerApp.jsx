@@ -218,6 +218,14 @@ export default function ManagerApp({ onLogout }) {
   const [showPerfModal, setShowPerfModal] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
 
+  // Asset allocation states
+  const [showAssetModal, setShowAssetModal] = useState(false);
+  const [newAssetEmpId, setNewAssetEmpId] = useState('');
+  const [newAssetName, setNewAssetName] = useState('');
+  const [newAssetType, setNewAssetType] = useState('Laptop');
+  const [newAssetSerial, setNewAssetSerial] = useState('');
+  const [newAssetComment, setNewAssetComment] = useState('');
+
   // New Forms values
   const [newTask, setNewTask] = useState({ title: '', description: '', assignedTo: '', priority: 'Medium', deadline: '' });
   const [newMeeting, setNewMeeting] = useState({ title: '', agenda: '', date: '', time: '', platform: 'Google Meet', link: '', invitees: [] });
@@ -551,6 +559,36 @@ export default function ManagerApp({ onLogout }) {
       alert(`Asset request ${status.toLowerCase()} successfully.`);
     } catch (err) {
       alert(err.message || 'Failed to update asset');
+    }
+  };
+
+  const handleAllocateAsset = async (e) => {
+    e.preventDefault();
+    const empId = newAssetEmpId || teamMembers[0]?.id;
+    if (!empId) {
+      alert("No team member selected");
+      return;
+    }
+    const emp = teamMembers.find(t => t.id === empId);
+    if (!emp) return;
+
+    try {
+      const created = await api.createManagerAsset({
+        employeeId: emp.id,
+        employeeName: emp.name,
+        assetName: newAssetName,
+        assetType: newAssetType,
+        serialNumber: newAssetSerial,
+        requestComment: newAssetComment
+      });
+      setAssets([created, ...assets]);
+      alert("Asset allocated successfully!");
+      setShowAssetModal(false);
+      setNewAssetName('');
+      setNewAssetSerial('');
+      setNewAssetComment('');
+    } catch (err) {
+      alert(err.message || "Failed to allocate asset");
     }
   };
 
@@ -1585,9 +1623,12 @@ export default function ManagerApp({ onLogout }) {
                   exit={{ opacity: 0, y: -10 }}
                   className="space-y-6"
                 >
-                  <div>
-                    <h3 className="text-sm font-bold text-foreground">Assets Ledger</h3>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Asset registers and company gadgets assigned to employees</p>
+                  <div className="p-5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl border border-primary/10 flex justify-between items-center gap-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">Assets Ledger</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Asset registers and company gadgets assigned to employees</p>
+                    </div>
+                    <Button variant="primary" onClick={() => setShowAssetModal(true)}>Allocate Asset</Button>
                   </div>
 
                   <Card className="p-0 overflow-hidden">
@@ -1600,12 +1641,13 @@ export default function ManagerApp({ onLogout }) {
                             <th className="p-3">Device Name</th>
                             <th className="p-3">Serial / Details</th>
                             <th className="p-3">Status</th>
+                            <th className="p-3 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
                           {assets.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                              <td colSpan={6} className="p-8 text-center text-muted-foreground">
                                 No assets registered.
                               </td>
                             </tr>
@@ -1613,10 +1655,43 @@ export default function ManagerApp({ onLogout }) {
                             assets.map(asset => (
                               <tr key={asset.id} className="hover:bg-secondary/25 transition-colors">
                                 <td className="p-3 font-semibold text-foreground">{asset.employeeName}</td>
-                                <td className="p-3 font-mono font-bold text-primary">{asset.assetCode}</td>
+                                <td className="p-3 font-mono font-bold text-primary">{asset.id}</td>
                                 <td className="p-3">{asset.assetName}</td>
-                                <td className="p-3 font-mono text-muted-foreground text-[10px]">{asset.serialNumber}</td>
-                                <td className="p-3"><Badge variant="success">Assigned</Badge></td>
+                                <td className="p-3 font-mono text-muted-foreground text-[10px]">{asset.serialNumber || 'Pending'}</td>
+                                <td className="p-3">
+                                  <Badge variant={asset.status === 'Assigned' || asset.status === 'Allocated' ? 'success' : asset.status === 'Requested' ? 'info' : asset.status === 'Return Pending' ? 'warning' : asset.status === 'Returned' ? 'neutral' : 'danger'}>
+                                    {asset.status}
+                                  </Badge>
+                                </td>
+                                <td className="p-3 text-right">
+                                  {asset.status === 'Requested' && (
+                                    <div className="flex gap-1.5 justify-end">
+                                      <button 
+                                        onClick={() => handleAssetRequest(asset.id, 'Assigned', 'Approved by Manager')}
+                                        className="px-2 py-1 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20 cursor-pointer"
+                                      >
+                                        Approve
+                                      </button>
+                                      <button 
+                                        onClick={() => handleAssetRequest(asset.id, 'Rejected', 'Rejected by Manager')}
+                                        className="px-2 py-1 rounded text-[10px] font-bold bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 border border-rose-500/20 cursor-pointer"
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
+                                  )}
+                                  {asset.status === 'Return Pending' && (
+                                    <button 
+                                      onClick={() => handleAssetRequest(asset.id, 'Returned', 'Returned & verified by Manager')}
+                                      className="px-2 py-1 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border border-amber-500/20 cursor-pointer"
+                                    >
+                                      Accept Return
+                                    </button>
+                                  )}
+                                  {asset.status !== 'Requested' && asset.status !== 'Return Pending' && (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </td>
                               </tr>
                             ))
                           )}
@@ -2465,6 +2540,79 @@ export default function ManagerApp({ onLogout }) {
               )}
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* 6. Allocate Asset Modal */}
+      {showAssetModal && (
+        <Modal isOpen={showAssetModal} onClose={() => setShowAssetModal(false)} title="Allocate Workstation Equipment">
+          <form onSubmit={handleAllocateAsset} className="space-y-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Select Team Member</label>
+              <select 
+                value={newAssetEmpId} 
+                onChange={(e) => setNewAssetEmpId(e.target.value)}
+                className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary w-full"
+              >
+                {teamMembers.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Asset Category</label>
+              <select 
+                value={newAssetType} 
+                onChange={(e) => setNewAssetType(e.target.value)}
+                className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary w-full"
+              >
+                <option value="Laptop">Laptop Workstation</option>
+                <option value="Monitor">Desktop Monitor</option>
+                <option value="Phone">Mobile Phone</option>
+                <option value="Accessories">Peripherals & Keyboard</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Asset Model Name</label>
+              <input 
+                type="text" 
+                required 
+                placeholder="e.g. MacBook Pro M3 or Dell 24 inch" 
+                value={newAssetName} 
+                onChange={(e) => setNewAssetName(e.target.value)} 
+                className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" 
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Serial Number (Tag)</label>
+              <input 
+                type="text" 
+                placeholder="e.g. SN-98239A8F" 
+                value={newAssetSerial} 
+                onChange={(e) => setNewAssetSerial(e.target.value)} 
+                className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary" 
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Allocation Comments</label>
+              <textarea 
+                value={newAssetComment} 
+                onChange={(e) => setNewAssetComment(e.target.value)} 
+                className="px-3 py-2 text-sm rounded-xl border border-border bg-secondary/35 text-foreground focus:outline-none focus:border-primary resize-none" 
+                rows={2} 
+                placeholder="Details of tracking, condition on issue, etc..." 
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t border-border">
+              <Button type="button" variant="outline" onClick={() => setShowAssetModal(false)}>Cancel</Button>
+              <Button type="submit" variant="primary">Allocate Asset</Button>
+            </div>
+          </form>
         </Modal>
       )}
 

@@ -1333,5 +1333,30 @@ export const api = {
       headers: getHeaders()
     });
     return handleResponse(res);
+  },
+
+  async getEmployeeAssets() {
+    const res = await fetch(`${API_URL}/employee/assets?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async requestEmployeeAsset(data: any) {
+    const res = await fetch(`${API_URL}/employee/assets/request`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async returnEmployeeAsset(id: string) {
+    const res = await fetch(`${API_URL}/employee/assets/return/${id}`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
   }
 };
