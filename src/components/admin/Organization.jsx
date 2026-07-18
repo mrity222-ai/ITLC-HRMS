@@ -173,33 +173,34 @@ export default function Organization({ employees = [], setActiveTab, currency = 
   };
 
   // Hierarchy Data
-  const ceoNode = {
-    name: 'Marcus Vance',
-    role: 'CEO & Founder',
-    children: [
-      {
-        name: 'Kenji Sato',
-        role: 'Director of Engineering',
-        children: [
-          { name: 'Matt Smith', role: 'Engineering Lead' }
-        ]
-      },
-      {
-        name: 'Sarah Jenkins',
-        role: 'Director of Product',
-        children: [
-          { name: 'Bob Johnson', role: 'Design Lead' }
-        ]
-      },
-      {
-        name: 'Priya Sharma',
-        role: 'Director of Operations',
-        children: [
-          { name: 'Diana Prince', role: 'HR Manager' }
-        ]
+  const buildHierarchy = () => {
+    if (!employees || employees.length === 0) {
+      return { name: 'No Employees', role: 'N/A', children: [] };
+    }
+    const roots = employees.filter(emp => !emp.reportingManager || emp.reportingManager === 'None' || emp.reportingManager === '');
+    const buildNode = (emp) => {
+      const children = employees.filter(child => child.reportingManager === emp.name);
+      return {
+        name: emp.name,
+        role: emp.designation || emp.role || 'Associate',
+        children: children.map(buildNode)
+      };
+    };
+    if (roots.length > 0) {
+      if (roots.length === 1) {
+        return buildNode(roots[0]);
+      } else {
+        return {
+          name: 'Corporate Workspace',
+          role: 'Organization Hub',
+          children: roots.map(buildNode)
+        };
       }
-    ]
+    }
+    return buildNode(employees[0]);
   };
+
+  const ceoNode = buildHierarchy();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
