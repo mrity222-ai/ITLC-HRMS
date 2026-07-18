@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useHRMS, EmployeeProfile } from "../context/HRMSContext";
+import { api } from "../../../services/api";
 import { Card, Button, Modal, Select } from "../UI";
 import {
   User,
@@ -12,6 +13,7 @@ import {
   Building2,
   Briefcase,
   UserCheck,
+  Award,
   Camera,
   KeyRound,
   Edit2,
@@ -201,6 +203,24 @@ export const MyProfile: React.FC = () => {
 
   // Digital ID Badge state
   const [isIdBadgeOpen, setIsIdBadgeOpen] = useState(false);
+
+  const [performanceReviews, setPerformanceReviews] = useState<any[]>([]);
+  const [loadingPerformance, setLoadingPerformance] = useState(false);
+
+  useEffect(() => {
+    const loadPerformance = async () => {
+      setLoadingPerformance(true);
+      try {
+        const data = await api.getEmployeePerformance();
+        setPerformanceReviews(data || []);
+      } catch (err) {
+        console.error("Failed to load performance reviews:", err);
+      } finally {
+        setLoadingPerformance(false);
+      }
+    };
+    loadPerformance();
+  }, []);
 
   // Profile Edit fields
   const [editName, setEditName] = useState(profile.fullName);
@@ -816,6 +836,7 @@ export const MyProfile: React.FC = () => {
           { id: "info-employment", label: "Employment Details", icon: Briefcase },
           { id: "documents", label: "Documents Vault", icon: FileText },
           { id: "info-bank", label: "Bank Details", icon: CreditCard },
+          { id: "performance-reviews", label: "Performance & Appraisals", icon: Award },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = globalSubTab === tab.id || (tab.id === "info-personal" && (!globalSubTab || globalSubTab === "profile" || globalSubTab === "info-emergency"));
@@ -1268,6 +1289,57 @@ export const MyProfile: React.FC = () => {
         <div className="pt-2 text-[9px] text-muted-foreground italic border-t border-border/40">
           * Payroll Compliance Lock: Bank details are verified and cannot be deleted or cleared. Please use the change request form to update account information.
         </div>
+      </Card>
+
+      {/* PERFORMANCE REVIEWS SECTION */}
+      <Card id="performance-reviews" className="scroll-mt-20 space-y-4 bg-card">
+        <h3 className="text-sm font-bold text-foreground pb-2 border-b border-border flex items-center gap-2">
+          <Award className="h-4.5 w-4.5 text-primary" /> Performance Appraisals & Goals
+        </h3>
+        {loadingPerformance ? (
+          <div className="text-xs text-muted-foreground p-4 text-center">Loading performance reviews...</div>
+        ) : performanceReviews.length === 0 ? (
+          <div className="text-xs text-muted-foreground p-4 text-center">No performance appraisals recorded by manager yet.</div>
+        ) : (
+          <div className="space-y-4">
+            {performanceReviews.map((rev: any, idx: number) => {
+              return (
+                <div key={rev.id || idx} className="p-4 border border-border rounded-xl space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-xs font-bold text-foreground">{rev.reviewPeriod} Review Cycle</h4>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Manager ID: {rev.managerId}</p>
+                    </div>
+                    <div className="flex items-center gap-1 bg-primary/10 text-primary px-2.5 py-1 rounded-lg">
+                      <span className="text-xs font-black">{rev.rating} / 5.0</span>
+                    </div>
+                  </div>
+
+                  {rev.appreciation && (
+                    <div className="p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg">
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block uppercase">Appreciation & Achievements</span>
+                      <p className="text-xs text-foreground mt-1">{rev.appreciation}</p>
+                    </div>
+                  )}
+
+                  {rev.warning && (
+                    <div className="p-3 bg-rose-500/5 border border-rose-500/10 rounded-lg">
+                      <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 block uppercase">Area of Improvement / Notes</span>
+                      <p className="text-xs text-foreground mt-1">{rev.warning}</p>
+                    </div>
+                  )}
+
+                  {rev.promotionRecommendation && (
+                    <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-lg">
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block uppercase">Promotion Recommendation</span>
+                      <p className="text-xs text-foreground mt-1">{rev.promotionRecommendation}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {/* Edit Bank Details Request Modal */}

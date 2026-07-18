@@ -189,6 +189,13 @@ export const api = {
     });
     return handleResponse(res);
   },
+  async deleteAdminPerformance(id: string) {
+    const res = await fetch(`${API_URL}/admin/performance/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
 
   // ===== JOBS =====
   async getAdminJobs() {
@@ -1314,6 +1321,14 @@ export const api = {
 
   async getEmployeeAnnouncements() {
     const res = await fetch(`${API_URL}/employee/announcements`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async getEmployeePerformance() {
+    const res = await fetch(`${API_URL}/employee/performance?t=${new Date().getTime()}`, {
       method: 'GET',
       headers: getHeaders()
     });

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, TrendingUp, Award, Star, Settings, FileText, CheckCircle, Heart } from 'lucide-react';
+import { Target, TrendingUp, Award, Star, Settings, FileText, CheckCircle, Heart, Pencil, Trash, X } from 'lucide-react';
 
 const mockGoals = [];
 
@@ -16,6 +16,55 @@ export default function Performance({ employees, subTab = 'dashboard' }) {
   const [designScore, setDesignScore] = useState(4.2);
   const [deliveryScore, setDeliveryScore] = useState(4.5);
   const [teamworkScore, setTeamworkScore] = useState(4.0);
+  const [appreciation, setAppreciation] = useState('');
+  const [warningText, setWarningText] = useState('');
+  const [promotionRec, setPromotionRec] = useState('');
+
+  // Edit Appraisal States
+  const [editingReview, setEditingReview] = useState(null);
+  const [editDesignScore, setEditDesignScore] = useState(5.0);
+  const [editDeliveryScore, setEditDeliveryScore] = useState(5.0);
+  const [editTeamworkScore, setEditTeamworkScore] = useState(5.0);
+  const [editAppreciation, setEditAppreciation] = useState('');
+  const [editWarning, setEditWarning] = useState('');
+  const [editPromotion, setEditPromotion] = useState('');
+
+  const handleDeleteReview = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this appraisal review?")) return;
+    try {
+      await api.deleteAdminPerformance(id);
+      alert("Appraisal review deleted successfully!");
+      const list = await api.getAdminPerformance();
+      setReviews(list);
+    } catch (err) {
+      alert("Failed to delete review: " + err.message);
+    }
+  };
+
+  const handleSaveEditReview = async (e) => {
+    e.preventDefault();
+    if (!editingReview) return;
+    try {
+      const avg = ((Number(editDesignScore) + Number(editDeliveryScore) + Number(editTeamworkScore)) / 3).toFixed(1);
+      await api.updateAdminPerformance(editingReview.id, {
+        rating: avg,
+        appreciation: editAppreciation,
+        warning: editWarning,
+        promotionRecommendation: editPromotion,
+        kpis: [
+          { label: 'Productivity', score: editDesignScore },
+          { label: 'Delivery', score: editDeliveryScore },
+          { label: 'Teamwork', score: editTeamworkScore }
+        ]
+      });
+      alert("Appraisal review updated successfully!");
+      setEditingReview(null);
+      const list = await api.getAdminPerformance();
+      setReviews(list);
+    } catch (err) {
+      alert("Failed to update appraisal review: " + err.message);
+    }
+  };
 
   useEffect(() => {
     const fetchPerformance = async () => {
@@ -131,6 +180,19 @@ export default function Performance({ employees, subTab = 'dashboard' }) {
                   </div>
                 </div>
 
+                <div className="premium-form-group">
+                  <label className="premium-label">Appreciation & Achievements</label>
+                  <input type="text" value={appreciation} onChange={(e) => setAppreciation(e.target.value)} className="premium-input" placeholder="e.g. Great code quality and sprint deliveries" />
+                </div>
+                <div className="premium-form-group">
+                  <label className="premium-label">Area of Improvement</label>
+                  <input type="text" value={warningText} onChange={(e) => setWarningText(e.target.value)} className="premium-input" placeholder="e.g. Needs to focus on test coverage" />
+                </div>
+                <div className="premium-form-group">
+                  <label className="premium-label">Promotion Recommendation</label>
+                  <input type="text" value={promotionRec} onChange={(e) => setPromotionRec(e.target.value)} className="premium-input" placeholder="e.g. Recommended for Senior Role next cycle" />
+                </div>
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
                   <div>
                     <span className="premium-label" style={{ fontSize: '0.65rem' }}>Rating & Appraisal</span>
@@ -152,13 +214,24 @@ export default function Performance({ employees, subTab = 'dashboard' }) {
                         employeeName: selectedEmp.name,
                         managerId: 'Admin',
                         rating: overallRating,
-                        reviewPeriod: 'Monthly'
+                        reviewPeriod: 'Monthly',
+                        appreciation,
+                        warning: warningText,
+                        promotionRecommendation: promotionRec,
+                        kpis: [
+                          { label: 'Productivity', score: designScore },
+                          { label: 'Delivery', score: deliveryScore },
+                          { label: 'Teamwork', score: teamworkScore }
+                        ]
                       });
                       alert("Appraisal submitted successfully!");
+                      setAppreciation('');
+                      setWarningText('');
+                      setPromotionRec('');
                       const list = await api.getAdminPerformance();
                       setReviews(list);
                     } catch (err) {
-                      alert("Failed to submit appraisal");
+                      alert("Failed to submit appraisal: " + err.message);
                     }
                   }}
                   className="premium-btn premium-btn-primary" 
@@ -308,20 +381,55 @@ export default function Performance({ employees, subTab = 'dashboard' }) {
                     <th>Delivery Speed</th>
                     <th>Teamwork</th>
                     <th>Cumulative Score</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {reviews.map(rev => (
-                    <tr key={rev.id}>
-                      <td style={{ fontWeight: 600 }}>{rev.employeeName}</td>
-                      <td className="number-font">-</td>
-                      <td className="number-font">-</td>
-                      <td className="number-font">-</td>
-                      <td className="number-font" style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{rev.rating} / 5.0</td>
-                    </tr>
-                  ))}
+                  {reviews.map(rev => {
+                    const prodKpi = rev.kpis?.find(k => k.label === 'Productivity')?.score || '-';
+                    const delKpi = rev.kpis?.find(k => k.label === 'Delivery')?.score || '-';
+                    const teamKpi = rev.kpis?.find(k => k.label === 'Teamwork')?.score || '-';
+                    return (
+                      <tr key={rev.id}>
+                        <td style={{ fontWeight: 600 }}>{rev.employeeName}</td>
+                        <td className="number-font">{prodKpi}</td>
+                        <td className="number-font">{delKpi}</td>
+                        <td className="number-font">{teamKpi}</td>
+                        <td className="number-font" style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{rev.rating} / 5.0</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <button 
+                              onClick={() => {
+                                setEditingReview(rev);
+                                const p = rev.kpis?.find(k => k.label === 'Productivity')?.score || 5;
+                                const d = rev.kpis?.find(k => k.label === 'Delivery')?.score || 5;
+                                const t = rev.kpis?.find(k => k.label === 'Teamwork')?.score || 5;
+                                setEditDesignScore(p);
+                                setEditDeliveryScore(d);
+                                setEditTeamworkScore(t);
+                                setEditAppreciation(rev.appreciation || '');
+                                setEditWarning(rev.warning || '');
+                                setEditPromotion(rev.promotionRecommendation || '');
+                              }}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: 4 }}
+                              title="Edit Appraisal"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteReview(rev.id)}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}
+                              title="Delete Appraisal"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {reviews.length === 0 && (
-                    <tr><td colSpan="5" style={{ textAlign: 'center' }}>No appraisals recorded yet.</td></tr>
+                    <tr><td colSpan="6" style={{ textAlign: 'center' }}>No appraisals recorded yet.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -389,6 +497,71 @@ export default function Performance({ employees, subTab = 'dashboard' }) {
         )}
 
       </AnimatePresence>
+
+      {/* Edit Appraisal Modal */}
+      {editingReview && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999
+        }}>
+          <div className="premium-card" style={{ padding: 24, width: 420, background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>Edit Appraisal Review</h3>
+              <button 
+                onClick={() => setEditingReview(null)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditReview} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                  <label className="premium-label" style={{ fontSize: '0.65rem' }}>Productivity</label>
+                  <input type="number" step="0.1" max="5" value={editDesignScore} onChange={(e) => setEditDesignScore(e.target.value)} className="premium-input" />
+                </div>
+                <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                  <label className="premium-label" style={{ fontSize: '0.65rem' }}>Delivery</label>
+                  <input type="number" step="0.1" max="5" value={editDeliveryScore} onChange={(e) => setEditDeliveryScore(e.target.value)} className="premium-input" />
+                </div>
+                <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                  <label className="premium-label" style={{ fontSize: '0.65rem' }}>Teamwork</label>
+                  <input type="number" step="0.1" max="5" value={editTeamworkScore} onChange={(e) => setEditTeamworkScore(e.target.value)} className="premium-input" />
+                </div>
+              </div>
+
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Appreciation & Achievements</label>
+                <input type="text" value={editAppreciation} onChange={(e) => setEditAppreciation(e.target.value)} className="premium-input" />
+              </div>
+
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Area of Improvement</label>
+                <input type="text" value={editWarning} onChange={(e) => setEditWarning(e.target.value)} className="premium-input" />
+              </div>
+
+              <div className="premium-form-group" style={{ marginBottom: 0 }}>
+                <label className="premium-label" style={{ fontSize: '0.65rem' }}>Promotion Recommendation</label>
+                <input type="text" value={editPromotion} onChange={(e) => setEditPromotion(e.target.value)} className="premium-input" />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+                <button type="submit" className="premium-btn premium-btn-primary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Save Changes</button>
+                <button type="button" onClick={() => setEditingReview(null)} className="premium-btn premium-btn-secondary" style={{ flex: 1, height: 42, justifyContent: 'center' }}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
