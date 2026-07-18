@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { FileText, FileSpreadsheet, ArrowDownCircle, CheckSquare, Square } from 'lucide-react';
+import { api } from '../../services/api';
 
 const reportTypes = [
   { id: 'attendance', label: 'Attendance Reports', desc: 'Punch logs, shift reports, check-in averages.' },
   { id: 'payroll', label: 'Payroll & Compensation', desc: 'Salary dispersals, allowances, tax breakdowns.' },
   { id: 'leave', label: 'Leave & Absences', desc: 'Remaining days, type averages, approval rates.' },
   { id: 'employee', label: 'Employee Records', desc: 'Personal details, contracts, contact metrics.' },
-  { id: 'dept', label: 'Department Analytics', desc: 'Budget allocation, staff ratios, head count trends.' },
+  { id: 'dept', label: 'Department Analytics', desc: 'Budget allocation, staff ratios, headcount trends.' },
 ];
 
 export default function Reports() {
@@ -21,16 +22,101 @@ export default function Reports() {
     }
   };
 
-  const handleGenerate = (format) => {
+  const handleGenerate = async (format) => {
     if (selected.length === 0) {
       alert("Please select at least one report category!");
       return;
     }
     setGenerating(true);
-    setTimeout(() => {
+    try {
+      let csvContent = "";
+      
+      if (selected.includes('employee')) {
+        const employees = await api.getAdminEmployees();
+        csvContent += "=== EMPLOYEE DIRECTORY REPORT ===\n";
+        csvContent += "ID,Name,Email,Department,Designation,Status,Joining Date\n";
+        if (Array.isArray(employees)) {
+          employees.forEach(e => {
+            csvContent += `"${e.id}","${e.name}","${e.email}","${e.department || 'N/A'}","${e.designation || 'N/A'}","${e.status}","${e.joiningDate || ''}"\n`;
+          });
+        }
+        csvContent += "\n\n";
+      }
+
+      if (selected.includes('attendance')) {
+        const employees = await api.getAdminEmployees();
+        csvContent += "=== ATTENDANCE REPORT ===\n";
+        csvContent += "Employee ID,Employee Name,Date,Clock In,Clock Out,Total Hours,Status\n";
+        
+        if (Array.isArray(employees)) {
+          for (let emp of employees) {
+            try {
+              const logs = await api.getEmployeeAttendanceLogs(emp.id);
+              if (Array.isArray(logs)) {
+                logs.forEach(log => {
+                  csvContent += `"${emp.id}","${emp.name}","${log.date}","${log.clockIn}","${log.clockOut || ''}","${log.totalHours || ''}","${log.status}"\n`;
+                });
+              }
+            } catch (e) {
+              console.error("Skipping logs for: " + emp.name);
+            }
+          }
+        }
+        csvContent += "\n\n";
+      }
+
+      if (selected.includes('leave')) {
+        const leaves = await api.getAdminLeaves();
+        csvContent += "=== LEAVE APPLICATIONS REPORT ===\n";
+        csvContent += "ID,Employee Name,Leave Type,From Date,To Date,Total Days,Status,Reason\n";
+        if (Array.isArray(leaves)) {
+          leaves.forEach(l => {
+            csvContent += `"${l.id}","${l.employeeName}","${l.type}","${l.fromDate}","${l.toDate}","${l.totalDays}","${l.status}","${l.reason || ''}"\n`;
+          });
+        }
+        csvContent += "\n\n";
+      }
+
+      if (selected.includes('payroll')) {
+        const payrolls = await api.getPayrollRecords();
+        csvContent += "=== PAYROLL DISPERSALS REPORT ===\n";
+        csvContent += "ID,Employee Name,Month/Year,Base Salary,Allowance,Deductions,Net Paid,Status\n";
+        if (Array.isArray(payrolls)) {
+          payrolls.forEach(p => {
+            csvContent += `"${p.id}","${p.employeeName}","${p.month || ''}","${p.basicSalary || 0}","${p.allowances || 0}","${p.deductions || 0}","${p.netSalary || 0}","${p.status}"\n`;
+          });
+        }
+        csvContent += "\n\n";
+      }
+
+      if (selected.includes('dept')) {
+        const depts = await api.getAdminDepartments();
+        csvContent += "=== DEPARTMENT ANALYTICS REPORT ===\n";
+        csvContent += "ID,Name,Head/Manager,Active Employee Count\n";
+        if (Array.isArray(depts)) {
+          depts.forEach(d => {
+            csvContent += `"${d.id}","${d.name}","${d.manager || 'Unassigned'}","${d.headcount || 0}"\n`;
+          });
+        }
+        csvContent += "\n\n";
+      }
+
+      // Trigger file download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `HRMS_Report_Package_${new Date().toISOString().split('T')[0]}.${format === 'pdf' ? 'txt' : 'csv'}`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      alert(`Report Package compiled with live database entries and downloaded successfully!`);
+    } catch (err) {
+      alert("Failed to assemble reports: " + err.message);
+    } finally {
       setGenerating(false);
-      alert(`Report Package generated and downloaded successfully as a .${format} archive!`);
-    }, 1800);
+    }
   };
 
   return (
