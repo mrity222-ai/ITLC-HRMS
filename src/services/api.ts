@@ -139,6 +139,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async deleteAdminPayroll(id: string) {
+    const res = await fetch(`${API_URL}/admin/payroll/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getAdminAssets() {
     const res = await fetch(`${API_URL}/admin/assets?t=${new Date().getTime()}`, {
       method: 'GET',

@@ -49,6 +49,14 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [isRecharging, setIsRecharging] = useState(false);
   const [selectedEmpBreakdown, setSelectedEmpBreakdown] = useState(null);
+  
+  // Edit & Delete States
+  const [editingSlip, setEditingSlip] = useState(null);
+  const [editBasic, setEditBasic] = useState(0);
+  const [editHra, setEditHra] = useState(0);
+  const [editAllowances, setEditAllowances] = useState(0);
+  const [editDeductions, setEditDeductions] = useState(0);
+  const [editNetSalary, setEditNetSalary] = useState(0);
 
   const loadCompanyPayrollSettings = async () => {
     setLoadingCompany(true);
@@ -100,6 +108,56 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     } catch (err) {
       alert("Failed to save payroll configurations.");
       console.error(err);
+    }
+  };
+
+  const handleOpenEditSlip = (slip) => {
+    setEditingSlip(slip);
+    setEditBasic(slip.basic || 0);
+    setEditHra(slip.hra || 0);
+    setEditAllowances(slip.allowances || 0);
+    setEditDeductions(slip.deductions || 0);
+    setEditNetSalary(slip.netSalary || 0);
+  };
+
+  const handleSaveEditSlip = async (e) => {
+    e.preventDefault();
+    if (!editingSlip) return;
+    try {
+      await api.updateAdminPayroll(editingSlip.id, {
+        basic: editBasic,
+        hra: editHra,
+        allowances: editAllowances,
+        deductions: editDeductions,
+        netSalary: editNetSalary
+      });
+      alert("Payroll record updated successfully!");
+      setEditingSlip(null);
+      fetchExpensesAndPayroll();
+    } catch (err) {
+      alert("Failed to update payroll record: " + err.message);
+    }
+  };
+
+  const handleDeleteSlip = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this payroll record?")) return;
+    try {
+      await api.deleteAdminPayroll(id);
+      alert("Payroll record deleted successfully!");
+      fetchExpensesAndPayroll();
+    } catch (err) {
+      alert("Failed to delete payroll record: " + err.message);
+    }
+  };
+
+  const handleDeleteExpense = async (id) => {
+    if (!window.confirm("Are you sure you want to decline/reject this reimbursement claim?")) return;
+    try {
+      await api.updateAdminExpense(id, 'Rejected');
+      alert("Reimbursement claim declined.");
+      fetchExpensesAndPayroll();
+    } catch (err) {
+      alert("Failed to update claim status: " + err.message);
     }
   };
 
@@ -1098,49 +1156,71 @@ and paid to the credit of the Government.
                       <td className="number-font" style={{ fontSize: '0.85rem' }}>{cSymbol}{slip.netSalary?.toLocaleString()}</td>
                       <td><span className="badge badge-success">{slip.status}</span></td>
                       <td style={{ textAlign: 'right' }}>
-                        <button 
-                          onClick={async () => {
-                            try {
-                              const emp = employees.find(e => e.id === slip.employeeId) || { name: slip.employeeName };
-                              const companyInfo = await api.getAdminCompany();
-                              const basicVal = Number(slip.basic || 0);
-                              const hraVal = Number(slip.hra || 0);
-                              const allowancesVal = Number(slip.allowances || 0);
-                              const deductionsVal = Number(slip.deductions || 0);
-                              const netVal = Number(slip.netSalary || 0);
-                              
-                              const pfVal = Math.round(basicVal * 0.12);
-                              const esiVal = Math.round(basicVal * 0.0175);
-                              const taxVal = Math.round((basicVal + hraVal + allowancesVal) * 0.15);
-                              
-                              downloadEmployeePayslip(
-                                emp,
-                                companyInfo || { name: 'ITLC Workspace' },
-                                {
-                                  month: slip.month,
-                                  year: slip.year,
-                                  basic: basicVal,
-                                  hra: hraVal,
-                                  allowances: allowancesVal,
-                                  overtime: slip.overtime || 0,
-                                  reimbursement: slip.reimbursements || 0,
-                                  pf: pfVal,
-                                  esi: esiVal,
-                                  tax: taxVal,
-                                  profTax: slip.profTax || 0,
-                                  deductions: deductionsVal,
-                                  netSalary: netVal,
-                                  currency: currency
-                                }
-                              );
-                            } catch (e) {
-                              alert("Failed to download payslip PDF.");
-                            }
-                          }}
-                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-primary)' }}
-                        >
-                          <Download size={15} />
-                        </button>
+                        <div style={{ display: 'inline-flex', gap: 8, justifyContent: 'flex-end' }}>
+                          <button 
+                            onClick={async () => {
+                              try {
+                                const emp = employees.find(e => e.id === slip.employeeId) || { name: slip.employeeName };
+                                const companyInfo = await api.getAdminCompany();
+                                const basicVal = Number(slip.basic || 0);
+                                const hraVal = Number(slip.hra || 0);
+                                const allowancesVal = Number(slip.allowances || 0);
+                                const deductionsVal = Number(slip.deductions || 0);
+                                const netVal = Number(slip.netSalary || 0);
+                                
+                                const pfVal = Math.round(basicVal * 0.12);
+                                const esiVal = Math.round(basicVal * 0.0175);
+                                const taxVal = Math.round((basicVal + hraVal + allowancesVal) * 0.15);
+                                
+                                downloadEmployeePayslip(
+                                  emp,
+                                  companyInfo || { name: 'ITLC Workspace' },
+                                  {
+                                    month: slip.month,
+                                    year: slip.year,
+                                    basic: basicVal,
+                                    hra: hraVal,
+                                    allowances: allowancesVal,
+                                    overtime: slip.overtime || 0,
+                                    reimbursement: slip.reimbursements || 0,
+                                    pf: pfVal,
+                                    esi: esiVal,
+                                    tax: taxVal,
+                                    profTax: slip.profTax || 0,
+                                    deductions: deductionsVal,
+                                    netSalary: netVal,
+                                    currency: currency
+                                  }
+                                );
+                              } catch (e) {
+                                alert("Failed to download payslip PDF.");
+                              }
+                            }}
+                            className="premium-btn premium-btn-secondary"
+                            style={{ padding: '0 8px', height: '26px', minWidth: '32px', justifyContent: 'center' }}
+                            title="Download PDF"
+                          >
+                            <Download size={13} />
+                          </button>
+                          
+                          <button 
+                            onClick={() => handleOpenEditSlip(slip)}
+                            className="premium-btn premium-btn-primary"
+                            style={{ padding: '0 8px', height: '26px', fontSize: '0.75rem', justifyContent: 'center' }}
+                            title="Edit Record"
+                          >
+                            Edit
+                          </button>
+
+                          <button 
+                            onClick={() => handleDeleteSlip(slip.id)}
+                            className="premium-btn premium-btn-secondary"
+                            style={{ padding: '0 8px', height: '26px', fontSize: '0.75rem', borderColor: '#ef4444', color: '#ef4444', justifyContent: 'center' }}
+                            title="Delete Record"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1242,6 +1322,7 @@ and paid to the credit of the Government.
                     <th>Description</th>
                     <th>Amount</th>
                     <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1254,6 +1335,15 @@ and paid to the credit of the Government.
                       <td className="number-font" style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{cSymbol}{exp.amount}</td>
                       <td>
                         <span className="badge badge-success">Approved</span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button
+                          onClick={() => handleDeleteExpense(exp.id)}
+                          className="premium-btn premium-btn-secondary"
+                          style={{ padding: '0 8px', height: '26px', fontSize: '0.75rem', borderColor: '#ef4444', color: '#ef4444', justifyContent: 'center' }}
+                        >
+                          Decline
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -1273,132 +1363,189 @@ and paid to the credit of the Government.
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
           >
-            <div className="premium-card" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Landmark size={18} style={{ color: 'var(--color-primary)' }} />
-                <span>Full & Final (F&F) Settlement</span>
-              </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}>
+              <div className="premium-card" style={{ padding: 24 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Landmark size={18} style={{ color: 'var(--color-primary)' }} />
+                  <span>Full & Final (F&F) Settlement</span>
+                </h3>
 
-              <form onSubmit={handleProcessFF} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div className="premium-form-group">
-                  <label className="premium-label">Resigning Employee</label>
-                  <select 
-                    value={ffEmpId} 
-                    onChange={(e) => setFfEmpId(e.target.value)}
-                    className="premium-input"
-                  >
-                    {employees.map(emp => (
-                      <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="premium-form-group">
-                  <label className="premium-label">Resignation/Relieving Date</label>
-                  <input 
-                    type="date" 
-                    required 
-                    value={resignationDate} 
-                    onChange={(e) => setResignationDate(e.target.value)}
-                    className="premium-input" 
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <form onSubmit={handleProcessFF} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div className="premium-form-group">
-                    <label className="premium-label">Unpaid Salary Days</label>
+                    <label className="premium-label">Resigning Employee</label>
+                    <select 
+                      value={ffEmpId} 
+                      onChange={(e) => setFfEmpId(e.target.value)}
+                      className="premium-input"
+                    >
+                      {employees.map(emp => (
+                        <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="premium-form-group">
+                    <label className="premium-label">Resignation/Relieving Date</label>
                     <input 
-                      type="number" 
-                      value={unpaidDays} 
-                      onChange={(e) => setUnpaidDays(Number(e.target.value) || 0)}
+                      type="date" 
+                      required 
+                      value={resignationDate} 
+                      onChange={(e) => setResignationDate(e.target.value)}
                       className="premium-input" 
                     />
                   </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Unpaid Salary Days</label>
+                      <input 
+                        type="number" 
+                        value={unpaidDays} 
+                        onChange={(e) => setUnpaidDays(Number(e.target.value) || 0)}
+                        className="premium-input" 
+                      />
+                    </div>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Encashable Leave Days</label>
+                      <input 
+                        type="number" 
+                        value={leaveEncashmentDays} 
+                        onChange={(e) => setLeaveEncashmentDays(Number(e.target.value) || 0)}
+                        className="premium-input" 
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Gratuity Amount ({currency})</label>
+                      <input 
+                        type="number" 
+                        value={gratuityAmount} 
+                        onChange={(e) => setGratuityAmount(Number(e.target.value) || 0)}
+                        className="premium-input" 
+                      />
+                    </div>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Notice Period Buyout ({currency})</label>
+                      <input 
+                        type="number" 
+                        value={noticePeriodAllowance} 
+                        onChange={(e) => setNoticePeriodAllowance(Number(e.target.value) || 0)}
+                        className="premium-input" 
+                      />
+                    </div>
+                  </div>
+
                   <div className="premium-form-group">
-                    <label className="premium-label">Encashable Leave Days</label>
+                    <label className="premium-label">Other Deductions / Dues ({currency})</label>
                     <input 
                       type="number" 
-                      value={leaveEncashmentDays} 
-                      onChange={(e) => setLeaveEncashmentDays(Number(e.target.value) || 0)}
+                      value={ffOtherDeductions} 
+                      onChange={(e) => setFfOtherDeductions(Number(e.target.value) || 0)}
                       className="premium-input" 
                     />
                   </div>
-                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                  <div className="premium-form-group">
-                    <label className="premium-label">Gratuity Amount ({currency})</label>
-                    <input 
-                      type="number" 
-                      value={gratuityAmount} 
-                      onChange={(e) => setGratuityAmount(Number(e.target.value) || 0)}
-                      className="premium-input" 
-                    />
-                  </div>
-                  <div className="premium-form-group">
-                    <label className="premium-label">Notice Period Buyout ({currency})</label>
-                    <input 
-                      type="number" 
-                      value={noticePeriodAllowance} 
-                      onChange={(e) => setNoticePeriodAllowance(Number(e.target.value) || 0)}
-                      className="premium-input" 
-                    />
-                  </div>
-                </div>
-
-                <div className="premium-form-group">
-                  <label className="premium-label">Other Deductions / Dues ({currency})</label>
-                  <input 
-                    type="number" 
-                    value={ffOtherDeductions} 
-                    onChange={(e) => setFfOtherDeductions(Number(e.target.value) || 0)}
-                    className="premium-input" 
-                  />
-                </div>
-
-                <button type="submit" className="premium-btn premium-btn-success" style={{ width: '100%', height: 42, justifyContent: 'center' }}>
-                  Disburse F&F Settlement
-                </button>
-              </form>
-            </div>
-
-            {/* F&F Summary Preview */}
-            <div className="premium-card" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 16 }}>F&F Settlement Statement</h3>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, borderBottom: '1px solid var(--color-border)', paddingBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Unpaid Working Salary ({unpaidDays} Days):</span>
-                  <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{unpaidSalaryAmount.toLocaleString()}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Leave Encashment ({leaveEncashmentDays} Days):</span>
-                  <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{leaveEncashmentAmount.toLocaleString()}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Gratuity Benefit:</span>
-                  <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{Number(gratuityAmount).toLocaleString()}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Notice Period Buyout:</span>
-                  <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{Number(noticePeriodAllowance).toLocaleString()}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ef4444' }}>
-                  <span>Dues & Deductions:</span>
-                  <strong className="number-font">-{cSymbol}{Number(ffOtherDeductions).toLocaleString()}</strong>
-                </div>
+                  <button type="submit" className="premium-btn premium-btn-success" style={{ width: '100%', height: 42, justifyContent: 'center' }}>
+                    Disburse F&F Settlement
+                  </button>
+                </form>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16 }}>
-                <div>
-                  <span style={{ fontSize: '0.65rem' }} className="premium-label">Net Settlement Amount</span>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Includes taxes and standard benefits</p>
+              {/* F&F Summary Preview */}
+              <div className="premium-card" style={{ padding: 24 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 16 }}>F&F Settlement Statement</h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, borderBottom: '1px solid var(--color-border)', paddingBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Unpaid Working Salary ({unpaidDays} Days):</span>
+                    <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{unpaidSalaryAmount.toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Leave Encashment ({leaveEncashmentDays} Days):</span>
+                    <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{leaveEncashmentAmount.toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Gratuity Benefit:</span>
+                    <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{Number(gratuityAmount).toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Notice Period Buyout:</span>
+                    <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{Number(noticePeriodAllowance).toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ef4444' }}>
+                    <span>Dues & Deductions:</span>
+                    <strong className="number-font">-{cSymbol}{Number(ffOtherDeductions).toLocaleString()}</strong>
+                  </div>
                 </div>
-                <h4 className="number-font" style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                  {cSymbol}{ffNetPayable.toLocaleString()}
-                </h4>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16 }}>
+                  <div>
+                    <span style={{ fontSize: '0.65rem' }} className="premium-label">Net Settlement Amount</span>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Includes taxes and standard benefits</p>
+                  </div>
+                  <h4 className="number-font" style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                    {cSymbol}{ffNetPayable.toLocaleString()}
+                  </h4>
+                </div>
+              </div>
+            </div>
+
+            {/* Past F&F Settlements Table */}
+            <div className="premium-card" style={{ padding: 24 }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 16 }}>Processed F&F Settlement Records</h3>
+              <div className="premium-table-container">
+                <table className="premium-table">
+                  <thead>
+                    <tr>
+                      <th>Settlement ID</th>
+                      <th>Resigning Employee</th>
+                      <th>Unpaid Dues</th>
+                      <th>Leave Encashment</th>
+                      <th>Gratuity</th>
+                      <th>Net Paid</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payrollHistory.filter(s => s.type === 'F&F').map(slip => (
+                      <tr key={slip.id}>
+                        <td style={{ fontWeight: 700 }}>#{slip.id}</td>
+                        <td>{slip.employeeName}</td>
+                        <td className="number-font">{cSymbol}{slip.basic?.toLocaleString()}</td>
+                        <td className="number-font">{cSymbol}{slip.leaveEncashment?.toLocaleString()}</td>
+                        <td className="number-font">{cSymbol}{slip.allowances?.toLocaleString()}</td>
+                        <td className="number-font" style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{cSymbol}{slip.netSalary?.toLocaleString()}</td>
+                        <td><span className="badge badge-success">Settled</span></td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <button 
+                              onClick={() => handleOpenEditSlip(slip)}
+                              className="premium-btn premium-btn-primary"
+                              style={{ padding: '0 8px', height: '26px', fontSize: '0.75rem', justifyContent: 'center' }}
+                            >
+                              Edit
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteSlip(slip.id)}
+                              className="premium-btn premium-btn-secondary"
+                              style={{ padding: '0 8px', height: '26px', fontSize: '0.75rem', borderColor: '#ef4444', color: '#ef4444', justifyContent: 'center' }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {payrollHistory.filter(s => s.type === 'F&F').length === 0 && (
+                      <tr><td colSpan="8" style={{ textAlign: 'center' }}>No historical F&F settlements processed.</td></tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </motion.div>
@@ -1466,6 +1613,128 @@ and paid to the credit of the Government.
         )}
 
       </AnimatePresence>
+
+      {/* Edit Payroll Modal */}
+      {editingSlip && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: 20
+        }} onClick={() => setEditingSlip(null)}>
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+              padding: 24,
+              borderRadius: 20,
+              width: '100%',
+              maxWidth: 420,
+              position: 'relative',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>Edit Processed Payroll</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
+                Modify earnings and deductions for #{editingSlip.id} ({editingSlip.employeeName})
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveEditSlip} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="premium-form-group">
+                <label className="premium-label">Basic Salary</label>
+                <input 
+                  type="number" 
+                  value={editBasic} 
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 0;
+                    setEditBasic(val);
+                    setEditNetSalary(val + editHra + editAllowances - editDeductions);
+                  }} 
+                  className="premium-input" 
+                />
+              </div>
+
+              <div className="premium-form-group">
+                <label className="premium-label">HRA Allowance</label>
+                <input 
+                  type="number" 
+                  value={editHra} 
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 0;
+                    setEditHra(val);
+                    setEditNetSalary(editBasic + val + editAllowances - editDeductions);
+                  }} 
+                  className="premium-input" 
+                />
+              </div>
+
+              <div className="premium-form-group">
+                <label className="premium-label">Other Allowances & Bonus</label>
+                <input 
+                  type="number" 
+                  value={editAllowances} 
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 0;
+                    setEditAllowances(val);
+                    setEditNetSalary(editBasic + editHra + val - editDeductions);
+                  }} 
+                  className="premium-input" 
+                />
+              </div>
+
+              <div className="premium-form-group">
+                <label className="premium-label">Total Deductions (PF/ESI/Tax/PT)</label>
+                <input 
+                  type="number" 
+                  value={editDeductions} 
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 0;
+                    setEditDeductions(val);
+                    setEditNetSalary(editBasic + editHra + editAllowances - val);
+                  }} 
+                  className="premium-input" 
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-secondary)', padding: '10px 14px', borderRadius: 10 }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Adjusted Net Salary:</span>
+                <strong className="number-font" style={{ color: 'var(--color-primary)' }}>{cSymbol}{editNetSalary.toLocaleString()}</strong>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                <button 
+                  type="button" 
+                  onClick={() => setEditingSlip(null)} 
+                  className="premium-btn premium-btn-secondary" 
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="premium-btn premium-btn-success" 
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
 
     </div>
   );
