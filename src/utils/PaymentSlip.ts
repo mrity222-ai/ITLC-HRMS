@@ -182,7 +182,7 @@ export const downloadEmployeePayslip = (employee: any, company: any, payroll: an
           </div>
         </div>
 
-        <div class="breakdown-grid">
+         <div class="breakdown-grid">
           <div class="breakdown-col">
             <h3>Earnings</h3>
             <div class="breakdown-row">
@@ -197,6 +197,18 @@ export const downloadEmployeePayslip = (employee: any, company: any, payroll: an
               <span>Allowances & Bonus</span>
               <strong>${currencySymbol}${Math.round(payroll.allowances).toLocaleString()}</strong>
             </div>
+            ${payroll.overtime ? `
+            <div class="breakdown-row">
+              <span>Overtime Pay</span>
+              <strong>${currencySymbol}${Math.round(payroll.overtime).toLocaleString()}</strong>
+            </div>
+            ` : ''}
+            ${payroll.reimbursement ? `
+            <div class="breakdown-row">
+              <span>Reimbursements</span>
+              <strong>${currencySymbol}${Math.round(payroll.reimbursement).toLocaleString()}</strong>
+            </div>
+            ` : ''}
           </div>
 
           <div class="breakdown-col">
@@ -213,6 +225,12 @@ export const downloadEmployeePayslip = (employee: any, company: any, payroll: an
               <span>Tax (TDS)</span>
               <strong>${currencySymbol}${Math.round(payroll.tax).toLocaleString()}</strong>
             </div>
+            ${payroll.profTax ? `
+            <div class="breakdown-row">
+              <span>Professional Tax</span>
+              <strong>${currencySymbol}${Math.round(payroll.profTax).toLocaleString()}</strong>
+            </div>
+            ` : ''}
           </div>
         </div>
 

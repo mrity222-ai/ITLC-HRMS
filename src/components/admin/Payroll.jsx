@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, DollarSign, Calculator, Download, Percent, FileText, CheckCircle, ShieldCheck, User, Briefcase } from 'lucide-react';
+import { CreditCard, DollarSign, Calculator, Download, Percent, FileText, CheckCircle, ShieldCheck, User, Briefcase, Plus, X, Calendar, Landmark } from 'lucide-react';
 import { api } from '../../services/api';
 import { downloadEmployeePayslip } from '../../utils/PaymentSlip';
-
-const mockPayslipHistory = [];
 
 export default function Payroll({ employees, subTab = 'dashboard', setActiveTab, currency = 'USD' }) {
   const currencySymbols = {
@@ -21,6 +19,23 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const [attendance, setAttendance] = useState([]);
   const [loadingAtt, setLoadingAtt] = useState(false);
   const [payrollHistory, setPayrollHistory] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+
+  // Overtime States
+  const [overtimeHours, setOvertimeHours] = useState(0);
+  const [overtimeRate, setOvertimeRate] = useState(25);
+
+  // Professional Tax & Statutory settings
+  const [profTax, setProfTax] = useState(200);
+
+  // F&F Settlement Form States
+  const [ffEmpId, setFfEmpId] = useState(employees[0]?.id || '');
+  const [resignationDate, setResignationDate] = useState('');
+  const [unpaidDays, setUnpaidDays] = useState(0);
+  const [leaveEncashmentDays, setLeaveEncashmentDays] = useState(0);
+  const [gratuityAmount, setGratuityAmount] = useState(0);
+  const [noticePeriodAllowance, setNoticePeriodAllowance] = useState(0);
+  const [ffOtherDeductions, setFfOtherDeductions] = useState(0);
 
   // Editable Payroll Configurations
   const [basicSalaryPercent, setBasicSalaryPercent] = useState(50.0);
@@ -55,8 +70,20 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     }
   };
 
+  const fetchExpensesAndPayroll = async () => {
+    try {
+      const history = await api.getAdminPayroll();
+      setPayrollHistory(history || []);
+      const exps = await api.getAdminExpenses();
+      setExpenses(exps || []);
+    } catch (err) {
+      console.error("Failed to load payroll or expense data:", err);
+    }
+  };
+
   useEffect(() => {
     loadCompanyPayrollSettings();
+    fetchExpensesAndPayroll();
   }, []);
 
   const handleSavePayrollSettings = async () => {
@@ -76,18 +103,6 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     }
   };
 
-  useEffect(() => {
-    const fetchPayroll = async () => {
-      try {
-        const history = await api.getAdminPayroll();
-        setPayrollHistory(history);
-      } catch (err) {
-        console.error("Failed to load payroll history:", err);
-      }
-    };
-    fetchPayroll();
-  }, []);
-
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'structures', label: 'Salary Structures' },
@@ -95,6 +110,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     { id: 'payslips', label: 'Payslips Console' },
     { id: 'compliance', label: 'Statutory Compliance' },
     { id: 'reimbursements', label: 'Reimbursements' },
+    { id: 'ff', label: 'F&F Settlement' },
     { id: 'reports', label: 'Reports & Export' },
   ];
 
@@ -116,7 +132,11 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     fetchAttendance();
   }, [selectedEmpId, selectedEmp]);
 
-  // Calculate payroll logic based on attendance
+  // Calculate approved expense reimbursements for this employee
+  const empApprovedExpenses = expenses.filter(exp => exp.employeeId === selectedEmp?.id && exp.status === 'Approved');
+  const reimbursementAmount = empApprovedExpenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
+
+  // Calculate attendance & salary details
   const presentCount = attendance.filter(a => a.status === 'Present' || a.status === 'Late').length;
   const halfDayCount = attendance.filter(a => a.status === 'Half-day').length;
   const activeDays = presentCount + (halfDayCount * 0.5);
@@ -133,8 +153,13 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const hra = basicPay * (hraPercent / 100);
   const pf = Math.round(basicPay * (pfPercent / 100));
   const esi = Math.round(basicPay * (esiPercent / 100));
-  const tax = Math.round((adjustedBaseSalary + Number(bonus)) * (tdsPercent / 100));
-  const netPay = Math.round(adjustedBaseSalary + Number(bonus) - Number(deductions) - pf - esi - tax);
+  
+  // Overtime Pay
+  const overtimePay = Number(overtimeHours) * Number(overtimeRate);
+  
+  // Total Earnings & Net Pay calculations
+  const tax = Math.round((adjustedBaseSalary + Number(bonus) + overtimePay) * (tdsPercent / 100));
+  const netPay = Math.round(adjustedBaseSalary + Number(bonus) + overtimePay + reimbursementAmount - Number(deductions) - pf - esi - tax - Number(profTax));
 
   const handleDownloadPayslip = async () => {
     if (!selectedEmp) return;
@@ -149,10 +174,13 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
           basic: basicPay,
           hra: hra,
           allowances: Number(bonus),
+          overtime: overtimePay,
+          reimbursement: reimbursementAmount,
           pf: pf,
           esi: esi,
           tax: tax,
-          deductions: pf + esi + tax + Number(deductions),
+          profTax: Number(profTax),
+          deductions: pf + esi + tax + Number(profTax) + Number(deductions),
           netSalary: netPay,
           currency: currency
         }
@@ -171,14 +199,17 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         year: 2026,
         basic: basicPay,
         hra: hra,
-        allowances: Number(bonus),
-        deductions: pf + esi + tax + Number(deductions),
+        allowances: Number(bonus) + overtimePay,
+        deductions: pf + esi + tax + Number(profTax) + Number(deductions),
         netSalary: netPay,
+        overtime: overtimePay,
+        reimbursements: reimbursementAmount,
+        profTax: Number(profTax),
+        type: 'Regular',
         status: 'Processed'
       });
       alert(`Payslip for ${selectedEmp.name} (July 2026) has been successfully processed and disbursed!`);
-      const history = await api.getAdminPayroll();
-      setPayrollHistory(history);
+      fetchExpensesAndPayroll();
     } catch (err) {
       alert("Failed to process individual payslip.");
     }
@@ -195,7 +226,12 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         const empPf = Math.round(empBasicPay * (pfPercent / 100));
         const empEsi = Math.round(empBasicPay * (esiPercent / 100));
         const empTax = Math.round(empBase * (tdsPercent / 100));
-        const empNet = Math.round(empBase - empPf - empEsi - empTax);
+        
+        // Load approved reimbursements for each employee
+        const empExps = expenses.filter(exp => exp.employeeId === emp.id && exp.status === 'Approved');
+        const empReimb = empExps.reduce((acc, exp) => acc + Number(exp.amount), 0);
+
+        const empNet = Math.round(empBase + empReimb - empPf - empEsi - empTax - Number(profTax));
         totalAmount += empNet;
         
         await api.createAdminPayroll({
@@ -206,15 +242,17 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
           basic: empBasicPay,
           hra: empBasicPay * (hraPercent / 100),
           allowances: 0,
-          deductions: empPf + empEsi + empTax,
+          deductions: empPf + empEsi + empTax + Number(profTax),
           netSalary: empNet,
+          overtime: 0,
+          reimbursements: empReimb,
+          profTax: Number(profTax),
+          type: 'Regular',
           status: 'Processed'
         });
       }
       alert(`Bulk payroll processing successful! ${cSymbol}${totalAmount.toLocaleString()} net salary disbursed across ${employees.length} employee accounts.`);
-      
-      const history = await api.getAdminPayroll();
-      setPayrollHistory(history);
+      fetchExpensesAndPayroll();
     } catch (err) {
       alert("Failed to run bulk payroll.");
       console.error(err);
@@ -229,12 +267,17 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     const empPf = Math.round(empBasicPay * (pfPercent / 100));
     const empEsi = Math.round(empBasicPay * (esiPercent / 100));
     const empTax = Math.round(empBase * (tdsPercent / 100));
-    const empNet = Math.round(empBase - empPf - empEsi - empTax);
+    
+    const empExps = expenses.filter(exp => exp.employeeId === emp.id && exp.status === 'Approved');
+    const empReimb = empExps.reduce((acc, exp) => acc + Number(exp.amount), 0);
+
+    const empNet = Math.round(empBase + empReimb - empPf - empEsi - empTax - Number(profTax));
     return {
       basic: empBasicPay,
       hra: empBasicPay * (hraPercent / 100),
-      deductions: empPf + empEsi + empTax,
-      netSalary: empNet
+      deductions: empPf + empEsi + empTax + Number(profTax),
+      netSalary: empNet,
+      reimbursements: empReimb
     };
   };
 
@@ -272,13 +315,14 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         hra: details.hra,
         allowances: 0,
         deductions: details.deductions,
-        netSalary: details.netSalary
+        netSalary: details.netSalary,
+        reimbursements: details.reimbursements,
+        profTax: Number(profTax)
       });
       if (res.success) {
         setWalletBalance(res.walletBalance);
         alert(`Salary of ${cSymbol}${details.netSalary.toLocaleString()} successfully disbursed to ${emp.name}!`);
-        const history = await api.getAdminPayroll();
-        setPayrollHistory(history);
+        fetchExpensesAndPayroll();
       }
     } catch (err) {
       alert(err.message || "Failed to disburse salary.");
@@ -297,16 +341,94 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         hra: details.hra,
         allowances: 0,
         deductions: details.deductions,
-        netSalary: details.netSalary
+        netSalary: details.netSalary,
+        profTax: Number(profTax)
       });
       if (res.success) {
         alert(`Salary for ${emp.name} has been placed ON HOLD.`);
-        const history = await api.getAdminPayroll();
-        setPayrollHistory(history);
+        fetchExpensesAndPayroll();
       }
     } catch (err) {
       alert("Failed to hold salary.");
     }
+  };
+
+  const getEmployeePayrollStatus = (empId) => {
+    const record = payrollHistory.find(r => r.employeeId === empId && r.month === 'July' && r.year === 2026);
+    return record ? record.status : 'Pending';
+  };
+
+  // Full & Final calculations
+  const ffEmp = employees.find(e => e.id.toString() === ffEmpId.toString()) || employees[0];
+  const ffBase = ffEmp ? (typeof ffEmp.salary === 'string' ? parseFloat(ffEmp.salary.replace('$', '').replace('₹', '').replace(/,/g, '')) / 12 : ffEmp.salary / 12) : 5000;
+  const unpaidSalaryAmount = Math.round((ffBase / 30) * unpaidDays);
+  const leaveEncashmentAmount = Math.round((ffBase / 30) * leaveEncashmentDays);
+  const ffNetPayable = unpaidSalaryAmount + leaveEncashmentAmount + Number(gratuityAmount) + Number(noticePeriodAllowance) - Number(ffOtherDeductions);
+
+  const handleProcessFF = async (e) => {
+    e.preventDefault();
+    if (!ffEmp) return;
+    try {
+      await api.createAdminPayroll({
+        employeeId: ffEmp.id,
+        employeeName: ffEmp.name,
+        month: 'Settlement',
+        year: 2026,
+        basic: unpaidSalaryAmount,
+        hra: 0,
+        allowances: Number(gratuityAmount) + Number(noticePeriodAllowance),
+        deductions: Number(ffOtherDeductions),
+        netSalary: ffNetPayable,
+        gratuity: Number(gratuityAmount),
+        leaveEncashment: leaveEncashmentAmount,
+        type: 'F&F',
+        status: 'Processed'
+      });
+      alert(`Full & Final (F&F) settlement of ${cSymbol}${ffNetPayable.toLocaleString()} processed for ${ffEmp.name}!`);
+      fetchExpensesAndPayroll();
+    } catch (err) {
+      alert("Failed to process F&F settlement: " + err.message);
+    }
+  };
+
+  // Generate compliance Form 16 or audit report
+  const handleDownloadAnnualReports = () => {
+    if (!selectedEmp) return;
+    
+    // Generate statutory compliance text payload representing Form 16
+    const form16Text = `
+========================================================================
+             FORM NO. 16 - ANNUAL TAX DEDUCTION STATEMENT
+========================================================================
+Employer Name: ITLC Workspace
+Employee Name: ${selectedEmp.name} (ID: ${selectedEmp.id})
+Assessment Year: 2026 - 2027
+TDS Period: July 2025 to June 2026
+------------------------------------------------------------------------
+I. Gross Salary received u/s 17(1):         ${cSymbol}${Math.round(baseSalary * 12).toLocaleString()}
+II. HRA Exemption u/s 10(13A):               ${cSymbol}${Math.round(hra * 12).toLocaleString()}
+III. Deductions u/s 16:
+     (a) Standard Deduction:                ${cSymbol}50,000
+     (b) Professional Tax u/s 16(iii):       ${cSymbol}${Math.round(profTax * 12).toLocaleString()}
+IV. Total Deductions:                       ${cSymbol}${Math.round(50000 + (profTax * 12)).toLocaleString()}
+V. Taxable Income u/s 115BAC:               ${cSymbol}${Math.round((baseSalary * 12) - 50000 - (profTax * 12)).toLocaleString()}
+VI. Total Tax Deposited (TDS):             ${cSymbol}${Math.round(tax * 12).toLocaleString()}
+------------------------------------------------------------------------
+Verification: This statement certifies that tax has been deducted at source
+and paid to the credit of the Government.
+========================================================================
+    `;
+
+    const blob = new Blob([form16Text], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Form_16_${selectedEmp.name.replace(/\s+/g, '_')}_2026.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    alert(`Form 16 Tax Certificate compiled and downloaded for ${selectedEmp.name}!`);
   };
 
   return (
@@ -404,6 +526,27 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                   </div>
                 </div>
 
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div className="premium-form-group">
+                    <label className="premium-label">Overtime Hours</label>
+                    <input 
+                      type="number" 
+                      value={overtimeHours} 
+                      onChange={(e) => setOvertimeHours(Number(e.target.value) || 0)} 
+                      className="premium-input" 
+                    />
+                  </div>
+                  <div className="premium-form-group">
+                    <label className="premium-label">Hourly Overtime Rate ({currency})</label>
+                    <input 
+                      type="number" 
+                      value={overtimeRate} 
+                      onChange={(e) => setOvertimeRate(Number(e.target.value) || 0)} 
+                      className="premium-input" 
+                    />
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
                   <button 
                     onClick={handleProcessSinglePayslip}
@@ -459,16 +602,30 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                   <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+{cSymbol}{bonus}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Provident Fund (PF 12%):</span>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Overtime Earnings:</span>
+                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+{cSymbol}{overtimePay}</span>
+                </div>
+                {reimbursementAmount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Approved Reimbursements:</span>
+                    <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+{cSymbol}{reimbursementAmount}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Provident Fund (PF {pfPercent}%):</span>
                   <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{pf}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>State Insurance (ESI 1.75%):</span>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>State Insurance (ESI {esiPercent}%):</span>
                   <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{esi}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Tax Deductions (TDS 15%):</span>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Tax Deductions (TDS {tdsPercent}%):</span>
                   <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{tax}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Professional Tax (PT):</span>
+                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{profTax}</span>
                 </div>
               </div>
 
@@ -571,10 +728,6 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
             const details = getEmpPayrollDetails(emp);
             return acc + details.netSalary;
           }, 0);
-          const getEmployeePayrollStatus = (empId) => {
-            const record = payrollHistory.find(r => r.employeeId === empId && r.month === 'July' && r.year === 2026);
-            return record ? record.status : 'Pending';
-          };
 
           return (
             <motion.div
@@ -688,7 +841,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Briefcase size={13} /> Role</span>
                           </th>
                           <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Basic Salary</th>
-                          <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Deductions</th>
+                          <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Reimbursements</th>
                           <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Net Payable</th>
                           <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>Status</th>
                           <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)', textAlign: 'right' }}>Actions</th>
@@ -733,9 +886,9 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                                 {cSymbol}{Math.round(details.basic).toLocaleString()}
                               </td>
 
-                              {/* Deductions */}
-                              <td className="number-font" style={{ color: '#ef4444' }}>
-                                -{cSymbol}{Math.round(details.deductions).toLocaleString()}
+                              {/* Reimbursements */}
+                              <td className="number-font" style={{ color: 'var(--color-success)', fontWeight: 600 }}>
+                                +{cSymbol}{details.reimbursements.toLocaleString()}
                               </td>
 
                               {/* Net Payable */}
@@ -874,8 +1027,12 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                           <span style={{ color: 'var(--color-text-secondary)' }}>House Rent Allowance (HRA - {hraPercent}%):</span>
                           <strong className="number-font">{cSymbol}{Math.round(details.hra).toLocaleString()}</strong>
                         </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-success)' }}>
+                          <span>Reimbursements Claims:</span>
+                          <strong className="number-font">+{cSymbol}{details.reimbursements.toLocaleString()}</strong>
+                        </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444' }}>
-                          <span>Total Deductions (PF/ESI/Tax):</span>
+                          <span>Total Deductions (PF/ESI/Tax/PT):</span>
                           <strong className="number-font">-{cSymbol}{Math.round(details.deductions).toLocaleString()}</strong>
                         </div>
                         <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem' }}>
@@ -925,7 +1082,8 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                 <thead>
                   <tr>
                     <th>Slip ID</th>
-                    <th>Payment Date</th>
+                    <th>Payment Period / Name</th>
+                    <th>Type</th>
                     <th>Net Amount</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Action</th>
@@ -936,6 +1094,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                     <tr key={slip.id}>
                       <td style={{ fontWeight: 700 }}>{slip.id}</td>
                       <td style={{ fontSize: '0.8rem' }}>{slip.month} {slip.year} - {slip.employeeName}</td>
+                      <td style={{ fontSize: '0.8rem', fontWeight: 600 }}>{slip.type || 'Regular'}</td>
                       <td className="number-font" style={{ fontSize: '0.85rem' }}>{cSymbol}{slip.netSalary?.toLocaleString()}</td>
                       <td><span className="badge badge-success">{slip.status}</span></td>
                       <td style={{ textAlign: 'right' }}>
@@ -950,7 +1109,6 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                               const deductionsVal = Number(slip.deductions || 0);
                               const netVal = Number(slip.netSalary || 0);
                               
-                              // Calculate PF/ESI/TDS values for details display
                               const pfVal = Math.round(basicVal * 0.12);
                               const esiVal = Math.round(basicVal * 0.0175);
                               const taxVal = Math.round((basicVal + hraVal + allowancesVal) * 0.15);
@@ -964,9 +1122,12 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                                   basic: basicVal,
                                   hra: hraVal,
                                   allowances: allowancesVal,
+                                  overtime: slip.overtime || 0,
+                                  reimbursement: slip.reimbursements || 0,
                                   pf: pfVal,
                                   esi: esiVal,
                                   tax: taxVal,
+                                  profTax: slip.profTax || 0,
                                   deductions: deductionsVal,
                                   netSalary: netVal,
                                   currency: currency
@@ -1035,6 +1196,15 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
                   className="premium-input" 
                 />
               </div>
+              <div style={{ padding: 18, border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span className="premium-label" style={{ fontSize: '0.65rem' }}>Professional Tax (Flat PT)</span>
+                <input 
+                  type="number" 
+                  value={profTax} 
+                  onChange={(e) => setProfTax(Number(e.target.value) || 0)} 
+                  className="premium-input" 
+                />
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
@@ -1053,30 +1223,188 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             className="premium-card"
-            style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 16 }}
+            style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}
           >
-            <div style={{
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              background: 'var(--color-primary-light)',
-              color: 'var(--color-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <DollarSign size={28} />
-            </div>
             <div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 8 }}>Reimbursements Gateway</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-tertiary)', maxWidth: 400, margin: '0 auto' }}>
-                All approved employee expense claims are queued directly into the current payroll cycle under the *Reimbursements* component.
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Reimbursements Gateway</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
+                Approved employee expense claims automatically queue directly into the current payroll run as tax-free reimbursements.
               </p>
+            </div>
+
+            <div className="premium-table-container">
+              <table className="premium-table">
+                <thead>
+                  <tr>
+                    <th>Claim ID</th>
+                    <th>Employee Name</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenses.filter(e => e.status === 'Approved').map(exp => (
+                    <tr key={exp.id}>
+                      <td style={{ fontWeight: 700 }}>#{exp.id}</td>
+                      <td>{exp.employeeName}</td>
+                      <td>{exp.category}</td>
+                      <td>{exp.description}</td>
+                      <td className="number-font" style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{cSymbol}{exp.amount}</td>
+                      <td>
+                        <span className="badge badge-success">Approved</span>
+                      </td>
+                    </tr>
+                  ))}
+                  {expenses.filter(e => e.status === 'Approved').length === 0 && (
+                    <tr><td colSpan="6" style={{ textAlign: 'center' }}>No approved reimbursement claims queued.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </motion.div>
         )}
 
-        {/* SUB-VIEW 7: Reports */}
+        {/* SUB-VIEW 7: F&F Settlement */}
+        {subTab === 'ff' && (
+          <motion.div
+            key="ff"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}
+          >
+            <div className="premium-card" style={{ padding: 24 }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Landmark size={18} style={{ color: 'var(--color-primary)' }} />
+                <span>Full & Final (F&F) Settlement</span>
+              </h3>
+
+              <form onSubmit={handleProcessFF} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="premium-form-group">
+                  <label className="premium-label">Resigning Employee</label>
+                  <select 
+                    value={ffEmpId} 
+                    onChange={(e) => setFfEmpId(e.target.value)}
+                    className="premium-input"
+                  >
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="premium-form-group">
+                  <label className="premium-label">Resignation/Relieving Date</label>
+                  <input 
+                    type="date" 
+                    required 
+                    value={resignationDate} 
+                    onChange={(e) => setResignationDate(e.target.value)}
+                    className="premium-input" 
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div className="premium-form-group">
+                    <label className="premium-label">Unpaid Salary Days</label>
+                    <input 
+                      type="number" 
+                      value={unpaidDays} 
+                      onChange={(e) => setUnpaidDays(Number(e.target.value) || 0)}
+                      className="premium-input" 
+                    />
+                  </div>
+                  <div className="premium-form-group">
+                    <label className="premium-label">Encashable Leave Days</label>
+                    <input 
+                      type="number" 
+                      value={leaveEncashmentDays} 
+                      onChange={(e) => setLeaveEncashmentDays(Number(e.target.value) || 0)}
+                      className="premium-input" 
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div className="premium-form-group">
+                    <label className="premium-label">Gratuity Amount ({currency})</label>
+                    <input 
+                      type="number" 
+                      value={gratuityAmount} 
+                      onChange={(e) => setGratuityAmount(Number(e.target.value) || 0)}
+                      className="premium-input" 
+                    />
+                  </div>
+                  <div className="premium-form-group">
+                    <label className="premium-label">Notice Period Buyout ({currency})</label>
+                    <input 
+                      type="number" 
+                      value={noticePeriodAllowance} 
+                      onChange={(e) => setNoticePeriodAllowance(Number(e.target.value) || 0)}
+                      className="premium-input" 
+                    />
+                  </div>
+                </div>
+
+                <div className="premium-form-group">
+                  <label className="premium-label">Other Deductions / Dues ({currency})</label>
+                  <input 
+                    type="number" 
+                    value={ffOtherDeductions} 
+                    onChange={(e) => setFfOtherDeductions(Number(e.target.value) || 0)}
+                    className="premium-input" 
+                  />
+                </div>
+
+                <button type="submit" className="premium-btn premium-btn-success" style={{ width: '100%', height: 42, justifyContent: 'center' }}>
+                  Disburse F&F Settlement
+                </button>
+              </form>
+            </div>
+
+            {/* F&F Summary Preview */}
+            <div className="premium-card" style={{ padding: 24 }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 16 }}>F&F Settlement Statement</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, borderBottom: '1px solid var(--color-border)', paddingBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Unpaid Working Salary ({unpaidDays} Days):</span>
+                  <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{unpaidSalaryAmount.toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Leave Encashment ({leaveEncashmentDays} Days):</span>
+                  <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{leaveEncashmentAmount.toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Gratuity Benefit:</span>
+                  <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{Number(gratuityAmount).toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>Notice Period Buyout:</span>
+                  <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{Number(noticePeriodAllowance).toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ef4444' }}>
+                  <span>Dues & Deductions:</span>
+                  <strong className="number-font">-{cSymbol}{Number(ffOtherDeductions).toLocaleString()}</strong>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16 }}>
+                <div>
+                  <span style={{ fontSize: '0.65rem' }} className="premium-label">Net Settlement Amount</span>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Includes taxes and standard benefits</p>
+                </div>
+                <h4 className="number-font" style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                  {cSymbol}{ffNetPayable.toLocaleString()}
+                </h4>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* SUB-VIEW 8: Reports */}
         {subTab === 'reports' && (
           <motion.div
             key="reports"
@@ -1100,16 +1428,40 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
             </div>
 
             <div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 8 }}>Export Payroll Sheets</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-tertiary)', maxWidth: 400, margin: '0 auto' }}>
-                Download statutory compliance documentation, ledger summaries, and tax forms (Form 16) in Excel.
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 8 }}>Export Payroll Sheets & Statutory Forms</h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-tertiary)', maxWidth: 400, margin: '0 auto', lineHeight: 1.6 }}>
+                Download Form 16 Tax Statement certificate or compile compliance excel return reports for the selected employee.
               </p>
             </div>
 
-            <button onClick={() => alert("Downloading payroll_annual_audit.xlsx")} className="premium-btn premium-btn-primary" style={{ padding: '12px 24px' }}>
-              <FileText size={16} />
-              <span>Download Payroll Reports</span>
-            </button>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={handleDownloadAnnualReports} className="premium-btn premium-btn-primary" style={{ padding: '12px 24px' }}>
+                <FileText size={16} />
+                <span>Download Form 16</span>
+              </button>
+              
+              <button 
+                onClick={() => {
+                  let csv = "ID,Employee Name,Month/Year,Base Pay,HRA,Allowances,Deductions,Overtime Pay,Reimbursements,Professional Tax,Net Paid,Type,Status\n";
+                  payrollHistory.forEach(slip => {
+                    csv += `"${slip.id}","${slip.employeeName}","${slip.month} ${slip.year}","${slip.basic}","${slip.hra}","${slip.allowances}","${slip.deductions}","${slip.overtime || 0}","${slip.reimbursements || 0}","${slip.profTax || 0}","${slip.netSalary}","${slip.type || 'Regular'}","${slip.status}"\n`;
+                  });
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", url);
+                  link.setAttribute("download", `HRMS_Payroll_Ledger_${new Date().toISOString().split('T')[0]}.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  alert("Payroll ledger export downloaded successfully!");
+                }} 
+                className="premium-btn premium-btn-secondary" 
+                style={{ padding: '12px 24px' }}
+              >
+                <span>Export Compliance Excel</span>
+              </button>
+            </div>
           </motion.div>
         )}
 
