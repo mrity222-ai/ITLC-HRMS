@@ -539,7 +539,8 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
         accountNumber: newAccountNumber,
         ifsc: newIfsc,
         reportingManager: newManager,
-        permissions: newPermissions
+        permissions: newPermissions,
+        password: newPassword || undefined
       });
 
       setEmployees(employees.map(emp => emp.id === editingEmployee.id ? updated : emp));
@@ -1590,6 +1591,23 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                     />
                     <span>Manage Document Vault</span>
                   </label>
+                </div>
+              </div>
+
+              {/* SECTION F: Account Security */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: 700, borderBottom: '1px solid var(--color-border)', paddingBottom: 6 }}>Account Security</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+                  <div className="premium-form-group">
+                    <label className="premium-label">Change Password (Leave blank to keep current password)</label>
+                    <input 
+                      type="password" 
+                      value={newPassword} 
+                      onChange={(e) => setNewPassword(e.target.value)} 
+                      className="premium-input" 
+                      placeholder="Type a new password..." 
+                    />
+                  </div>
                 </div>
               </div>
 
