@@ -763,11 +763,11 @@ export const api = {
     });
     return handleResponse(res);
   },
-  async chooseSubscriptionPlan(planId: string) {
+  async chooseSubscriptionPlan(planId: string, currency?: string) {
     const res = await fetch(`${API_URL}/admin/company/choose-plan`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ planId })
+      body: JSON.stringify({ planId, currency })
     });
     return handleResponse(res);
   },

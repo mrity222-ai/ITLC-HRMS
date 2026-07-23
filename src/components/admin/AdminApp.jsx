@@ -78,6 +78,8 @@ export default function App({ onLogout, loggedInEmail }) {
     }
   }, [isMobile, activeTab]);
   const [company, setCompany] = useState(null);
+  const [plans, setPlans] = useState([]);
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
@@ -94,6 +96,14 @@ export default function App({ onLogout, loggedInEmail }) {
         const prof = await api.getProfile();
         const comp = await api.getAdminCompany();
         setCompany(comp);
+        if (comp && (comp.subscriptionPlanId === 'unselected' || comp.subscriptionPlanId === 'none')) {
+          try {
+            const fetchedPlans = await api.getAdminPlans();
+            setPlans(fetchedPlans || []);
+          } catch (err) {
+            console.error("Failed to load active subscription plans:", err);
+          }
+        }
         setProfile({
           name: prof.name,
           role: prof.role,
@@ -421,7 +431,7 @@ export default function App({ onLogout, loggedInEmail }) {
 
   const handleSelectPlan = async (planId) => {
     try {
-      const result = await api.chooseSubscriptionPlan(planId);
+      const result = await api.chooseSubscriptionPlan(planId, selectedCurrency);
       if (result.success) {
         alert(`Congratulations! You have successfully subscribed to the ${planId.toUpperCase()} plan.`);
         window.location.reload();
@@ -440,88 +450,71 @@ export default function App({ onLogout, loggedInEmail }) {
               Welcome to ITLC HRMS Workspace!
             </h2>
             <p style={{ marginTop: 12, fontSize: '1.1rem', opacity: 0.8 }}>
-              Select a subscription plan to unlock your portal features and initialize your dashboard.
+              Select your currency and select a subscription plan to unlock your workspace.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginTop: 16 }}>
-            {/* Free Trial Plan */}
-            <div className="premium-card" style={{ display: 'flex', flexDirection: 'column', padding: 32, textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: 24, background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Free Trial</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-tertiary)', marginTop: 8 }}>Perfect to explore basic workflows</p>
-              <div style={{ marginTop: 16, display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
-                <span style={{ fontSize: '3rem', fontWeight: 800 }}>$0</span>
-                <span style={{ fontSize: '1.2rem', color: 'var(--color-text-tertiary)', marginLeft: 4 }}>/mo</span>
-              </div>
-              <ul style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.85rem', textAlign: 'left', listStyle: 'none', padding: 0 }}>
-                <li>🟢 Limit: Up to 10 Employees</li>
-                <li>🟢 Storage: 2 GB Limits</li>
-                <li>🟢 Basic Attendance Logs & Profiles</li>
-                <li style={{ opacity: 0.5, textDecoration: 'line-through' }}>❌ Payroll & Payslips</li>
-                <li style={{ opacity: 0.5, textDecoration: 'line-through' }}>❌ Custom Salary Components</li>
-                <li style={{ opacity: 0.5, textDecoration: 'line-through' }}>❌ Expense Reimbursements</li>
-              </ul>
-              <button 
-                onClick={() => handleSelectPlan('free_trial')}
-                className="premium-btn premium-btn-secondary"
-                style={{ marginTop: 'auto', paddingTop: 12, paddingBottom: 12, borderRadius: 12, fontWeight: 700 }}
-              >
-                Choose Trial
-              </button>
-            </div>
+          {/* Currency Selector Row */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: '0.95rem', fontWeight: 700 }}>Choose System Currency:</span>
+            <select 
+              value={selectedCurrency} 
+              onChange={(e) => setSelectedCurrency(e.target.value)}
+              className="premium-input"
+              style={{ width: '150px', padding: '8px 14px', borderRadius: '8px' }}
+            >
+              <option value="USD">USD ($)</option>
+              <option value="INR">INR (₹)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+            </select>
+          </div>
 
-            {/* Starter Plan */}
-            <div className="premium-card" style={{ display: 'flex', flexDirection: 'column', padding: 32, textAlign: 'center', border: '2px solid var(--color-primary)', borderRadius: 24, background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--color-primary)', color: 'white', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', padding: '6px 16px', borderRadius: '0 20px 0 12px' }}>
-                Popular
-              </div>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Starter Plan</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-tertiary)', marginTop: 8 }}>Best for growing small businesses</p>
-              <div style={{ marginTop: 16, display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
-                <span style={{ fontSize: '3rem', fontWeight: 800 }}>$49</span>
-                <span style={{ fontSize: '1.2rem', color: 'var(--color-text-tertiary)', marginLeft: 4 }}>/mo</span>
-              </div>
-              <ul style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.85rem', textAlign: 'left', listStyle: 'none', padding: 0 }}>
-                <li>🟢 Limit: Up to 50 Employees</li>
-                <li>🟢 Storage: 10 GB Limits</li>
-                <li>🟢 Regular Payroll & Payslips</li>
-                <li>🟢 Daily Logs & Corrections</li>
-                <li style={{ opacity: 0.5, textDecoration: 'line-through' }}>❌ Custom Salary Components</li>
-                <li style={{ opacity: 0.5, textDecoration: 'line-through' }}>❌ Expense Reimbursements</li>
-              </ul>
-              <button 
-                onClick={() => handleSelectPlan('starter')}
-                className="premium-btn premium-btn-primary"
-                style={{ marginTop: 'auto', paddingTop: 12, paddingBottom: 12, borderRadius: 12, fontWeight: 700 }}
-              >
-                Choose Starter
-              </button>
-            </div>
-
-            {/* Enterprise Plan */}
-            <div className="premium-card" style={{ display: 'flex', flexDirection: 'column', padding: 32, textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: 24, background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Enterprise Plan</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-tertiary)', marginTop: 8 }}>Unlimited power & tools</p>
-              <div style={{ marginTop: 16, display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
-                <span style={{ fontSize: '3rem', fontWeight: 800 }}>$499</span>
-                <span style={{ fontSize: '1.2rem', color: 'var(--color-text-tertiary)', marginLeft: 4 }}>/mo</span>
-              </div>
-              <ul style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.85rem', textAlign: 'left', listStyle: 'none', padding: 0 }}>
-                <li>🟢 Limit: Unlimited Employees</li>
-                <li>🟢 Storage: 1 TB Limit</li>
-                <li>🟢 Full & Final (F&F) Settlement</li>
-                <li>🟢 Custom Salary Components</li>
-                <li>🟢 Expense Reimbursement Gateway</li>
-                <li>🟢 CSV Directory & Logs Upload</li>
-              </ul>
-              <button 
-                onClick={() => handleSelectPlan('enterprise')}
-                className="premium-btn premium-btn-primary"
-                style={{ marginTop: 'auto', paddingTop: 12, paddingBottom: 12, borderRadius: 12, fontWeight: 700, background: '#0f172a', borderColor: '#0f172a' }}
-              >
-                Choose Enterprise
-              </button>
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginTop: 16 }}>
+            {plans.map((p) => {
+              let features = {};
+              if (typeof p.features === 'string') {
+                try { features = JSON.parse(p.features); } catch (e) {}
+              } else if (p.features && typeof p.features === 'object') {
+                features = p.features;
+              }
+              const isPopular = p.id === 'starter' || p.id === 'professional';
+              return (
+                <div key={p.id} className="premium-card" style={{ display: 'flex', flexDirection: 'column', padding: 32, textAlign: 'center', border: isPopular ? '2px solid var(--color-primary)' : '1px solid var(--color-border)', borderRadius: 24, background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', position: 'relative' }}>
+                  {isPopular && (
+                    <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--color-primary)', color: 'white', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', padding: '6px 16px', borderRadius: '0 20px 0 12px' }}>
+                      Popular
+                    </div>
+                  )}
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>{p.name}</h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-tertiary)', marginTop: 8 }}>
+                    {p.id === 'free_trial' ? 'Explore basic workflows' : p.id === 'starter' ? 'Best for growing startups' : 'Complete power & enterprise tools'}
+                  </p>
+                  <div style={{ marginTop: 16, display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '3rem', fontWeight: 800 }}>
+                      {selectedCurrency === 'INR' ? '₹' : selectedCurrency === 'EUR' ? '€' : selectedCurrency === 'GBP' ? '£' : '$'}
+                      {Math.round(selectedCurrency === 'INR' ? p.price * 83 : p.price).toLocaleString()}
+                    </span>
+                    <span style={{ fontSize: '1.2rem', color: 'var(--color-text-tertiary)', marginLeft: 4 }}>/mo</span>
+                  </div>
+                  <ul style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12, fontSize: '0.85rem', textAlign: 'left', listStyle: 'none', padding: 0 }}>
+                    <li>🟢 Limit: {p.employeeLimit >= 99999 ? 'Unlimited' : `${p.employeeLimit} Employees`}</li>
+                    <li>🟢 Storage: {p.storageLimit} GB Limit</li>
+                    <li>{features.payroll ? '🟢 Monthly Payroll & Payslips' : '❌ Payroll & Payslips'}</li>
+                    <li>{features.attendance ? '🟢 Check-in Logs & Corrections' : '❌ Check-in Logs'}</li>
+                    <li>{features.recruitment ? '🟢 Recruitment & Interview Wizard' : '❌ Recruitment Panel'}</li>
+                    <li>{features.faceRecognition || features.gpsAttendance ? '🟢 Face ID & GPS Coordinates Check' : '❌ Geofenced/Biometric Attendance'}</li>
+                  </ul>
+                  <button 
+                    onClick={() => handleSelectPlan(p.id)}
+                    className={isPopular ? 'premium-btn premium-btn-primary' : 'premium-btn premium-btn-secondary'}
+                    style={{ marginTop: 'auto', paddingTop: 12, paddingBottom: 12, borderRadius: 12, fontWeight: 700 }}
+                  >
+                    Select {p.name}
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           <div style={{ marginTop: 16 }}>
