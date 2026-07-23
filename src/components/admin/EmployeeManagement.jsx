@@ -396,6 +396,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [generatedEmpCredentials, setGeneratedEmpCredentials] = useState(null);
+  const [importedCredentials, setImportedCredentials] = useState([]);
   const [newRole, setNewRole] = useState('');
   const [newSystemRole, setNewSystemRole] = useState('Employee');
   const [newDept, setNewDept] = useState('Engineering');
@@ -697,7 +698,8 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
             });
             updatedCount++;
           } else {
-            await api.createEmployee({
+            const passStr = 'Pass_' + Math.floor(1000 + Math.random() * 9000);
+            const created = await api.createEmployee({
               id: data.id || undefined,
               name: data.name,
               email: data.email,
@@ -708,7 +710,17 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
               phone: data.phone || '',
               joiningDate: data.joiningdate || data["joining date"] || new Date().toISOString().split('T')[0],
               reportingManager: data.reportingmanager || data["reporting manager"] || 'None',
-              password: 'Pass_' + Math.floor(1000 + Math.random() * 9000)
+              password: passStr
+            });
+            
+            const finalId = created?.employee?.id || data.id || 'Generated';
+            const finalPass = created?.generatedPassword || passStr;
+
+            newCredentials.push({
+              name: data.name,
+              email: data.email,
+              id: finalId,
+              password: finalPass
             });
             createdCount++;
           }
@@ -722,6 +734,10 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
         setEmployees(list);
       } catch (err) {}
 
+      if (newCredentials.length > 0) {
+        setImportedCredentials(newCredentials);
+      }
+
       let statusMsg = `CSV Import Done:\n- Onboarded ${createdCount} new employees.\n- Corrected/updated ${updatedCount} existing employee records.`;
       if (errors.length > 0) {
         statusMsg += `\n\nErrors encountered:\n` + errors.slice(0, 5).join('\n');
@@ -731,6 +747,26 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
 
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const handleCopyAllLogins = () => {
+    const text = importedCredentials.map(c => `Name: ${c.name}\nEmail: ${c.email}\nEmployee ID: ${c.id}\nPassword: ${c.password}\n-------------------`).join('\n');
+    navigator.clipboard.writeText(text);
+    alert("All generated logins copied to clipboard!");
+  };
+
+  const handleDownloadLoginsCSV = () => {
+    const headers = ["Name", "Email", "Employee ID", "Password"];
+    const rows = importedCredentials.map(c => [c.name, c.email, c.id, c.password]);
+    const csvContent = [headers.join(","), ...rows.map(r => r.map(val => `"${val.replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `onboarded_employee_logins_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -2461,6 +2497,95 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                   onClick={() => setGeneratedEmpCredentials(null)}
                   className="px-4 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition shadow border border-indigo-700 cursor-pointer"
                   style={{ cursor: 'pointer', background: '#4f46e5', border: 'none', color: '#fff', padding: '6px 14px', borderRadius: '8px', fontWeight: 700 }}
+                >
+                  Dismiss / Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* CSV Imported Employee Credentials Popup Modal */}
+      <AnimatePresence>
+        {importedCredentials && importedCredentials.length > 0 && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="glass-card w-full max-w-2xl p-6 rounded-2xl space-y-5 relative overflow-hidden"
+              style={{ background: 'var(--header-bg, #0f172a)', color: '#fff', border: '1px solid var(--color-border, #334155)', borderRadius: '24px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: '16px' }}
+            >
+              <div className="absolute top-0 right-0 h-32 w-32 bg-emerald-500/10 blur-2xl pointer-events-none"></div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="flex items-center gap-3 text-emerald-400">
+                  <h3 className="text-lg font-bold text-white font-sans" style={{ margin: 0 }}>Onboarded Employee Logins ({importedCredentials.length})</h3>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed font-sans" style={{ margin: 0 }}>
+                Unique IDs and passwords have been automatically generated for all newly imported employees. Use the controls below to copy or export them.
+              </p>
+
+              <div style={{ flex: 1, overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '12px', background: 'rgba(255,255,255,0.01)' }} className="premium-scrollbar">
+                <table className="premium-table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem' }}>Name</th>
+                      <th style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem' }}>Email</th>
+                      <th style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem' }}>Employee ID</th>
+                      <th style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem' }}>Password</th>
+                      <th style={{ textAlign: 'right', color: 'var(--color-text-secondary)', fontSize: '0.75rem' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importedCredentials.map((c, index) => (
+                      <tr key={index}>
+                        <td style={{ fontWeight: 600, fontSize: '0.8rem' }}>{c.name}</td>
+                        <td style={{ fontSize: '0.8rem' }}>{c.email}</td>
+                        <td className="number-font" style={{ fontSize: '0.8rem', color: 'var(--color-accent)' }}>{c.id}</td>
+                        <td className="number-font" style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: 'bold' }}>{c.password}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`ID: ${c.id}\nPassword: ${c.password}`);
+                              alert(`${c.name}'s login credentials copied to clipboard!`);
+                            }}
+                            className="premium-btn premium-btn-secondary"
+                            style={{ padding: '4px 10px', fontSize: '0.7rem' }}
+                          >
+                            Copy
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={handleCopyAllLogins}
+                    className="premium-btn premium-btn-secondary"
+                    style={{ padding: '8px 14px', fontSize: '0.75rem' }}
+                  >
+                    Copy All Logins
+                  </button>
+                  <button
+                    onClick={handleDownloadLoginsCSV}
+                    className="premium-btn premium-btn-secondary"
+                    style={{ padding: '8px 14px', fontSize: '0.75rem' }}
+                  >
+                    Download Logins CSV
+                  </button>
+                </div>
+                <button
+                  onClick={() => setImportedCredentials([])}
+                  className="premium-btn premium-btn-primary"
+                  style={{ padding: '8px 18px', fontSize: '0.75rem' }}
                 >
                   Dismiss / Close
                 </button>
