@@ -397,6 +397,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   const [newPassword, setNewPassword] = useState('');
   const [generatedEmpCredentials, setGeneratedEmpCredentials] = useState(null);
   const [importedCredentials, setImportedCredentials] = useState([]);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
   const [newRole, setNewRole] = useState('');
   const [newSystemRole, setNewSystemRole] = useState('Employee');
   const [newDept, setNewDept] = useState('Engineering');
@@ -770,6 +771,37 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     document.body.removeChild(link);
   };
 
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedEmployeeIds(filteredEmployees.map(emp => emp.id));
+    } else {
+      setSelectedEmployeeIds([]);
+    }
+  };
+
+  const handleSelectEmployee = (id, checked) => {
+    if (checked) {
+      setSelectedEmployeeIds([...selectedEmployeeIds, id]);
+    } else {
+      setSelectedEmployeeIds(selectedEmployeeIds.filter(x => x !== id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedEmployeeIds.length === 0) return;
+    if (!window.confirm(`Kya aap sach me in ${selectedEmployeeIds.length} employees ko ek sath delete karna chahte hain? Ye action permanent hai.`)) {
+      return;
+    }
+    try {
+      await Promise.all(selectedEmployeeIds.map(id => api.deleteEmployee(id)));
+      setEmployees(employees.filter(emp => !selectedEmployeeIds.includes(emp.id)));
+      setSelectedEmployeeIds([]);
+      alert("Chune hue employees successfully delete ho gaye!");
+    } catch (err) {
+      alert("Kuch employees delete karne me error aayi: " + err.message);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <AnimatePresence mode="wait">
@@ -935,8 +967,48 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                   </button>
                 </div>
               </div>
-
             </div>
+
+             {/* Bulk Actions Panel */}
+             {selectedEmployeeIds.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  background: 'rgba(239, 68, 68, 0.08)', 
+                  border: '1px solid rgba(239, 68, 68, 0.25)', 
+                  borderRadius: '12px', 
+                  padding: '12px 20px',
+                  marginBottom: '16px' 
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f87171' }}>
+                    ⚡ Bulk Actions: {selectedEmployeeIds.length} Employee(s) Selected
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button 
+                    onClick={() => setSelectedEmployeeIds([])}
+                    className="premium-btn premium-btn-secondary"
+                    style={{ padding: '6px 14px', fontSize: '0.75rem' }}
+                  >
+                    Clear Selection
+                  </button>
+                  <button 
+                    onClick={handleBulkDelete}
+                    className="premium-btn"
+                    style={{ padding: '6px 16px', fontSize: '0.75rem', background: '#ef4444', border: '1px solid #dc2626', color: '#fff' }}
+                  >
+                    <Trash2 size={13} style={{ marginRight: 4 }} />
+                    Delete Selected
+                  </button>
+                </div>
+              </motion.div>
+            )}
 
             {/* Employee Table matching user upload design */}
             <div style={{ maxHeight: '650px', overflowY: 'auto', paddingBottom: '16px', background: 'var(--glass-bg)', borderRadius: '16px', border: '1px solid var(--color-border)' }} className="premium-scrollbar">
@@ -944,6 +1016,14 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                 <table className="premium-table">
                   <thead>
                     <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--color-border)' }}>
+                      <th style={{ padding: '14px 16px', width: '40px', textAlign: 'center' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={filteredEmployees.length > 0 && selectedEmployeeIds.length === filteredEmployees.length}
+                          onChange={handleSelectAll}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </th>
                       <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}># ID</th>
                       <th style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><User size={13} /> Name</span>
@@ -973,8 +1053,18 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                         <tr 
                           key={emp.id} 
                           onClick={() => { setSelectedProfile(emp); setViewMode('profile'); }}
-                          style={{ cursor: 'pointer' }}
+                          style={{ cursor: 'pointer', background: selectedEmployeeIds.includes(emp.id) ? 'rgba(239, 68, 68, 0.03)' : 'transparent' }}
                         >
+                          {/* Selection Checkbox */}
+                          <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                            <input 
+                              type="checkbox" 
+                              checked={selectedEmployeeIds.includes(emp.id)}
+                              onChange={(e) => handleSelectEmployee(emp.id, e.target.checked)}
+                              style={{ cursor: 'pointer' }}
+                            />
+                          </td>
+
                           {/* ID */}
                           <td style={{ fontWeight: 700 }} className="number-font">
                             #{emp.id}
