@@ -126,9 +126,36 @@ const menuItems = [
   { id: 'support', label: 'Support', icon: HeartHandshake },
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, handleLogout, mobileOpen, setMobileOpen, companyName, companyLogo, featureFlags = {} }) {
+export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, handleLogout, mobileOpen, setMobileOpen, companyName, companyLogo, featureFlags = {}, subscriptionPlanId }) {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [isMobile, setIsMobile] = useState(false);
+
+  const isLocked = (itemId) => {
+    if (!subscriptionPlanId) return false;
+    const plan = subscriptionPlanId.toLowerCase();
+    if (plan === 'enterprise' || plan === 'business') return false;
+
+    if (plan === 'free_trial' || plan === 'trial' || plan === 'starter' || plan === 'none' || plan === 'unselected') {
+      if (['recruitment', 'performance', 'training'].includes(itemId)) return true;
+    }
+    if (plan === 'free_trial' || plan === 'trial' || plan === 'none' || plan === 'unselected') {
+      if (['payroll', 'expenses'].includes(itemId)) return true;
+    }
+    return false;
+  };
+
+  const isSubItemLocked = (itemId, subItemId) => {
+    if (!subscriptionPlanId) return false;
+    const plan = subscriptionPlanId.toLowerCase();
+    if (plan === 'enterprise' || plan === 'business') return false;
+
+    if (itemId === 'payroll') {
+      if (plan === 'starter' || plan === 'free_trial' || plan === 'trial' || plan === 'unselected') {
+        return ['payroll-structures', 'payroll-compliance'].includes(subItemId);
+      }
+    }
+    return false;
+  };
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 768px)');
@@ -295,7 +322,13 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
             return (
               <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <button
-                  onClick={() => toggleMenu(item.id)}
+                  onClick={() => {
+                    if (isLocked(item.id)) {
+                      alert(`🔒 FEATURE LOCKED\nThe "${item.label}" module is not included in your current subscription plan (${subscriptionPlanId}). Please upgrade your plan under "Subscription & Billing" to unlock this feature.`);
+                      return;
+                    }
+                    toggleMenu(item.id);
+                  }}
                   style={{
                     position: 'relative',
                     display: 'flex',
@@ -321,8 +354,10 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                       >
-                        {item.label}
+                        <span>{item.label}</span>
+                        {isLocked(item.id) && <span style={{ fontSize: '0.7rem' }}>🔒</span>}
                       </motion.span>
                     )}
                   </div>
@@ -353,10 +388,17 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
                     >
                       {item.subItems.map((sub) => {
                         const isSubActive = activeTab === sub.id;
+                        const subLocked = isSubItemLocked(item.id, sub.id);
                         return (
                           <button
                             key={sub.id}
-                            onClick={() => handleItemClick(sub.id)}
+                            onClick={() => {
+                              if (subLocked) {
+                                alert(`🔒 FEATURE LOCKED\nThe "${sub.label}" feature is locked under your current subscription plan (${subscriptionPlanId}). Please upgrade your plan to unlock.`);
+                                return;
+                              }
+                              handleItemClick(sub.id);
+                            }}
                             style={{
                               padding: '8px 12px',
                               borderRadius: 8,
@@ -369,10 +411,15 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
                               fontWeight: isSubActive ? 700 : 500,
                               fontSize: '14px',
                               outline: 'none',
-                              transition: 'all 0.15s ease'
+                              transition: 'all 0.15s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              opacity: subLocked ? 0.65 : 1
                             }}
                           >
-                            {sub.label}
+                            <span>{sub.label}</span>
+                            {subLocked && <span style={{ fontSize: '0.7rem' }}>🔒</span>}
                           </button>
                         );
                       })}
@@ -386,10 +433,17 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
           // Render normal root items
           const Icon = item.icon;
           const isActive = activeTab === item.id;
+          const locked = isLocked(item.id);
           return (
             <button
               key={item.id}
-              onClick={() => handleItemClick(item.id)}
+              onClick={() => {
+                if (locked) {
+                  alert(`🔒 FEATURE LOCKED\nThe "${item.label}" module is not included in your current subscription plan (${subscriptionPlanId}). Please upgrade your plan under "Subscription & Billing" to unlock this feature.`);
+                  return;
+                }
+                handleItemClick(item.id);
+              }}
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -406,7 +460,8 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
                 fontWeight: 600,
                 fontSize: '16px',
                 transition: 'color 0.2s ease',
-                outline: 'none'
+                outline: 'none',
+                opacity: locked ? 0.65 : 1
               }}
             >
               {/* Active Tab Glow / Pill Indicator */}
@@ -436,8 +491,10 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                 >
-                  {item.label}
+                  <span>{item.label}</span>
+                  {locked && <span style={{ fontSize: '0.7rem' }}>🔒</span>}
                 </motion.span>
               )}
             </button>
