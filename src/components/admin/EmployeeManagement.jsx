@@ -913,6 +913,13 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleImportCSV} 
+                    accept=".csv" 
+                    style={{ display: 'none' }} 
+                  />
                   <button onClick={handleImport} className="premium-btn premium-btn-secondary" style={{ padding: '8px 14px' }}>
                     <Upload size={14} />
                     <span>Import</span>
