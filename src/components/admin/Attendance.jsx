@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Square, Calendar, Clock, UserCheck, AlertTriangle, 
-  MapPin, CheckCircle, FileSpreadsheet, List, Table, User, ShieldAlert, Sliders, FileText, LogOut, Pencil
+  MapPin, CheckCircle, FileSpreadsheet, List, Table, User, ShieldAlert, Sliders, FileText, LogOut, Pencil, Upload, Download
 } from 'lucide-react';
 
 const shiftSchedule = [
@@ -33,6 +33,7 @@ const mockDailyLogs = [
 import { api } from '../../services/api';
 
 export default function Attendance({ subTab = 'dashboard' }) {
+  const attendanceFileInputRef = React.useRef(null);
   const [punchedIn, setPunchedIn] = useState(false);
   const [punchTime, setPunchTime] = useState(null);
   const [workDuration, setWorkDuration] = useState('00:00:00');
@@ -286,6 +287,89 @@ export default function Attendance({ subTab = 'dashboard' }) {
     document.body.removeChild(link);
   };
 
+  const handleImportAttendance = () => {
+    attendanceFileInputRef.current?.click();
+  };
+
+  const handleImportAttendanceCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result;
+      if (typeof text !== 'string') return;
+
+      const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      if (lines.length <= 1) return alert("Empty or invalid CSV file.");
+
+      // Parse headers
+      const rawHeaders = lines[0].split(',').map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+      
+      let createdCount = 0;
+      let errors = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = [];
+        let inQuotes = false;
+        let currentValue = '';
+        const lineText = lines[i];
+
+        for (let j = 0; j < lineText.length; j++) {
+          const char = lineText[j];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            row.push(currentValue.replace(/^["']|["']$/g, '').trim());
+            currentValue = '';
+          } else {
+            currentValue += char;
+          }
+        }
+        row.push(currentValue.replace(/^["']|["']$/g, '').trim());
+
+        const data = {};
+        rawHeaders.forEach((header, index) => {
+          data[header] = row[index] || '';
+        });
+
+        // Ensure key fields: employeeid or "employee id", name/employeename, date
+        const empId = data.employeeid || data["employee id"] || data.empid || data["emp id"];
+        const empName = data.employeename || data["employee name"] || data.name || `Employee ${empId}`;
+        const date = data.date;
+
+        if (!empId || !date) continue;
+
+        try {
+          await api.createAdminAttendance({
+            employeeId: empId.toString(),
+            employeeName: empName,
+            date: date,
+            checkIn: data.checkin || data["check-in"] || data["check in"] || '09:00:00',
+            checkOut: data.checkout || data["check-out"] || data["check out"] || '18:00:00',
+            breakDuration: data.breakduration || data["break duration"] || '00:00:00',
+            workHours: data.workhours || data["work hours"] || '08:00:00',
+            status: data.status || 'Present'
+          });
+          createdCount++;
+        } catch (err) {
+          errors.push(`Row ${i + 1} (${empName || empId}): ${err.message}`);
+        }
+      }
+
+      fetchLogs(false);
+
+      let statusMsg = `Attendance CSV Import Done:\n- Processed ${createdCount} attendance logs.`;
+      if (errors.length > 0) {
+        statusMsg += `\n\nErrors encountered:\n` + errors.slice(0, 5).join('\n');
+      }
+      alert(statusMsg);
+    };
+
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       
@@ -408,10 +492,27 @@ export default function Attendance({ subTab = 'dashboard' }) {
             className="premium-card"
             style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Daily Login Logs</h3>
                 <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Live check-in times of all employees</span>
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input 
+                  type="file" 
+                  ref={attendanceFileInputRef} 
+                  onChange={handleImportAttendanceCSV} 
+                  accept=".csv" 
+                  style={{ display: 'none' }} 
+                />
+                <button onClick={exportAttendance} className="premium-btn premium-btn-secondary" style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Download size={14} />
+                  <span>Export Logs</span>
+                </button>
+                <button onClick={handleImportAttendance} className="premium-btn premium-btn-primary" style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Upload size={14} />
+                  <span>Import Attendance</span>
+                </button>
               </div>
             </div>
 

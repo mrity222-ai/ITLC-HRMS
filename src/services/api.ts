@@ -1380,6 +1380,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  async createAdminAttendance(data: any) {
+    const res = await fetch(`${API_URL}/admin/attendance`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   async getSuperOwnerCompanyEmployees(companyId: string) {
     const res = await fetch(`${API_URL}/superowner/companies/${companyId}/employees`, {
       method: 'GET',

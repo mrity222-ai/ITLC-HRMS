@@ -389,6 +389,8 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     loadDepartments();
   }, []);
 
+  const fileInputRef = React.useRef(null);
+
   // Form variables
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -598,11 +600,137 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   };
 
   const handleExport = () => {
-    alert("Exporting CSV file: employee_records_july2026.csv downloaded successfully!");
+    if (employees.length === 0) return alert("No employees to export.");
+    const headers = ["ID", "Name", "Email", "Role", "Department", "Salary", "Phone", "Joining Date", "Status", "Reporting Manager"];
+    const rows = employees.map(emp => [
+      emp.id || '',
+      emp.name || '',
+      emp.email || '',
+      emp.designation || emp.role || '',
+      emp.department || '',
+      emp.salary || '',
+      emp.phone || '',
+      emp.joiningDate || '',
+      emp.status || '',
+      emp.reportingManager || ''
+    ]);
+    
+    const csvContent = [headers.join(","), ...rows.map(e => e.map(val => `"${val.toString().replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `employee_directory_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleImport = () => {
-    alert("CSV File Import simulated. 5 records appended to database!");
+    fileInputRef.current?.click();
+  };
+
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result;
+      if (typeof text !== 'string') return;
+
+      const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      if (lines.length <= 1) return alert("Empty or invalid CSV file.");
+
+      // Parse headers
+      const rawHeaders = lines[0].split(',').map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+      
+      let createdCount = 0;
+      let updatedCount = 0;
+      let errors = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = [];
+        let inQuotes = false;
+        let currentValue = '';
+        const lineText = lines[i];
+
+        for (let j = 0; j < lineText.length; j++) {
+          const char = lineText[j];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            row.push(currentValue.replace(/^["']|["']$/g, '').trim());
+            currentValue = '';
+          } else {
+            currentValue += char;
+          }
+        }
+        row.push(currentValue.replace(/^["']|["']$/g, '').trim());
+
+        const data = {};
+        rawHeaders.forEach((header, index) => {
+          data[header] = row[index] || '';
+        });
+
+        const email = data.email;
+        const name = data.name;
+        if (!email || !name) continue;
+
+        const existing = employees.find(emp => 
+          (data.id && emp.id.toString() === data.id.toString()) || 
+          (emp.email.toLowerCase() === email.toLowerCase())
+        );
+
+        try {
+          if (existing) {
+            const updated = await api.updateEmployee(existing.id, {
+              name: data.name || existing.name,
+              role: data.role || existing.role,
+              designation: data.designation || data.role || existing.designation,
+              department: data.department || existing.department,
+              salary: data.salary || existing.salary,
+              phone: data.phone || existing.phone,
+              joiningDate: data.joiningdate || data["joining date"] || existing.joiningDate,
+              status: data.status || existing.status,
+              reportingManager: data.reportingmanager || data["reporting manager"] || existing.reportingManager
+            });
+            updatedCount++;
+          } else {
+            await api.createEmployee({
+              id: data.id || undefined,
+              name: data.name,
+              email: data.email,
+              role: data.designation || data.role || 'Staff Member',
+              systemRole: data.role || 'Employee',
+              department: data.department || 'Engineering',
+              salary: data.salary || '$60,000',
+              phone: data.phone || '',
+              joiningDate: data.joiningdate || data["joining date"] || new Date().toISOString().split('T')[0],
+              reportingManager: data.reportingmanager || data["reporting manager"] || 'None',
+              password: 'Pass_' + Math.floor(1000 + Math.random() * 9000)
+            });
+            createdCount++;
+          }
+        } catch (err) {
+          errors.push(`Row ${i + 1} (${name}): ${err.message}`);
+        }
+      }
+
+      try {
+        const list = await api.getEmployees();
+        setEmployees(list);
+      } catch (err) {}
+
+      let statusMsg = `CSV Import Done:\n- Onboarded ${createdCount} new employees.\n- Corrected/updated ${updatedCount} existing employee records.`;
+      if (errors.length > 0) {
+        statusMsg += `\n\nErrors encountered:\n` + errors.slice(0, 5).join('\n');
+      }
+      alert(statusMsg);
+    };
+
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
