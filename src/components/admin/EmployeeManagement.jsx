@@ -403,7 +403,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   const [localSearch, setLocalSearch] = useState('');
   const [activeProfileTab, setActiveProfileTab] = useState('Personal Info');
   const [newDob, setNewDob] = useState('');
-  const [newJoiningDate, setNewJoiningDate] = useState('');
+  const [newJoiningDate, setNewJoiningDate] = useState(new Date().toISOString().split('T')[0]);
   const [newGender, setNewGender] = useState('Male');
   const [newAddress, setNewAddress] = useState('');
   const [newPrimaryContact, setNewPrimaryContact] = useState('');
@@ -465,6 +465,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
         department: showCustomDeptInput ? newCustomDept : newDept,
         salary: `${cSymbol}${newSalary || '75,000'}`,
         phone: newPhone || '+1 (555) 019-2834',
+        joiningDate: newJoiningDate || new Date().toISOString().split('T')[0],
         reportingManager: newManager,
         avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 900000)}?w=150&auto=format&fit=crop&q=80`,
         password: newPassword
@@ -576,7 +577,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     setNewPhone('');
     setNewSalary('');
     setNewDob('');
-    setNewJoiningDate('');
+    setNewJoiningDate(new Date().toISOString().split('T')[0]);
     setNewGender('Male');
     setNewAddress('');
     setNewPrimaryContact('');
@@ -1063,30 +1064,40 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-                <div className="premium-form-group">
-                  <label className="premium-label">Base Salary ({currency}/yr)</label>
-                  <input 
-                    type="number" 
-                    value={newSalary} 
-                    onChange={(e) => setNewSalary(e.target.value)} 
-                    className="premium-input" 
-                    placeholder="75000"
-                  />
-                </div>
-                <div className="premium-form-group">
-                  <label className="premium-label">Status</label>
-                  <select 
-                    value={newStatus} 
-                    onChange={(e) => setNewStatus(e.target.value)} 
-                    className="premium-input"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="On Leave">On Leave</option>
-                    <option value="Suspended">Suspended</option>
-                  </select>
-                </div>
-              </div>
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }}>
+                 <div className="premium-form-group">
+                   <label className="premium-label">Base Salary ({currency}/yr)</label>
+                   <input 
+                     type="number" 
+                     value={newSalary} 
+                     onChange={(e) => setNewSalary(e.target.value)} 
+                     className="premium-input" 
+                     placeholder="75000"
+                   />
+                 </div>
+                 <div className="premium-form-group">
+                   <label className="premium-label">Joining Date</label>
+                   <input 
+                     type="date" 
+                     required
+                     value={newJoiningDate} 
+                     onChange={(e) => setNewJoiningDate(e.target.value)} 
+                     className="premium-input" 
+                   />
+                 </div>
+                 <div className="premium-form-group">
+                   <label className="premium-label">Status</label>
+                   <select 
+                     value={newStatus} 
+                     onChange={(e) => setNewStatus(e.target.value)} 
+                     className="premium-input"
+                   >
+                     <option value="Active">Active</option>
+                     <option value="On Leave">On Leave</option>
+                     <option value="Suspended">Suspended</option>
+                   </select>
+                 </div>
+               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
                 <div className="premium-form-group">
@@ -1298,18 +1309,40 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                       </select>
                     )}
                   </div>
-                  <div className="premium-form-group">
-                    <label className="premium-label">Base Salary ({currency}/yr)</label>
-                    <input type="text" value={newSalary} onChange={(e) => setNewSalary(e.target.value)} className="premium-input" />
-                  </div>
-                  <div className="premium-form-group">
-                    <label className="premium-label">Status</label>
-                    <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="premium-input">
-                      <option value="Active">Active</option>
-                      <option value="On Leave">On Leave</option>
-                      <option value="Suspended">Suspended</option>
-                    </select>
-                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }}>
+                 <div className="premium-form-group">
+                   <label className="premium-label">Base Salary ({currency}/yr)</label>
+                   <input 
+                     type="number" 
+                     value={newSalary} 
+                     onChange={(e) => setNewSalary(e.target.value)} 
+                     className="premium-input" 
+                     placeholder="75000"
+                   />
+                 </div>
+                 <div className="premium-form-group">
+                   <label className="premium-label">Joining Date</label>
+                   <input 
+                     type="date" 
+                     required
+                     value={newJoiningDate} 
+                     onChange={(e) => setNewJoiningDate(e.target.value)} 
+                     className="premium-input" 
+                   />
+                 </div>
+                 <div className="premium-form-group">
+                   <label className="premium-label">Status</label>
+                   <select 
+                     value={newStatus} 
+                     onChange={(e) => setNewStatus(e.target.value)} 
+                     className="premium-input"
+                   >
+                     <option value="Active">Active</option>
+                     <option value="On Leave">On Leave</option>
+                     <option value="Suspended">Suspended</option>
+                   </select>
+                 </div>
+               </div>
                   <div className="premium-form-group">
                     <label className="premium-label">Reporting Manager</label>
                     <select value={newManager} onChange={(e) => setNewManager(e.target.value)} className="premium-input">
