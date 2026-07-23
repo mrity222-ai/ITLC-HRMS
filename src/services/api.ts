@@ -147,6 +147,49 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getAdminSalaryComponents() {
+    const res = await fetch(`${API_URL}/admin/salary-components?t=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createAdminSalaryComponent(data: any) {
+    const res = await fetch(`${API_URL}/admin/salary-components`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async updateAdminSalaryComponent(id: string | number, data: any) {
+    const res = await fetch(`${API_URL}/admin/salary-components/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async deleteAdminSalaryComponent(id: string | number) {
+    const res = await fetch(`${API_URL}/admin/salary-components/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async createAdminExpense(data: any) {
+    const res = await fetch(`${API_URL}/admin/expenses`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
   async getAdminAssets() {
     const res = await fetch(`${API_URL}/admin/assets?t=${new Date().getTime()}`, {
       method: 'GET',

@@ -58,6 +58,34 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const [editDeductions, setEditDeductions] = useState(0);
   const [editNetSalary, setEditNetSalary] = useState(0);
 
+  // Dynamic custom salary components states
+  const [customComponents, setCustomComponents] = useState([]);
+  const [showAddCompModal, setShowAddCompModal] = useState(false);
+  const [newCompName, setNewCompName] = useState('');
+  const [newCompType, setNewCompType] = useState('Earning');
+  const [newCompCalcType, setNewCompCalcType] = useState('Percentage');
+  const [newCompValue, setNewCompValue] = useState(0);
+
+  // Dynamic reimbursement expense claims states
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
+  const [newExpEmpId, setNewExpEmpId] = useState(employees[0]?.id || '');
+  const [newExpCategory, setNewExpCategory] = useState('Travel');
+  const [newExpDate, setNewExpDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newExpAmount, setNewExpAmount] = useState(0);
+  const [newExpReason, setNewExpReason] = useState('');
+
+  // Dynamic manual payslip states
+  const [showAddPayslipModal, setShowAddPayslipModal] = useState(false);
+  const [newSlipEmpId, setNewSlipEmpId] = useState(employees[0]?.id || '');
+  const [newSlipMonth, setNewSlipMonth] = useState('July');
+  const [newSlipYear, setNewSlipYear] = useState(2026);
+  const [newSlipBasic, setNewSlipBasic] = useState(3000);
+  const [newSlipHra, setNewSlipHra] = useState(1200);
+  const [newSlipAllowances, setNewSlipAllowances] = useState(500);
+  const [newSlipDeductions, setNewSlipDeductions] = useState(400);
+  const [newSlipNet, setNewSlipNet] = useState(4300);
+  const [newSlipType, setNewSlipType] = useState('Regular');
+
   const loadCompanyPayrollSettings = async () => {
     setLoadingCompany(true);
     try {
@@ -84,8 +112,10 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
       setPayrollHistory(history || []);
       const exps = await api.getAdminExpenses();
       setExpenses(exps || []);
+      const comps = await api.getAdminSalaryComponents();
+      setCustomComponents(comps || []);
     } catch (err) {
-      console.error("Failed to load payroll or expense data:", err);
+      console.error("Failed to load payroll, expense, or components data:", err);
     }
   };
 
@@ -161,6 +191,87 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     }
   };
 
+  const handleAddSalaryComponent = async (e) => {
+    e.preventDefault();
+    if (!newCompName.trim()) return alert("Please enter a valid component name.");
+    try {
+      await api.createAdminSalaryComponent({
+        name: newCompName,
+        type: newCompType,
+        calculationType: newCompCalcType,
+        value: Number(newCompValue) || 0
+      });
+      alert(`Component "${newCompName}" added successfully!`);
+      setNewCompName('');
+      setNewCompValue(0);
+      setShowAddCompModal(false);
+      fetchExpensesAndPayroll();
+    } catch (err) {
+      alert("Failed to add component.");
+    }
+  };
+
+  const handleDeleteSalaryComponent = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this component?")) return;
+    try {
+      await api.deleteAdminSalaryComponent(id);
+      alert("Component deleted successfully!");
+      fetchExpensesAndPayroll();
+    } catch (err) {
+      alert("Failed to delete component.");
+    }
+  };
+
+  const handleAddReimbursement = async (e) => {
+    e.preventDefault();
+    const targetEmp = employees.find(emp => emp.id.toString() === newExpEmpId.toString());
+    if (!targetEmp) return alert("Please select a valid employee.");
+    try {
+      await api.createAdminExpense({
+        employeeId: targetEmp.id,
+        employeeName: targetEmp.name,
+        date: newExpDate,
+        category: newExpCategory,
+        amount: Number(newExpAmount) || 0,
+        reason: newExpReason,
+        status: 'Approved'
+      });
+      alert("Reimbursement claim added and auto-approved!");
+      setShowAddExpenseModal(false);
+      setNewExpAmount(0);
+      setNewExpReason('');
+      fetchExpensesAndPayroll();
+    } catch (err) {
+      alert("Failed to add reimbursement claim.");
+    }
+  };
+
+  const handleAddManualPayslip = async (e) => {
+    e.preventDefault();
+    const targetEmp = employees.find(emp => emp.id.toString() === newSlipEmpId.toString());
+    if (!targetEmp) return alert("Please select a valid employee.");
+    try {
+      await api.createAdminPayroll({
+        employeeId: targetEmp.id,
+        employeeName: targetEmp.name,
+        month: newSlipMonth,
+        year: Number(newSlipYear) || 2026,
+        basic: Number(newSlipBasic) || 0,
+        hra: Number(newSlipHra) || 0,
+        allowances: Number(newSlipAllowances) || 0,
+        deductions: Number(newSlipDeductions) || 0,
+        netSalary: Number(newSlipNet) || 0,
+        type: newSlipType,
+        status: 'Processed'
+      });
+      alert("Payslip record manually logged in database history!");
+      setShowAddPayslipModal(false);
+      fetchExpensesAndPayroll();
+    } catch (err) {
+      alert("Failed to manually add payslip record.");
+    }
+  };
+
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'structures', label: 'Salary Structures' },
@@ -212,12 +323,30 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const pf = Math.round(basicPay * (pfPercent / 100));
   const esi = Math.round(basicPay * (esiPercent / 100));
   
+  // Dynamic custom earnings / deductions calculations
+  let customEarnings = 0;
+  let customDeductions = 0;
+  customComponents.forEach(comp => {
+    const value = Number(comp.value) || 0;
+    let amount = 0;
+    if (comp.calculationType === 'Percentage') {
+      amount = basicPay * (value / 100);
+    } else {
+      amount = value;
+    }
+    if (comp.type === 'Earning') {
+      customEarnings += amount;
+    } else {
+      customDeductions += amount;
+    }
+  });
+
   // Overtime Pay
   const overtimePay = Number(overtimeHours) * Number(overtimeRate);
   
   // Total Earnings & Net Pay calculations
-  const tax = Math.round((adjustedBaseSalary + Number(bonus) + overtimePay) * (tdsPercent / 100));
-  const netPay = Math.round(adjustedBaseSalary + Number(bonus) + overtimePay + reimbursementAmount - Number(deductions) - pf - esi - tax - Number(profTax));
+  const tax = Math.round((adjustedBaseSalary + Number(bonus) + overtimePay + customEarnings) * (tdsPercent / 100));
+  const netPay = Math.round(adjustedBaseSalary + Number(bonus) + overtimePay + reimbursementAmount + customEarnings - Number(deductions) - pf - esi - tax - Number(profTax) - customDeductions);
 
   const handleDownloadPayslip = async () => {
     if (!selectedEmp) return;
@@ -238,9 +367,17 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
           esi: esi,
           tax: tax,
           profTax: Number(profTax),
-          deductions: pf + esi + tax + Number(profTax) + Number(deductions),
+          deductions: pf + esi + tax + Number(profTax) + Number(deductions) + customDeductions,
           netSalary: netPay,
-          currency: currency
+          currency: currency,
+          customEarningsList: customComponents.filter(c => c.type === 'Earning').map(c => ({
+            name: c.name,
+            amount: c.calculationType === 'Percentage' ? basicPay * (Number(c.value) / 100) : Number(c.value)
+          })),
+          customDeductionsList: customComponents.filter(c => c.type === 'Deduction').map(c => ({
+            name: c.name,
+            amount: c.calculationType === 'Percentage' ? basicPay * (Number(c.value) / 100) : Number(c.value)
+          }))
         }
       );
     } catch (e) {
@@ -257,8 +394,8 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         year: 2026,
         basic: basicPay,
         hra: hra,
-        allowances: Number(bonus) + overtimePay,
-        deductions: pf + esi + tax + Number(profTax) + Number(deductions),
+        allowances: Number(bonus) + overtimePay + customEarnings,
+        deductions: pf + esi + tax + Number(profTax) + Number(deductions) + customDeductions,
         netSalary: netPay,
         overtime: overtimePay,
         reimbursements: reimbursementAmount,
@@ -277,33 +414,21 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     try {
       let totalAmount = 0;
       for (const emp of employees) {
-        const empBase = (typeof emp.salary === 'string') 
-          ? parseFloat(emp.salary.replace('$', '').replace('₹', '').replace(/,/g, '')) / 12 
-          : (typeof emp.salary === 'number' ? emp.salary / 12 : 5000);
-        const empBasicPay = empBase * (basicSalaryPercent / 100);
-        const empPf = Math.round(empBasicPay * (pfPercent / 100));
-        const empEsi = Math.round(empBasicPay * (esiPercent / 100));
-        const empTax = Math.round(empBase * (tdsPercent / 100));
-        
-        // Load approved reimbursements for each employee
-        const empExps = expenses.filter(exp => exp.employeeId === emp.id && exp.status === 'Approved');
-        const empReimb = empExps.reduce((acc, exp) => acc + Number(exp.amount), 0);
-
-        const empNet = Math.round(empBase + empReimb - empPf - empEsi - empTax - Number(profTax));
-        totalAmount += empNet;
+        const details = getEmpPayrollDetails(emp);
+        totalAmount += details.netSalary;
         
         await api.createAdminPayroll({
           employeeId: emp.id,
           employeeName: emp.name,
           month: 'July',
           year: 2026,
-          basic: empBasicPay,
-          hra: empBasicPay * (hraPercent / 100),
-          allowances: 0,
-          deductions: empPf + empEsi + empTax + Number(profTax),
-          netSalary: empNet,
+          basic: details.basic,
+          hra: details.hra,
+          allowances: details.customEarnings,
+          deductions: details.deductions,
+          netSalary: details.netSalary,
           overtime: 0,
-          reimbursements: empReimb,
+          reimbursements: details.reimbursements,
           profTax: Number(profTax),
           type: 'Regular',
           status: 'Processed'
@@ -329,13 +454,32 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     const empExps = expenses.filter(exp => exp.employeeId === emp.id && exp.status === 'Approved');
     const empReimb = empExps.reduce((acc, exp) => acc + Number(exp.amount), 0);
 
-    const empNet = Math.round(empBase + empReimb - empPf - empEsi - empTax - Number(profTax));
+    let empCustomEarnings = 0;
+    let empCustomDeductions = 0;
+    customComponents.forEach(comp => {
+      const value = Number(comp.value) || 0;
+      let amount = 0;
+      if (comp.calculationType === 'Percentage') {
+        amount = empBasicPay * (value / 100);
+      } else {
+        amount = value;
+      }
+      if (comp.type === 'Earning') {
+        empCustomEarnings += amount;
+      } else {
+        empCustomDeductions += amount;
+      }
+    });
+
+    const empNet = Math.round(empBase + empReimb + empCustomEarnings - empPf - empEsi - empTax - Number(profTax) - empCustomDeductions);
     return {
       basic: empBasicPay,
       hra: empBasicPay * (hraPercent / 100),
-      deductions: empPf + empEsi + empTax + Number(profTax),
+      deductions: empPf + empEsi + empTax + Number(profTax) + empCustomDeductions,
       netSalary: empNet,
-      reimbursements: empReimb
+      reimbursements: empReimb,
+      customEarnings: empCustomEarnings,
+      customDeductions: empCustomDeductions
     };
   };
 
@@ -710,9 +854,18 @@ and paid to the credit of the Government.
             className="premium-card"
             style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}
           >
-            <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Salary Components</h3>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Define structure mappings and deductions formulas</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Salary Components</h3>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Define structure mappings and deductions formulas</span>
+              </div>
+              <button 
+                onClick={() => setShowAddCompModal(true)} 
+                className="premium-btn premium-btn-primary"
+              >
+                <Plus size={16} />
+                <span>Add Component</span>
+              </button>
             </div>
 
             <div className="premium-table-container">
@@ -768,6 +921,27 @@ and paid to the credit of the Government.
                     </td>
                     <td><span className="badge badge-success">Active</span></td>
                   </tr>
+                  {customComponents.map(comp => (
+                    <tr key={comp.id}>
+                      <td style={{ fontWeight: 700 }}>{comp.name}</td>
+                      <td>{comp.type}</td>
+                      <td className="number-font" style={{ fontWeight: 600 }}>
+                        {comp.calculationType === 'Percentage' ? `${comp.value}% of Basic` : `${cSymbol}${comp.value} (Flat)`}
+                      </td>
+                      <td>
+                        <div style={{ display: 'inline-flex', gap: 10, alignItems: 'center' }}>
+                          <span className="badge badge-success">Active</span>
+                          <button 
+                            onClick={() => handleDeleteSalaryComponent(comp.id)}
+                            className="premium-btn premium-btn-secondary"
+                            style={{ padding: '0 8px', height: '24px', fontSize: '0.7rem', color: '#ef4444', borderColor: '#ef4444', justifyContent: 'center' }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -1130,9 +1304,18 @@ and paid to the credit of the Government.
             className="premium-card"
             style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}
           >
-            <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Disbursed Payslips Archives</h3>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Historically logged wire payouts</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Disbursed Payslips Archives</h3>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Historically logged wire payouts</span>
+              </div>
+              <button 
+                onClick={() => setShowAddPayslipModal(true)} 
+                className="premium-btn premium-btn-primary"
+              >
+                <Plus size={16} />
+                <span>Add Payslip Record</span>
+              </button>
             </div>
 
             <div className="premium-table-container">
@@ -1305,11 +1488,23 @@ and paid to the credit of the Government.
             className="premium-card"
             style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}
           >
-            <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Reimbursements Gateway</h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
-                Approved employee expense claims automatically queue directly into the current payroll run as tax-free reimbursements.
-              </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Reimbursements Gateway</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
+                  Approved employee expense claims automatically queue directly into the current payroll run as tax-free reimbursements.
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setNewExpEmpId(employees[0]?.id || '');
+                  setShowAddExpenseModal(true);
+                }} 
+                className="premium-btn premium-btn-primary"
+              >
+                <Plus size={16} />
+                <span>Add Claim</span>
+              </button>
             </div>
 
             <div className="premium-table-container">
@@ -1736,6 +1931,414 @@ and paid to the credit of the Government.
         </div>
       )}
 
+      {/* Add Custom Component Modal */}
+      {showAddCompModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: 20
+        }} onClick={() => setShowAddCompModal(false)}>
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+              padding: 24,
+              borderRadius: 20,
+              width: '100%',
+              maxWidth: 420,
+              position: 'relative',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>Add Custom Salary Component</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
+                Create custom earning allowance or deduction component mapping.
+              </p>
+            </div>
+
+            <form onSubmit={handleAddSalaryComponent} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="premium-form-group">
+                <label className="premium-label">Component Name</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. Conveyance Allowance"
+                  value={newCompName} 
+                  onChange={(e) => setNewCompName(e.target.value)} 
+                  className="premium-input" 
+                />
+              </div>
+
+              <div className="premium-form-group">
+                <label className="premium-label">Type</label>
+                <select 
+                  value={newCompType} 
+                  onChange={(e) => setNewCompType(e.target.value)} 
+                  className="premium-input"
+                >
+                  <option value="Earning">Earning (Allowance)</option>
+                  <option value="Deduction">Deduction (Withholding)</option>
+                </select>
+              </div>
+
+              <div className="premium-form-group">
+                <label className="premium-label">Calculation Type</label>
+                <select 
+                  value={newCompCalcType} 
+                  onChange={(e) => setNewCompCalcType(e.target.value)} 
+                  className="premium-input"
+                >
+                  <option value="Percentage">Percentage of Basic Pay</option>
+                  <option value="Flat">Flat Amount</option>
+                </select>
+              </div>
+
+              <div className="premium-form-group">
+                <label className="premium-label">Value ({newCompCalcType === 'Percentage' ? '%' : currency})</label>
+                <input 
+                  type="number" 
+                  required
+                  min="0.01"
+                  step="any"
+                  value={newCompValue} 
+                  onChange={(e) => setNewCompValue(parseFloat(e.target.value) || 0)} 
+                  className="premium-input" 
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowAddCompModal(false)} 
+                  className="premium-btn premium-btn-secondary" 
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="premium-btn premium-btn-primary" 
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Create Component
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Add Custom Expense (Reimbursement Claim) Modal */}
+      {showAddExpenseModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: 20
+        }} onClick={() => setShowAddExpenseModal(false)}>
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+              padding: 24,
+              borderRadius: 20,
+              width: '100%',
+              maxWidth: 420,
+              position: 'relative',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>Add Reimbursement Claim</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
+                Log an approved expense claim to be refunded in the next payroll cycle.
+              </p>
+            </div>
+
+            <form onSubmit={handleAddReimbursement} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="premium-form-group">
+                <label className="premium-label">Select Employee</label>
+                <select 
+                  value={newExpEmpId} 
+                  onChange={(e) => setNewExpEmpId(e.target.value)} 
+                  className="premium-input"
+                >
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="premium-form-group">
+                <label className="premium-label">Category</label>
+                <select 
+                  value={newExpCategory} 
+                  onChange={(e) => setNewExpCategory(e.target.value)} 
+                  className="premium-input"
+                >
+                  <option value="Travel">Travel & Lodging</option>
+                  <option value="Meals">Meals & Entertainment</option>
+                  <option value="Software">Software & Subscriptions</option>
+                  <option value="Office Supplies">Office Supplies</option>
+                  <option value="Other">Other Expenses</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="premium-form-group">
+                  <label className="premium-label">Date</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={newExpDate} 
+                    onChange={(e) => setNewExpDate(e.target.value)} 
+                    className="premium-input" 
+                  />
+                </div>
+                <div className="premium-form-group">
+                  <label className="premium-label">Amount ({currency})</label>
+                  <input 
+                    type="number" 
+                    required
+                    min="1"
+                    value={newExpAmount} 
+                    onChange={(e) => setNewExpAmount(parseFloat(e.target.value) || 0)} 
+                    className="premium-input" 
+                  />
+                </div>
+              </div>
+
+              <div className="premium-form-group">
+                <label className="premium-label">Reason / Notes</label>
+                <textarea 
+                  required
+                  placeholder="e.g. Client lunch meeting"
+                  value={newExpReason} 
+                  onChange={(e) => setNewExpReason(e.target.value)} 
+                  className="premium-input" 
+                  style={{ height: 60, resize: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowAddExpenseModal(false)} 
+                  className="premium-btn premium-btn-secondary" 
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="premium-btn premium-btn-primary" 
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Add Claim
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Add Manual Payslip Modal */}
+      {showAddPayslipModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: 20
+        }} onClick={() => setShowAddPayslipModal(false)}>
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+              padding: 24,
+              borderRadius: 20,
+              width: '100%',
+              maxWidth: 440,
+              position: 'relative',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>Add Historical Payslip Record</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
+                Manually record a processed payout in the company's ledger database.
+              </p>
+            </div>
+
+            <form onSubmit={handleAddManualPayslip} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="premium-form-group">
+                <label className="premium-label">Select Employee</label>
+                <select 
+                  value={newSlipEmpId} 
+                  onChange={(e) => setNewSlipEmpId(e.target.value)} 
+                  className="premium-input"
+                >
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="premium-form-group">
+                  <label className="premium-label">Month</label>
+                  <select 
+                    value={newSlipMonth} 
+                    onChange={(e) => setNewSlipMonth(e.target.value)} 
+                    className="premium-input"
+                  >
+                    {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'Settlement'].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="premium-form-group">
+                  <label className="premium-label">Year</label>
+                  <input 
+                    type="number" 
+                    value={newSlipYear} 
+                    onChange={(e) => setNewSlipYear(Number(e.target.value) || 2026)} 
+                    className="premium-input" 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="premium-form-group">
+                  <label className="premium-label">Basic Salary ({currency})</label>
+                  <input 
+                    type="number" 
+                    value={newSlipBasic} 
+                    onChange={(e) => {
+                      const val = Number(e.target.value) || 0;
+                      setNewSlipBasic(val);
+                      setNewSlipNet(val + newSlipHra + newSlipAllowances - newSlipDeductions);
+                    }} 
+                    className="premium-input" 
+                  />
+                </div>
+                <div className="premium-form-group">
+                  <label className="premium-label">HRA Allowance ({currency})</label>
+                  <input 
+                    type="number" 
+                    value={newSlipHra} 
+                    onChange={(e) => {
+                      const val = Number(e.target.value) || 0;
+                      setNewSlipHra(val);
+                      setNewSlipNet(newSlipBasic + val + newSlipAllowances - newSlipDeductions);
+                    }} 
+                    className="premium-input" 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="premium-form-group">
+                  <label className="premium-label">Bonus & Allowances ({currency})</label>
+                  <input 
+                    type="number" 
+                    value={newSlipAllowances} 
+                    onChange={(e) => {
+                      const val = Number(e.target.value) || 0;
+                      setNewSlipAllowances(val);
+                      setNewSlipNet(newSlipBasic + newSlipHra + val - newSlipDeductions);
+                    }} 
+                    className="premium-input" 
+                  />
+                </div>
+                <div className="premium-form-group">
+                  <label className="premium-label">Total Deductions ({currency})</label>
+                  <input 
+                    type="number" 
+                    value={newSlipDeductions} 
+                    onChange={(e) => {
+                      const val = Number(e.target.value) || 0;
+                      setNewSlipDeductions(val);
+                      setNewSlipNet(newSlipBasic + newSlipHra + newSlipAllowances - val);
+                    }} 
+                    className="premium-input" 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="premium-form-group">
+                  <label className="premium-label">Record Type</label>
+                  <select 
+                    value={newSlipType} 
+                    onChange={(e) => setNewSlipType(e.target.value)} 
+                    className="premium-input"
+                  >
+                    <option value="Regular">Regular Payroll</option>
+                    <option value="F&F">F&F Settlement</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'var(--color-bg-secondary)', padding: '6px 12px', borderRadius: 10 }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)' }}>Net Salary Dues:</span>
+                  <strong className="number-font" style={{ color: 'var(--color-primary)', fontSize: '1.1rem' }}>{cSymbol}{newSlipNet.toLocaleString()}</strong>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowAddPayslipModal(false)} 
+                  className="premium-btn premium-btn-secondary" 
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="premium-btn premium-btn-primary" 
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Add Record
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

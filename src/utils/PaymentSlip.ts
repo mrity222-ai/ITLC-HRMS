@@ -209,6 +209,12 @@ export const downloadEmployeePayslip = (employee: any, company: any, payroll: an
               <strong>${currencySymbol}${Math.round(payroll.reimbursement).toLocaleString()}</strong>
             </div>
             ` : ''}
+            ${(payroll.customEarningsList || []).map((e: any) => `
+            <div class="breakdown-row">
+              <span>${e.name}</span>
+              <strong>${currencySymbol}${Math.round(e.amount).toLocaleString()}</strong>
+            </div>
+            `).join('')}
           </div>
 
           <div class="breakdown-col">
@@ -231,6 +237,12 @@ export const downloadEmployeePayslip = (employee: any, company: any, payroll: an
               <strong>${currencySymbol}${Math.round(payroll.profTax).toLocaleString()}</strong>
             </div>
             ` : ''}
+            ${(payroll.customDeductionsList || []).map((d: any) => `
+            <div class="breakdown-row">
+              <span>${d.name}</span>
+              <strong>${currencySymbol}${Math.round(d.amount).toLocaleString()}</strong>
+            </div>
+            `).join('')}
           </div>
         </div>
 
