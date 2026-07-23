@@ -305,6 +305,14 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const empApprovedExpenses = expenses.filter(exp => exp.employeeId === selectedEmp?.id && exp.status === 'Approved');
   const reimbursementAmount = empApprovedExpenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
 
+  // Real-time payroll summary calculations
+  const processedRecords = payrollHistory.filter(r => r.month === 'July' && r.year === 2026 && r.type !== 'F&F');
+  const processedEmpIds = new Set(processedRecords.filter(r => r.employeeId).map(r => r.employeeId.toString()));
+  const salaryMilaCount = processedEmpIds.size;
+  const salaryBakiCount = Math.max(0, employees.length - salaryMilaCount);
+  const totalDisbursed = processedRecords.reduce((acc, r) => acc + Number(r.netSalary || 0), 0);
+  const paidRatio = employees.length > 0 ? (salaryMilaCount / employees.length) * 100 : 0;
+
   // Calculate attendance & salary details
   const presentCount = attendance.filter(a => a.status === 'Present' || a.status === 'Late').length;
   const halfDayCount = attendance.filter(a => a.status === 'Half-day').length;
@@ -915,9 +923,9 @@ and paid to the credit of the Government.
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 400, overflowY: 'auto', paddingRight: 4 }} className="custom-scrollbar">
                   {employees.map(emp => {
-                    const isPaid = processedEmpIds.has(emp.id.toString());
-                    const payrollRec = payrollHistory.find(r => r.employeeId.toString() === emp.id.toString() && r.month === 'July' && r.year === 2026);
-                    const isSelected = selectedEmpId.toString() === emp.id.toString();
+                    const isPaid = !!(emp.id && processedEmpIds.has(emp.id.toString()));
+                    const payrollRec = payrollHistory.find(r => r.employeeId && emp.id && r.employeeId.toString() === emp.id.toString() && r.month === 'July' && r.year === 2026);
+                    const isSelected = !!(selectedEmpId && emp.id && selectedEmpId.toString() === emp.id.toString());
 
                     return (
                       <div 
