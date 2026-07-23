@@ -86,6 +86,10 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const [newSlipNet, setNewSlipNet] = useState(4300);
   const [newSlipType, setNewSlipType] = useState('Regular');
 
+  // Active Payroll Month & Year selector states
+  const [payrollMonth, setPayrollMonth] = useState('July');
+  const [payrollYear, setPayrollYear] = useState(2026);
+
   const loadCompanyPayrollSettings = async () => {
     setLoadingCompany(true);
     try {
@@ -307,18 +311,27 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const reimbursementAmount = empApprovedExpenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
 
   // Real-time payroll summary calculations
-  const processedRecords = payrollHistory.filter(r => r.month === 'July' && r.year === 2026 && r.type !== 'F&F');
+  const processedRecords = payrollHistory.filter(r => r.month === payrollMonth && r.year === Number(payrollYear) && r.type !== 'F&F');
   const processedEmpIds = new Set(processedRecords.filter(r => r.employeeId).map(r => r.employeeId.toString()));
   const salaryMilaCount = processedEmpIds.size;
   const salaryBakiCount = Math.max(0, activeEmployees.length - salaryMilaCount);
   const totalDisbursed = processedRecords.reduce((acc, r) => acc + Number(r.netSalary || 0), 0);
   const paidRatio = activeEmployees.length > 0 ? (salaryMilaCount / activeEmployees.length) * 100 : 0;
 
-  // Calculate attendance & salary details
-  const presentCount = attendance.filter(a => a.status === 'Present' || a.status === 'Late').length;
-  const halfDayCount = attendance.filter(a => a.status === 'Half-day').length;
+  // Calculate attendance & salary details based on selected month/year
+  const monthNameToNumber = {
+    January: '01', February: '02', March: '03', April: '04',
+    May: '05', June: '06', July: '07', August: '08',
+    September: '09', October: '10', November: '11', December: '12'
+  };
+  const monthNumber = monthNameToNumber[payrollMonth] || '07';
+  const targetPrefix = `${payrollYear}-${monthNumber}`;
+  const monthAttendance = attendance.filter(a => a.date && a.date.startsWith(targetPrefix));
+
+  const presentCount = monthAttendance.filter(a => a.status === 'Present' || a.status === 'Late').length;
+  const halfDayCount = monthAttendance.filter(a => a.status === 'Half-day').length;
   const activeDays = presentCount + (halfDayCount * 0.5);
-  const payoutRatio = attendance.length === 0 ? 1.0 : Math.min(1.0, activeDays / totalWorkingDays);
+  const payoutRatio = monthAttendance.length === 0 ? 1.0 : Math.min(1.0, activeDays / totalWorkingDays);
 
   const baseSalary = (selectedEmp && typeof selectedEmp.salary === 'string') 
     ? parseFloat(selectedEmp.salary.replace('$', '').replace('₹', '').replace(/,/g, '')) / 12 
@@ -365,8 +378,8 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         selectedEmp,
         company || { name: 'ITLC Workspace' },
         {
-          month: 'July',
-          year: 2026,
+          month: payrollMonth,
+          year: Number(payrollYear),
           basic: basicPay,
           hra: hra,
           allowances: Number(bonus),
@@ -399,8 +412,8 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
       await api.createAdminPayroll({
         employeeId: selectedEmp.id,
         employeeName: selectedEmp.name,
-        month: 'July',
-        year: 2026,
+        month: payrollMonth,
+        year: Number(payrollYear),
         basic: basicPay,
         hra: hra,
         allowances: Number(bonus) + overtimePay + customEarnings,
@@ -412,7 +425,7 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         type: 'Regular',
         status: 'Processed'
       });
-      alert(`Payslip for ${selectedEmp.name} (July 2026) has been successfully processed and disbursed!`);
+      alert(`Payslip for ${selectedEmp.name} (${payrollMonth} ${payrollYear}) has been successfully processed and disbursed!`);
       fetchExpensesAndPayroll();
     } catch (err) {
       alert("Failed to process individual payslip.");
@@ -752,7 +765,7 @@ and paid to the credit of the Government.
                   <TrendingUp size={20} />
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Total Disbursed (July)</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Total Disbursed ({payrollMonth})</span>
                   <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0 0' }}>
                     {cSymbol}{totalDisbursed.toLocaleString()}
                   </h4>
@@ -780,6 +793,30 @@ and paid to the credit of the Government.
                         <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
                       ))}
                     </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Payroll Month</label>
+                      <select 
+                        value={payrollMonth} 
+                        onChange={(e) => setPayrollMonth(e.target.value)}
+                        className="premium-input"
+                      >
+                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Payroll Year</label>
+                      <input 
+                        type="number" 
+                        value={payrollYear} 
+                        onChange={(e) => setPayrollYear(Number(e.target.value) || 2026)} 
+                        className="premium-input" 
+                      />
+                    </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
