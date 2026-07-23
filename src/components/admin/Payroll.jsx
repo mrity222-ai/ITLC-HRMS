@@ -283,7 +283,8 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
     { id: 'reports', label: 'Reports & Export' },
   ];
 
-  const selectedEmp = employees.find(emp => emp.id.toString() === selectedEmpId.toString()) || employees[0];
+  const activeEmployees = employees.filter(emp => emp.status !== 'Suspended');
+  const selectedEmp = activeEmployees.find(emp => emp.id && selectedEmpId && emp.id.toString() === selectedEmpId.toString()) || activeEmployees[0] || employees[0];
 
   useEffect(() => {
     if (!selectedEmp) return;
@@ -309,9 +310,9 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
   const processedRecords = payrollHistory.filter(r => r.month === 'July' && r.year === 2026 && r.type !== 'F&F');
   const processedEmpIds = new Set(processedRecords.filter(r => r.employeeId).map(r => r.employeeId.toString()));
   const salaryMilaCount = processedEmpIds.size;
-  const salaryBakiCount = Math.max(0, employees.length - salaryMilaCount);
+  const salaryBakiCount = Math.max(0, activeEmployees.length - salaryMilaCount);
   const totalDisbursed = processedRecords.reduce((acc, r) => acc + Number(r.netSalary || 0), 0);
-  const paidRatio = employees.length > 0 ? (salaryMilaCount / employees.length) * 100 : 0;
+  const paidRatio = activeEmployees.length > 0 ? (salaryMilaCount / activeEmployees.length) * 100 : 0;
 
   // Calculate attendance & salary details
   const presentCount = attendance.filter(a => a.status === 'Present' || a.status === 'Late').length;
@@ -594,6 +595,8 @@ export default function Payroll({ employees, subTab = 'dashboard', setActiveTab,
         type: 'F&F',
         status: 'Processed'
       });
+      await api.updateEmployee(ffEmp.id, { status: 'Suspended' });
+      ffEmp.status = 'Suspended'; // Real-time local state update
       alert(`Full & Final (F&F) settlement of ${cSymbol}${ffNetPayable.toLocaleString()} processed for ${ffEmp.name}!`);
       fetchExpensesAndPayroll();
     } catch (err) {
@@ -703,7 +706,7 @@ and paid to the credit of the Government.
                 <div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Total Employees</span>
                   <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0 0' }}>
-                    {employees.length}
+                    {activeEmployees.length}
                   </h4>
                 </div>
               </div>
@@ -773,7 +776,7 @@ and paid to the credit of the Government.
                       onChange={(e) => setSelectedEmpId(e.target.value)}
                       className="premium-input"
                     >
-                      {employees.map(emp => (
+                      {activeEmployees.map(emp => (
                         <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
                       ))}
                     </select>
@@ -922,7 +925,7 @@ and paid to the credit of the Government.
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 400, overflowY: 'auto', paddingRight: 4 }} className="custom-scrollbar">
-                  {employees.map(emp => {
+                  {activeEmployees.map(emp => {
                     const isPaid = !!(emp.id && processedEmpIds.has(emp.id.toString()));
                     const payrollRec = payrollHistory.find(r => r.employeeId && emp.id && r.employeeId.toString() === emp.id.toString() && r.month === 'July' && r.year === 2026);
                     const isSelected = !!(selectedEmpId && emp.id && selectedEmpId.toString() === emp.id.toString());
