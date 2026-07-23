@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, DollarSign, Calculator, Download, Percent, FileText, CheckCircle, ShieldCheck, User, Briefcase, Plus, X, Calendar, Landmark } from 'lucide-react';
+import { CreditCard, DollarSign, Calculator, Download, Percent, FileText, CheckCircle, ShieldCheck, User, Briefcase, Plus, X, Calendar, Landmark, Users, AlertCircle, TrendingUp } from 'lucide-react';
 import { api } from '../../services/api';
 import { downloadEmployeePayslip } from '../../utils/PaymentSlip';
 
@@ -684,161 +684,296 @@ and paid to the credit of the Government.
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
           >
-            {/* Payroll Config Panel */}
-            <div className="premium-card" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Calculator size={18} style={{ color: 'var(--color-primary)' }} />
-                <span>Generate & Process Payslip</span>
-              </h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div className="premium-form-group">
-                  <label className="premium-label">Select Employee</label>
-                  <select 
-                    value={selectedEmpId} 
-                    onChange={(e) => setSelectedEmpId(e.target.value)}
-                    className="premium-input"
-                  >
-                    {employees.map(emp => (
-                      <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
-                    ))}
-                  </select>
+            {/* Real-time Payroll Dashboard KPI Summary */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
+              <div className="premium-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ padding: 12, borderRadius: 12, background: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
+                  <Users size={20} />
                 </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Total Employees</span>
+                  <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0 0' }}>
+                    {employees.length}
+                  </h4>
+                </div>
+              </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                  <div className="premium-form-group">
-                    <label className="premium-label">Bonus ({currency})</label>
-                    <input 
-                      type="number" 
-                      value={bonus} 
-                      onChange={(e) => setBonus(e.target.value)} 
-                      className="premium-input" 
-                    />
+              <div className="premium-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ padding: 12, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                  <CheckCircle size={20} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Salaries Processed</span>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0 0' }}>
+                      {salaryMilaCount}
+                    </h4>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>({paidRatio.toFixed(0)}%)</span>
                   </div>
-                  <div className="premium-form-group">
-                    <label className="premium-label">Deductions ({currency})</label>
-                    <input 
-                      type="number" 
-                      value={deductions} 
-                      onChange={(e) => setDeductions(e.target.value)} 
-                      className="premium-input" 
-                    />
+                  <div style={{ width: '100%', height: 4, background: 'var(--color-bg-secondary)', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
+                    <div style={{ width: `${paidRatio}%`, height: '100%', background: '#10b981' }} />
                   </div>
                 </div>
+              </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                  <div className="premium-form-group">
-                    <label className="premium-label">Overtime Hours</label>
-                    <input 
-                      type="number" 
-                      value={overtimeHours} 
-                      onChange={(e) => setOvertimeHours(Number(e.target.value) || 0)} 
-                      className="premium-input" 
-                    />
+              <div className="premium-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ padding: 12, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                  <AlertCircle size={20} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Salaries Remaining</span>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0 0' }}>
+                      {salaryBakiCount}
+                    </h4>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>({(100 - paidRatio).toFixed(0)}%)</span>
                   </div>
-                  <div className="premium-form-group">
-                    <label className="premium-label">Hourly Overtime Rate ({currency})</label>
-                    <input 
-                      type="number" 
-                      value={overtimeRate} 
-                      onChange={(e) => setOvertimeRate(Number(e.target.value) || 0)} 
-                      className="premium-input" 
-                    />
+                  <div style={{ width: '100%', height: 4, background: 'var(--color-bg-secondary)', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
+                    <div style={{ width: `${100 - paidRatio}%`, height: '100%', background: '#f59e0b' }} />
                   </div>
                 </div>
+              </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
-                  <button 
-                    onClick={handleProcessSinglePayslip}
-                    className="premium-btn premium-btn-success" 
-                    style={{ width: '100%', justifyContent: 'center', padding: 12, border: 'none', borderRadius: 8, background: 'var(--color-success)', color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
-                  >
-                    <span>Process & Disburse Salary</span>
-                  </button>
-
-                  <button 
-                    onClick={handleDownloadPayslip}
-                    className="premium-btn premium-btn-primary" 
-                    style={{ width: '100%', justifyContent: 'center', padding: 12 }}
-                  >
-                    <Download size={16} />
-                    <span>Download PDF Payslip</span>
-                  </button>
+              <div className="premium-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ padding: 12, borderRadius: 12, background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+                  <TrendingUp size={20} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Total Disbursed (July)</span>
+                  <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0 0' }}>
+                    {cSymbol}{totalDisbursed.toLocaleString()}
+                  </h4>
                 </div>
               </div>
             </div>
 
-            {/* Payslip preview */}
-            <div className="premium-card" style={{ padding: 24 }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 16 }}>Breakdown Summary</h3>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, borderBottom: '1px solid var(--color-border)', paddingBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Basic Base Salary (Monthly):</span>
-                  <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{Math.round(baseSalary).toLocaleString()}</span>
-                </div>
-                {attendance.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-bg-secondary)', padding: 8, borderRadius: 8, fontSize: '0.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)' }}>
-                      <span>Attendance Present Days:</span>
-                      <span className="number-font">{presentCount} Days</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+              {/* Payroll Config Panel */}
+              <div className="premium-card" style={{ padding: 24 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Calculator size={18} style={{ color: 'var(--color-primary)' }} />
+                  <span>Generate & Process Payslip</span>
+                </h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div className="premium-form-group">
+                    <label className="premium-label">Select Employee</label>
+                    <select 
+                      value={selectedEmpId} 
+                      onChange={(e) => setSelectedEmpId(e.target.value)}
+                      className="premium-input"
+                    >
+                      {employees.map(emp => (
+                        <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Bonus ({currency})</label>
+                      <input 
+                        type="number" 
+                        value={bonus} 
+                        onChange={(e) => setBonus(e.target.value)} 
+                        className="premium-input" 
+                      />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)' }}>
-                      <span>Attendance Half-Days:</span>
-                      <span className="number-font">{halfDayCount} Days</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)', borderTop: '1px dashed var(--color-border)', paddingTop: 4, marginTop: 4 }}>
-                      <span>Prorated Payout Ratio:</span>
-                      <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{(payoutRatio * 100).toFixed(0)}%</span>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Deductions ({currency})</label>
+                      <input 
+                        type="number" 
+                        value={deductions} 
+                        onChange={(e) => setDeductions(e.target.value)} 
+                        className="premium-input" 
+                      />
                     </div>
                   </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', borderTop: '1px solid var(--color-border)', paddingTop: 8 }}>
-                  <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>Adjusted Base Salary:</span>
-                  <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{Math.round(adjustedBaseSalary).toLocaleString()}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Performance Bonus:</span>
-                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+{cSymbol}{bonus}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Overtime Earnings:</span>
-                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+{cSymbol}{overtimePay}</span>
-                </div>
-                {reimbursementAmount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                    <span style={{ color: 'var(--color-text-secondary)' }}>Approved Reimbursements:</span>
-                    <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+{cSymbol}{reimbursementAmount}</span>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Overtime Hours</label>
+                      <input 
+                        type="number" 
+                        value={overtimeHours} 
+                        onChange={(e) => setOvertimeHours(Number(e.target.value) || 0)} 
+                        className="premium-input" 
+                      />
+                    </div>
+                    <div className="premium-form-group">
+                      <label className="premium-label">Hourly Overtime Rate ({currency})</label>
+                      <input 
+                        type="number" 
+                        value={overtimeRate} 
+                        onChange={(e) => setOvertimeRate(Number(e.target.value) || 0)} 
+                        className="premium-input" 
+                      />
+                    </div>
                   </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Provident Fund (PF {pfPercent}%):</span>
-                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{pf}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>State Insurance (ESI {esiPercent}%):</span>
-                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{esi}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Tax Deductions (TDS {tdsPercent}%):</span>
-                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{tax}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>Professional Tax (PT):</span>
-                  <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{profTax}</span>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+                    <button 
+                      onClick={handleProcessSinglePayslip}
+                      className="premium-btn premium-btn-success" 
+                      style={{ width: '100%', justifyContent: 'center', padding: 12, border: 'none', borderRadius: 8, background: 'var(--color-success)', color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      <span>Process & Disburse Salary</span>
+                    </button>
+
+                    <button 
+                      onClick={handleDownloadPayslip}
+                      className="premium-btn premium-btn-primary" 
+                      style={{ width: '100%', justifyContent: 'center', padding: 12 }}
+                    >
+                      <Download size={16} />
+                      <span>Download PDF Payslip</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16 }}>
-                <div>
-                  <span className="premium-label" style={{ fontSize: '0.65rem' }}>Estimated Net Pay</span>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Direct bank wire payment</p>
+              {/* Payslip preview */}
+              <div className="premium-card" style={{ padding: 24 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 16 }}>Breakdown Summary</h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, borderBottom: '1px solid var(--color-border)', paddingBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Basic Base Salary (Monthly):</span>
+                    <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{Math.round(baseSalary).toLocaleString()}</span>
+                  </div>
+                  {attendance.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-bg-secondary)', padding: 8, borderRadius: 8, fontSize: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)' }}>
+                        <span>Attendance Present Days:</span>
+                        <span className="number-font">{presentCount} Days</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)' }}>
+                        <span>Attendance Half-Days:</span>
+                        <span className="number-font">{halfDayCount} Days</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-secondary)', borderTop: '1px dashed var(--color-border)', paddingTop: 4, marginTop: 4 }}>
+                        <span>Prorated Payout Ratio:</span>
+                        <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{(payoutRatio * 100).toFixed(0)}%</span>
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', borderTop: '1px solid var(--color-border)', paddingTop: 8 }}>
+                    <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>Adjusted Base Salary:</span>
+                    <span className="number-font" style={{ fontWeight: 600 }}>{cSymbol}{Math.round(adjustedBaseSalary).toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Performance Bonus:</span>
+                    <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+{cSymbol}{bonus}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Overtime Earnings:</span>
+                    <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+{cSymbol}{overtimePay}</span>
+                  </div>
+                  {reimbursementAmount > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                      <span style={{ color: 'var(--color-text-secondary)' }}>Approved Reimbursements:</span>
+                      <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-success)' }}>+{cSymbol}{reimbursementAmount}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Provident Fund (PF {pfPercent}%):</span>
+                    <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{pf}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>State Insurance (ESI {esiPercent}%):</span>
+                    <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{esi}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Tax Deductions (TDS {tdsPercent}%):</span>
+                    <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{tax}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Professional Tax (PT):</span>
+                    <span className="number-font" style={{ fontWeight: 600, color: 'var(--color-danger)' }}>-{cSymbol}{profTax}</span>
+                  </div>
                 </div>
-                <h4 className="number-font" style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                  {cSymbol}{netPay.toLocaleString()}
-                </h4>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16 }}>
+                  <div>
+                    <span className="premium-label" style={{ fontSize: '0.65rem' }}>Estimated Net Pay</span>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Direct bank wire payment</p>
+                  </div>
+                  <h4 className="number-font" style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                    {cSymbol}{netPay.toLocaleString()}
+                  </h4>
+                </div>
+              </div>
+
+              {/* Real-time Employee Payment Status Feed */}
+              <div className="premium-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Workforce Payroll Status</h3>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)' }}>Click employee to load & process salary</span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 400, overflowY: 'auto', paddingRight: 4 }} className="custom-scrollbar">
+                  {employees.map(emp => {
+                    const isPaid = processedEmpIds.has(emp.id.toString());
+                    const payrollRec = payrollHistory.find(r => r.employeeId.toString() === emp.id.toString() && r.month === 'July' && r.year === 2026);
+                    const isSelected = selectedEmpId.toString() === emp.id.toString();
+
+                    return (
+                      <div 
+                        key={emp.id}
+                        onClick={() => setSelectedEmpId(emp.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: 10,
+                          borderRadius: 12,
+                          border: isSelected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                          background: isSelected ? 'var(--color-primary-light)' : 'transparent',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                        className="hover-card"
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: '50%',
+                            background: 'var(--color-bg-secondary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 700,
+                            fontSize: '0.85rem'
+                          }}>
+                            {emp.name.charAt(0)}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{emp.name}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>{emp.designation}</span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                          {isPaid ? (
+                            <>
+                              <span className="badge badge-success" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>Paid</span>
+                              <span className="number-font" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+                                {cSymbol}{payrollRec?.netSalary?.toLocaleString()}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="badge badge-warning" style={{ fontSize: '0.65rem', padding: '2px 6px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                              Pending
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -1560,6 +1695,57 @@ and paid to the credit of the Government.
             exit={{ opacity: 0, y: -10 }}
             style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
           >
+            {/* Real-time F&F Settlement Dashboard Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
+              <div className="premium-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ padding: 12, borderRadius: 12, background: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
+                  <Users size={20} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Offboarded Employees</span>
+                  <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0 0' }}>
+                    {payrollHistory.filter(s => s.type === 'F&F').length}
+                  </h4>
+                </div>
+              </div>
+
+              <div className="premium-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ padding: 12, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                  <CheckCircle size={20} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Settled F&F Records</span>
+                  <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0 0' }}>
+                    {payrollHistory.filter(s => s.type === 'F&F' && s.status === 'Processed').length} Active
+                  </h4>
+                </div>
+              </div>
+
+              <div className="premium-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ padding: 12, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                  <AlertCircle size={20} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Pending Clearances</span>
+                  <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0 0' }}>
+                    0 Pending
+                  </h4>
+                </div>
+              </div>
+
+              <div className="premium-card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ padding: 12, borderRadius: 12, background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+                  <Landmark size={20} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Total Settlement Volume</span>
+                  <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0 0' }}>
+                    {cSymbol}{payrollHistory.filter(s => s.type === 'F&F').reduce((acc, s) => acc + Number(s.netSalary || 0), 0).toLocaleString()}
+                  </h4>
+                </div>
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}>
               <div className="premium-card" style={{ padding: 24 }}>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
