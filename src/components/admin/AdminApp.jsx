@@ -80,6 +80,8 @@ export default function App({ onLogout, loggedInEmail }) {
   const [company, setCompany] = useState(null);
   const [plans, setPlans] = useState([]);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const [checkoutPlan, setCheckoutPlan] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
@@ -430,14 +432,134 @@ export default function App({ onLogout, loggedInEmail }) {
   };
 
   const handleSelectPlan = async (planId) => {
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    if (plan.price === 0) {
+      try {
+        const result = await api.chooseSubscriptionPlan(planId, selectedCurrency);
+        if (result.success) {
+          alert(`Congratulations! You have successfully subscribed to the ${plan.name}.`);
+          window.location.reload();
+        }
+      } catch (err) {
+        alert("Failed to activate plan: " + err.message);
+      }
+    } else {
+      setCheckoutPlan(plan);
+      setShowPaymentModal(true);
+    }
+  };
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleInitiatePayment = async (gateway) => {
+    if (!checkoutPlan) return;
+    const price = selectedCurrency === 'INR' ? checkoutPlan.price * 83 : checkoutPlan.price;
+
     try {
-      const result = await api.chooseSubscriptionPlan(planId, selectedCurrency);
-      if (result.success) {
-        alert(`Congratulations! You have successfully subscribed to the ${planId.toUpperCase()} plan.`);
-        window.location.reload();
+      if (gateway === 'mock') {
+        const result = await api.chooseSubscriptionPlan(checkoutPlan.id, selectedCurrency);
+        if (result.success) {
+          alert(`Congratulations! You have successfully subscribed to the ${checkoutPlan.name} (Trial Mode).`);
+          window.location.reload();
+        }
+      } 
+      else if (gateway === 'stripe') {
+        const result = await api.createStripeSession({
+          planId: checkoutPlan.id,
+          planName: checkoutPlan.name,
+          amount: Math.round(price),
+          currency: selectedCurrency
+        });
+        if (result.success && result.url) {
+          window.location.href = result.url;
+        } else {
+          alert("Stripe Checkout failed to load.");
+        }
+      } 
+      else if (gateway === 'razorpay') {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) {
+          alert("Failed to load Razorpay Payment Gateway script.");
+          return;
+        }
+
+        const order = await api.createRazorpayOrder({
+          amount: Math.round(price),
+          currency: selectedCurrency === 'INR' ? 'INR' : 'USD'
+        });
+
+        if (order.success) {
+          if (order.orderId.includes('mock')) {
+            const verify = await api.verifyPayment({
+              gateway: 'razorpay',
+              planId: checkoutPlan.id,
+              orderId: order.orderId,
+              paymentId: `pay_mock_${Date.now()}`,
+              signature: `sig_mock_${Date.now()}`,
+              amount: price,
+              currency: selectedCurrency
+            });
+            if (verify.success) {
+              alert(`Congratulations! Payment verified successfully via Razorpay (Sandbox).`);
+              window.location.reload();
+            }
+            return;
+          }
+
+          const options = {
+            key: order.key,
+            amount: order.amount,
+            currency: order.currency,
+            name: "ITLC Workspace",
+            description: `Subscription for ${checkoutPlan.name}`,
+            order_id: order.orderId,
+            handler: async function (response) {
+              try {
+                const verify = await api.verifyPayment({
+                  gateway: 'razorpay',
+                  planId: checkoutPlan.id,
+                  paymentId: response.razorpay_payment_id,
+                  orderId: response.razorpay_order_id,
+                  signature: response.razorpay_signature,
+                  amount: price,
+                  currency: selectedCurrency
+                });
+                if (verify.success) {
+                  alert(`Payment verified successfully! Welcome to ITLC HRMS.`);
+                  window.location.reload();
+                }
+              } catch (err) {
+                alert("Payment verification failed: " + err.message);
+              }
+            },
+            prefill: {
+              name: profile.name,
+              email: profile.email || ''
+            },
+            theme: {
+              color: "#4F46E5"
+            }
+          };
+          const rzp = new window.Razorpay(options);
+          rzp.open();
+        }
       }
     } catch (err) {
-      alert("Failed to activate plan: " + err.message);
+      alert("Payment processing error: " + err.message);
     }
   };
 
@@ -525,6 +647,80 @@ export default function App({ onLogout, loggedInEmail }) {
               Sign out and return to Login
             </button>
           </div>
+
+          {/* Payment Selection Modal */}
+          <AnimatePresence>
+            {showPaymentModal && checkoutPlan && (
+              <>
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.5 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowPaymentModal(false)}
+                  style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 1000 }}
+                />
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="premium-card text-center"
+                  style={{
+                    position: 'fixed',
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 1001,
+                    padding: 32,
+                    width: '90%',
+                    maxWidth: 420,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 20
+                  }}
+                >
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>Complete Your Subscription</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-tertiary)', marginTop: 8 }}>
+                      You are subscribing to the <strong>{checkoutPlan.name}</strong> for {selectedCurrency === 'INR' ? '₹' : selectedCurrency === 'EUR' ? '€' : selectedCurrency === 'GBP' ? '£' : '$'}{Math.round(selectedCurrency === 'INR' ? checkoutPlan.price * 83 : checkoutPlan.price)}/mo.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <button 
+                      onClick={() => handleInitiatePayment('stripe')}
+                      className="premium-btn premium-btn-primary"
+                      style={{ padding: 12, borderRadius: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                    >
+                      💳 Pay with Stripe (Cards)
+                    </button>
+
+                    <button 
+                      onClick={() => handleInitiatePayment('razorpay')}
+                      className="premium-btn premium-btn-primary"
+                      style={{ padding: 12, borderRadius: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#111827', color: 'white', borderColor: '#1b263b' }}
+                    >
+                      ⚡ Pay with Razorpay (UPI, Netbanking)
+                    </button>
+
+                    <button 
+                      onClick={() => handleInitiatePayment('mock')}
+                      className="premium-btn premium-btn-secondary"
+                      style={{ padding: 12, borderRadius: 12, fontWeight: 600, border: '1px dashed var(--color-border)' }}
+                    >
+                      🛠️ Test Mode: Fast Activate
+                    </button>
+                  </div>
+
+                  <button 
+                    onClick={() => setShowPaymentModal(false)}
+                    style={{ border: 'none', background: 'transparent', color: 'var(--color-text-tertiary)', fontSize: '0.8rem', cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     );
