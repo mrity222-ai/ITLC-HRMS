@@ -843,6 +843,38 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     }
   };
 
+  const handleCopyCredentials = async (emp) => {
+    let password = emp.tempPassword;
+    if (!password) {
+      password = 'Pass_' + Math.floor(1000 + Math.random() * 9000);
+      try {
+        await api.updateEmployee(emp.id, { password });
+        setEmployees(prev => prev.map(e => e.id === emp.id ? { ...e, tempPassword: password } : e));
+      } catch (err) {
+        console.error("Auto-password set failed:", err);
+      }
+    }
+    navigator.clipboard.writeText(`Employee ID: ${emp.id}\nEmail: ${emp.email}\nPassword: ${password}`);
+    alert('Credentials copied to clipboard!');
+  };
+
+  const handleWhatsAppShare = async (emp) => {
+    let password = emp.tempPassword;
+    if (!password) {
+      password = 'Pass_' + Math.floor(1000 + Math.random() * 9000);
+      try {
+        await api.updateEmployee(emp.id, { password });
+        setEmployees(prev => prev.map(e => e.id === emp.id ? { ...e, tempPassword: password } : e));
+      } catch (err) {
+        console.error("Auto-password set failed:", err);
+      }
+    }
+    const text = `Hi ${emp.name}!\nWelcome to the team. Here are your HRMS Portal Login Credentials:\n\n*Portal URL:* https://gold-stork-993357.hostingersite.com\n*Employee ID:* ${emp.id}\n*Password:* ${password}\n\nPlease change your password after logging in.`;
+    const phoneNum = emp.phone ? emp.phone.replace(/[^0-9]/g, '') : '';
+    const formattedPhone = phoneNum.length === 10 ? `91${phoneNum}` : phoneNum;
+    window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
+  };
+
   const handleBulkResendCredentials = async () => {
     if (selectedEmployeeIds.length === 0) return;
     if (!window.confirm(`Kya aap in ${selectedEmployeeIds.length} employees ko ek sath login details email karna chahte hain?`)) {
@@ -1360,10 +1392,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                               <div style={{ display: 'inline-flex', gap: 10, justifyContent: 'flex-end', width: '100%' }}>
                                 {/* Copy Credentials */}
                                 <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(`Employee ID: ${emp.id}\nEmail: ${emp.email}\nPassword: ${emp.tempPassword || 'Auto-generated'}`);
-                                    alert('Credentials copied to clipboard!');
-                                  }}
+                                  onClick={() => handleCopyCredentials(emp)}
                                   className="premium-btn premium-btn-secondary"
                                   style={{ padding: '4px 10px', fontSize: '0.7rem' }}
                                   title="Copy Login Details"
@@ -1372,12 +1401,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                                 </button>
                                 {/* Share via WhatsApp */}
                                 <button
-                                  onClick={() => {
-                                    const text = `Hi ${emp.name}!\nWelcome to the team. Here are your HRMS Portal Login Credentials:\n\n*Portal URL:* https://gold-stork-993357.hostingersite.com\n*Employee ID:* ${emp.id}\n*Password:* ${emp.tempPassword || 'Auto-generated'}\n\nPlease change your password after logging in.`;
-                                    const phoneNum = emp.phone ? emp.phone.replace(/[^0-9]/g, '') : '';
-                                    const formattedPhone = phoneNum.length === 10 ? `91${phoneNum}` : phoneNum;
-                                    window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
-                                  }}
+                                  onClick={() => handleWhatsAppShare(emp)}
                                   className="premium-btn premium-btn-secondary"
                                   style={{ padding: '4px 10px', fontSize: '0.7rem', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)' }}
                                   title="Share to WhatsApp"
