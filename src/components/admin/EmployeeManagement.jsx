@@ -393,10 +393,6 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
         const comp = await api.getCompany();
         if (comp) {
           setCompanyName(comp.name || 'ITLC HRMS');
-          if (comp.googleScriptUrl) {
-            setGoogleScriptUrl(comp.googleScriptUrl);
-            setScriptUrlInput(comp.googleScriptUrl);
-          }
         }
       } catch (err) {
         console.error("Failed to load company profile:", err);
@@ -405,8 +401,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     fetchCompanyData();
   }, []);
 
-  const [googleScriptUrl, setGoogleScriptUrl] = useState('');
-  const [scriptUrlInput, setScriptUrlInput] = useState('');
+  const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbyteDWBZjMqX0iqPqH-UOHkWGEwv4HfCnIoZA3_UoldrgrTPYnCUIqm2lYpr8J38S8f/exec';
   const [companyName, setCompanyName] = useState('ITLC HRMS');
   const [showScriptModal, setShowScriptModal] = useState(false);
 
@@ -1351,72 +1346,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
 
             {/* Credentials Hub Table */}
             {dirSubTab === 'credentials' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-                {/* Google Sheet Automation Config Card */}
-                <div className="premium-card" style={{ padding: 20, background: 'var(--glass-bg)', borderRadius: '16px', border: '1px solid var(--color-border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 8 }}>
-                    <h5 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>
-                      <span>📊 Google Sheets Onboarding Automation</span>
-                      <span style={{ 
-                        fontSize: '0.7rem', 
-                        fontWeight: 600, 
-                        padding: '2px 8px', 
-                        borderRadius: 8, 
-                        background: googleScriptUrl ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
-                        color: googleScriptUrl ? '#10b981' : '#ef4444' 
-                      }}>
-                        {googleScriptUrl ? 'Active / Connected' : 'Not Connected'}
-                      </span>
-                    </h5>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 600, textDecoration: 'underline' }} onClick={() => setShowScriptModal(true)}>
-                      View Apps Script Setup Guide
-                    </span>
-                  </div>
-                  
-                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', margin: '0 0 12px 0', lineHeight: 1.4 }}>
-                    Apne Google Apps Script Web App URL ko niche set karein taaki naye employees onboarding details automatic aapki Google Sheet me save hon aur aapke logged-in Gmail se credentials email ho sakein.
-                  </p>
-
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <input 
-                      type="text" 
-                      value={scriptUrlInput}
-                      onChange={(e) => setScriptUrlInput(e.target.value)}
-                      placeholder="https://script.google.com/macros/s/.../exec"
-                      className="premium-input"
-                      style={{ flex: 1, minWidth: '280px', padding: '8px 12px', fontSize: '0.8rem', height: '36px' }}
-                    />
-                    <button 
-                      onClick={handleSaveGoogleScriptUrl}
-                      className="premium-btn premium-btn-primary"
-                      style={{ padding: '8px 16px', fontSize: '0.8rem', height: '36px' }}
-                    >
-                      Save Configuration
-                    </button>
-                    {googleScriptUrl && (
-                      <button 
-                        onClick={async () => {
-                          if (window.confirm("Kya aap sach me Google Sheets automation link delete karna chahte hain?")) {
-                            setScriptUrlInput('');
-                            try {
-                              await api.updateAdminCompany({ googleScriptUrl: '' });
-                              setGoogleScriptUrl('');
-                              alert("Google Sheets automation link deleted successfully!");
-                            } catch (err) {
-                              alert("Failed to delete settings: " + err.message);
-                            }
-                          }
-                        }}
-                        className="premium-btn"
-                        style={{ padding: '8px 16px', fontSize: '0.8rem', height: '36px', background: 'rgba(239, 68, 68, 0.05)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
-                      >
-                        Disconnect
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ maxHeight: '650px', overflowY: 'auto', paddingBottom: '16px', background: 'var(--glass-bg)', borderRadius: '16px', border: '1px solid var(--color-border)', width: '100%' }} className="premium-scrollbar">
+              <div style={{ maxHeight: '650px', overflowY: 'auto', paddingBottom: '16px', background: 'var(--glass-bg)', borderRadius: '16px', border: '1px solid var(--color-border)', width: '100%' }} className="premium-scrollbar">
                 <div className="premium-table-container" style={{ margin: 0 }}>
                   <table className="premium-table">
                     <thead>
@@ -1523,8 +1453,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
           </motion.div>
         )}
 
