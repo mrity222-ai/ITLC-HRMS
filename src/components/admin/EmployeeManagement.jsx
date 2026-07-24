@@ -834,15 +834,6 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     }
   };
 
-  const handleResendCredentials = async (emp) => {
-    try {
-      const res = await api.resendEmployeeCredentials(emp.id);
-      alert(res.message || `Login details successfully emailed to ${emp.email}`);
-    } catch (err) {
-      alert("Failed to send email: " + err.message);
-    }
-  };
-
   const handleCopyCredentials = async (emp) => {
     let password = emp.tempPassword;
     if (!password) {
@@ -874,21 +865,6 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     const formattedPhone = phoneNum.length === 10 ? `91${phoneNum}` : phoneNum;
     window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
   };
-
-  const handleBulkResendCredentials = async () => {
-    if (selectedEmployeeIds.length === 0) return;
-    if (!window.confirm(`Kya aap in ${selectedEmployeeIds.length} employees ko ek sath login details email karna chahte hain?`)) {
-      return;
-    }
-    try {
-      await Promise.all(selectedEmployeeIds.map(id => api.resendEmployeeCredentials(id)));
-      alert("Sabhi chune hue employees ko login details email kar di gayi hain!");
-      setSelectedEmployeeIds([]);
-    } catch (err) {
-      alert("Kuch employees ko email bhejne me error aayi: " + err.message);
-    }
-  };
-
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -1106,25 +1082,14 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                   >
                     Clear Selection
                   </button>
-                  {dirSubTab === 'credentials' ? (
-                    <button 
-                      onClick={handleBulkResendCredentials}
-                      className="premium-btn premium-btn-primary"
-                      style={{ padding: '6px 16px', fontSize: '0.75rem' }}
-                    >
-                      <Mail size={13} style={{ marginRight: 4 }} />
-                      Email Login Details
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={handleBulkDelete}
-                      className="premium-btn"
-                      style={{ padding: '6px 16px', fontSize: '0.75rem', background: '#ef4444', border: '1px solid #dc2626', color: '#fff' }}
-                    >
-                      <Trash2 size={13} style={{ marginRight: 4 }} />
-                      Delete Selected
-                    </button>
-                  )}
+                  <button 
+                    onClick={handleBulkDelete}
+                    className="premium-btn"
+                    style={{ padding: '6px 16px', fontSize: '0.75rem', background: '#ef4444', border: '1px solid #dc2626', color: '#fff' }}
+                  >
+                    <Trash2 size={13} style={{ marginRight: 4 }} />
+                    Delete Selected
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -1407,16 +1372,6 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                                   title="Share to WhatsApp"
                                 >
                                   WhatsApp
-                                </button>
-                                {/* Resend Email */}
-                                <button
-                                  onClick={() => handleResendCredentials(emp)}
-                                  className="premium-btn premium-btn-primary"
-                                  style={{ padding: '4px 10px', fontSize: '0.7rem' }}
-                                  title="Resend welcome email via SMTP"
-                                >
-                                  <Mail size={11} style={{ marginRight: 3 }} />
-                                  Email
                                 </button>
                               </div>
                             </td>
