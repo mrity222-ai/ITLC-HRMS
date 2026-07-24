@@ -844,6 +844,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async resendEmployeeCredentials(id: string) {
+    const res = await fetch(`${API_URL}/admin/employees/${id}/resend-credentials`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   async getAdminLeaves() {
     const res = await fetch(`${API_URL}/admin/leaves`, {
       method: 'GET',
