@@ -401,9 +401,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     fetchCompanyData();
   }, []);
 
-  const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbyteDWBZjMqX0iqPqH-UOHkWGEwv4HfCnIoZA3_UoldrgrTPYnCUIqm2lYpr8J38S8f/exec';
   const [companyName, setCompanyName] = useState('ITLC HRMS');
-  const [showScriptModal, setShowScriptModal] = useState(false);
 
   const fileInputRef = React.useRef(null);
 
@@ -499,13 +497,6 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
         email: result.employee.email,
         pass: result.generatedPassword || newPassword,
         employeeName: result.employee.name
-      });
-      
-      triggerGoogleScriptAutomation({
-        id: result.employee.id,
-        name: result.employee.name,
-        email: result.employee.email,
-        password: result.generatedPassword || newPassword
       });
 
       resetForm();
@@ -752,13 +743,6 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
               phone: data.phone || ''
             });
 
-            triggerGoogleScriptAutomation({
-              id: finalId,
-              name: data.name,
-              email: data.email,
-              password: finalPass
-            });
-
             createdCount++;
           }
         } catch (err) {
@@ -896,40 +880,6 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
     const phoneNum = emp.phone ? emp.phone.replace(/[^0-9]/g, '') : '';
     const formattedPhone = phoneNum.length === 10 ? `91${phoneNum}` : phoneNum;
     window.open(`https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(text)}`, '_blank');
-  };
-
-  const triggerGoogleScriptAutomation = async (empData) => {
-    if (!googleScriptUrl) return;
-    console.log("Triggering Google Sheets automation for:", empData.email);
-    try {
-      await fetch(googleScriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          companyName: companyName || 'ITLC HRMS',
-          employeeId: empData.id,
-          employeeName: empData.name,
-          employeeEmail: empData.email,
-          temporaryPassword: empData.password
-        })
-      });
-      console.log("Google Sheets automation success!");
-    } catch (err) {
-      console.error("Google Sheets automation request failed:", err);
-    }
-  };
-
-  const handleSaveGoogleScriptUrl = async () => {
-    try {
-      await api.updateAdminCompany({ googleScriptUrl: scriptUrlInput });
-      setGoogleScriptUrl(scriptUrlInput);
-      alert("Google Sheet Web App URL saved successfully!");
-    } catch (err) {
-      alert("Failed to save settings: " + err.message);
-    }
   };
 
   return (
@@ -2972,97 +2922,6 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
           </div>
         )}
       </AnimatePresence>
-
-      {/* Google Apps Script Modal Dialog */}
-      {showScriptModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: 16 }}>
-            <div className="premium-card w-full max-w-xl" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16, maxHeight: '90vh' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4 style={{ margin: 0, fontWeight: 700, fontSize: '1rem' }}>📋 Google Apps Script Setup Guide</h4>
-                <button 
-                  onClick={() => setShowScriptModal(false)}
-                  style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 0 }}
-                >
-                  ✕
-                </button>
-              </div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', margin: 0, lineHeight: 1.4 }}>
-                Follow these simple steps to configure your own Gmail sender automation for free:
-              </p>
-              <ol style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <li>Open a Google Sheet. Go to <strong>Extensions &gt; Apps Script</strong>.</li>
-                <li>Delete any default code and paste the script template shown below.</li>
-                <li>Click <strong>Deploy &gt; New Deployment</strong>. Choose type: <strong>Web App</strong>.</li>
-                <li>Execute as: <strong>Me (your email)</strong>. Who has access: <strong>Anyone</strong>.</li>
-                <li>Authorize permissions, copy the generated Web App URL, and paste it into the settings card in the Credentials Hub.</li>
-              </ol>
-              
-              <div style={{ flex: 1, overflowY: 'auto' }}>
-                <pre style={{ 
-                  fontFamily: 'monospace', 
-                  fontSize: '0.7rem', 
-                  background: '#f8fafc', 
-                  padding: 12, 
-                  borderRadius: 8, 
-                  border: '1px solid var(--color-border)', 
-                  whiteSpace: 'pre-wrap',
-                  color: '#334155',
-                  margin: 0
-                }}>
-{`function doPost(e) {
-  try {
-    var data = JSON.parse(e.postData.contents);
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    
-    // Write records to Google Sheet
-    sheet.appendRow([
-      new Date(),
-      data.companyName,
-      data.employeeId,
-      data.employeeName,
-      data.employeeEmail,
-      data.temporaryPassword,
-      "Welcome Email Dispatched"
-    ]);
-    
-    // Auto-deliver welcome email from your Google account!
-    var subject = "Welcome to " + data.companyName + " - Your HRMS Login Credentials";
-    var body = "Hi " + data.employeeName + ",\\n\\n" +
-               "Welcome to the team! Your employee account has been created on the HRMS Portal.\\n\\n" +
-               "Here are your login credentials:\\n" +
-               "🔑 Employee ID (Username): " + data.employeeId + "\\n" +
-               "🔒 Temporary Password: " + data.temporaryPassword + "\\n\\n" +
-               "💻 Portal URL: https://gold-stork-993357.hostingersite.com\\n\\n" +
-               "Please change your password after logging in.\\n\\n" +
-               "Best regards,\\n" +
-               data.companyName + " Support Team";
-               
-    GmailApp.sendEmail(data.employeeEmail, subject, body);
-    
-    return ContentService.createTextOutput(JSON.stringify({ success: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}`}
-                </pre>
-              </div>
-              
-              <button 
-                onClick={() => {
-                  const code = `function doPost(e) {\n  try {\n    var data = JSON.parse(e.postData.contents);\n    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();\n    \n    sheet.appendRow([\n      new Date(),\n      data.companyName,\n      data.employeeId,\n      data.employeeName,\n      data.employeeEmail,\n      data.temporaryPassword,\n      "Welcome Email Dispatched"\n    ]);\n    \n    var subject = "Welcome to " + data.companyName + " - Your HRMS Login Credentials";\n    var body = "Hi " + data.employeeName + ",\\n\\n" +\n               "Welcome to the team! Your employee account has been created on the HRMS Portal.\\n\\n" +\n               "Here are your login credentials:\\n" +\n               "🔑 Employee ID (Username): " + data.employeeId + "\\n" +\n               "🔒 Temporary Password: " + data.temporaryPassword + "\\n\\n" +\n               "💻 Portal URL: https://gold-stork-993357.hostingersite.com\\n\\n" +\n               "Please change your password after logging in.\\n\\n" +\n               "Best regards,\\n" +\n               data.companyName + " Support Team";\n               \n    GmailApp.sendEmail(data.employeeEmail, subject, body);\n    \n    return ContentService.createTextOutput(JSON.stringify({ success: true }))\n      .setMimeType(ContentService.MimeType.JSON);\n  } catch (err) {\n    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))\n      .setMimeType(ContentService.MimeType.JSON);\n  }\n}`;
-                  navigator.clipboard.writeText(code);
-                  alert("Apps Script template copied to clipboard!");
-                }}
-                className="premium-btn premium-btn-primary"
-                style={{ padding: '10px 18px', fontSize: '0.8rem' }}
-              >
-                Copy Apps Script Code
-              </button>
-            </div>
-          </div>
-        )}
     </div>
   );
 }
