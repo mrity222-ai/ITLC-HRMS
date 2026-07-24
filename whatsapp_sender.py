@@ -9,9 +9,9 @@
 #
 # Setup Steps:
 #   1. Make sure you are logged in to WhatsApp Web on your default Chrome browser.
-#   2. Place your exported logins CSV file in the same folder as this script.
-#   3. Change the 'csv_file_name' variable below to match your CSV file name.
-#   4. Run the script: python whatsapp_sender.py
+#   2. Go to your HRMS Admin Dashboard -> Credentials Hub -> Click "Export".
+#      (This downloads the logins sheet to your Downloads folder).
+#   3. Run the script: python whatsapp_sender.py
 # ==============================================================================
 
 import os
@@ -20,20 +20,29 @@ import pandas as pd
 import pywhatkit as kit
 
 # --- CONFIGURATION ---
-# Change this to the path of your exported logins CSV file
-csv_file_name = "onboarded_employee_logins.csv" 
+# The script will search for the file in your Downloads folder first, then the current folder
+downloads_path = os.path.expanduser("~/Downloads/onboarded_employee_logins.csv")
+local_path = "onboarded_employee_logins.csv"
 # ---------------------
 
 def send_bulk_whatsapp():
-    if not os.path.exists(csv_file_name):
-        print(f"❌ Error: File '{csv_file_name}' not found!")
-        print("Please export the logins CSV from your HRMS Credentials Hub and save it in this folder.")
+    # Resolve which file exists
+    csv_file_name = None
+    if os.path.exists(downloads_path):
+        csv_file_name = downloads_path
+        print(f"📂 Found logins file in Downloads folder: {csv_file_name}")
+    elif os.path.exists(local_path):
+        csv_file_name = local_path
+        print(f"📂 Found logins file in local folder: {csv_file_name}")
+    else:
+        print("❌ Error: 'onboarded_employee_logins.csv' not found!")
+        print(f"Tried locations:\n  1. {downloads_path}\n  2. {os.path.abspath(local_path)}")
+        print("\nPlease go to your HRMS Credentials Hub, click 'Export', and run this script again.")
         return
 
     print(f"📖 Reading credentials from {csv_file_name}...")
     try:
-        # Load CSV (expects columns: Name, Email, Employee ID, Password)
-        # Note: If phone is not in credentials CSV, it will look up Phone column
+        # Load CSV (expects columns: Name, Email, Employee ID, Password, Phone)
         df = pd.read_csv(csv_file_name)
     except Exception as e:
         print(f"❌ Error reading CSV: {e}")
@@ -44,14 +53,11 @@ def send_bulk_whatsapp():
     for col in required_cols:
         if col not in df.columns:
             print(f"❌ Error: CSV must contain '{col}' column!")
+            print(f"Found columns: {list(df.columns)}")
             return
 
-    # We also need a Phone column. If not in logins CSV, we ask the user to make sure it exists.
+    # We also need a Phone column
     if "Phone" not in df.columns:
-        # If no Phone column, let's look for phone numbers.
-        # We can ask the user to add phone numbers manually to the CSV or fetch them.
-        print("⚠️ Warning: 'Phone' column not found in CSV.")
-        print("Please make sure your CSV has a 'Phone' column with the employee mobile numbers.")
         # Try to find common column names for phone
         found_phone = False
         for c in df.columns:
@@ -61,7 +67,7 @@ def send_bulk_whatsapp():
                 found_phone = True
                 break
         if not found_phone:
-            print("Please edit the CSV file and add a 'Phone' column containing mobile numbers.")
+            print("❌ Error: 'Phone' column not found in CSV. Please edit the CSV and add a 'Phone' column containing mobile numbers.")
             return
 
     print(f"🚀 Loaded {len(df)} employees. Starting WhatsApp automation in 5 seconds...")
