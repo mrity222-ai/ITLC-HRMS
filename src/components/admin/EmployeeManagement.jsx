@@ -724,7 +724,8 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
               name: data.name,
               email: data.email,
               id: finalId,
-              password: finalPass
+              password: finalPass,
+              phone: data.phone || ''
             });
             createdCount++;
           }
@@ -760,14 +761,35 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   };
 
   const handleDownloadLoginsCSV = () => {
-    const headers = ["Name", "Email", "Employee ID", "Password"];
-    const rows = importedCredentials.map(c => [c.name, c.email, c.id, c.password]);
+    const headers = ["Name", "Email", "Employee ID", "Password", "Phone"];
+    const rows = importedCredentials.map(c => [c.name, c.email, c.id, c.password, c.phone || '']);
     const csvContent = [headers.join(","), ...rows.map(r => r.map(val => `"${val.replace(/"/g, '""')}"`).join(","))].join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `onboarded_employee_logins_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `onboarded_employee_logins.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportCredentialsCSV = () => {
+    if (employees.length === 0) return alert("No employees to export.");
+    const headers = ["Name", "Email", "Employee ID", "Password", "Phone"];
+    const rows = employees.map(emp => [
+      emp.name || '',
+      emp.email || '',
+      emp.id || '',
+      emp.tempPassword || '',
+      emp.phone || ''
+    ]);
+    const csvContent = [headers.join(","), ...rows.map(e => e.map(val => `"${val.toString().replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `onboarded_employee_logins.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1011,7 +1033,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                     <Upload size={14} />
                     <span>Import</span>
                   </button>
-                  <button onClick={handleExport} className="premium-btn premium-btn-secondary" style={{ padding: '8px 14px' }}>
+                  <button onClick={dirSubTab === 'credentials' ? handleExportCredentialsCSV : handleExport} className="premium-btn premium-btn-secondary" style={{ padding: '8px 14px' }}>
                     <Download size={14} />
                     <span>Export</span>
                   </button>
