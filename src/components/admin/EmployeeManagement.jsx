@@ -375,26 +375,6 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   const [customId, setCustomId] = useState('');
   const [portalPassword, setPortalPassword] = useState('');
 
-  const [selectedEmpAttendance, setSelectedEmpAttendance] = useState([]);
-  const [loadingAttendance, setLoadingAttendance] = useState(false);
-
-  useEffect(() => {
-    if (activeProfileTab === 'Attendance Logs' && selectedProfile) {
-      const loadAttendance = async () => {
-        setLoadingAttendance(true);
-        try {
-          const data = await api.getAdminAttendance(selectedProfile.id);
-          setSelectedEmpAttendance(data || []);
-        } catch (err) {
-          console.error("Failed to load employee attendance logs:", err);
-        } finally {
-          setLoadingAttendance(false);
-        }
-      };
-      loadAttendance();
-    }
-  }, [activeProfileTab, selectedProfile]);
-
   useEffect(() => {
     const loadDepartments = async () => {
       try {
@@ -441,6 +421,27 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   const [newSalary, setNewSalary] = useState('');
   const [localSearch, setLocalSearch] = useState('');
   const [activeProfileTab, setActiveProfileTab] = useState('Personal Info');
+
+  const [selectedEmpAttendance, setSelectedEmpAttendance] = useState([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+
+  useEffect(() => {
+    if (activeProfileTab === 'Attendance Logs' && selectedProfile) {
+      const loadAttendance = async () => {
+        setLoadingAttendance(true);
+        try {
+          const data = await api.getAdminAttendance(selectedProfile.id);
+          setSelectedEmpAttendance(data || []);
+        } catch (err) {
+          console.error("Failed to load employee attendance logs:", err);
+        } finally {
+          setLoadingAttendance(false);
+        }
+      };
+      loadAttendance();
+    }
+  }, [activeProfileTab, selectedProfile]);
+
   const [newDob, setNewDob] = useState('');
   const [newJoiningDate, setNewJoiningDate] = useState(new Date().toISOString().split('T')[0]);
   const [newGender, setNewGender] = useState('Male');
