@@ -74,7 +74,7 @@ const compressImage = (base64Str: string, maxWidth = 800, maxHeight = 800): Prom
 };
 
 export const LeaveManagement: React.FC = () => {
-  const { leaveBalances, leaveRequests, applyLeave, cancelLeave, activeSubTab: globalSubTab, setActiveSubTab: setGlobalSubTab } = useHRMS();
+  const { leaveBalances, leaveRequests, applyLeave, cancelLeave, activeSubTab: globalSubTab, setActiveSubTab: setGlobalSubTab, holidays } = useHRMS();
 
   // Sub-Navigation Tab State (mapping global subtab selectors to local ones)
   const localTabMap: Record<string, string> = {
@@ -306,22 +306,18 @@ export const LeaveManagement: React.FC = () => {
     }
   };
 
-  // 4. HOLIDAY CALENDAR DATA
-  const companyHolidays = [
+  // 4. HOLIDAY CALENDAR DATA (dynamically fetched from DB via context)
+  const companyHolidays = (holidays && holidays.length > 0) ? holidays.map((h: any, index: number) => ({
+    id: h.id || index,
+    name: h.name,
+    date: h.date,
+    type: h.type || 'Public Holiday'
+  })) : [
     { id: 1, name: "New Year's Day", date: "2026-01-01", type: "Public Holiday" },
-    { id: 2, name: "Memorial Day", date: "2026-05-25", type: "Public Holiday" },
-    { id: 3, name: "ITLC Foundation Day", date: "2026-06-15", type: "Company Holiday" },
-    { id: 4, name: "Independence Day", date: "2026-07-04", type: "Public Holiday" },
-    { id: 5, name: "Labor Day", date: "2026-09-07", type: "Public Holiday" },
-    { id: 6, name: "Thanksgiving Day", date: "2026-11-26", type: "Public Holiday" },
-    { id: 7, name: "Christmas Day", date: "2026-12-25", type: "Public Holiday" },
+    { id: 2, name: "Republic Day", date: "2026-01-26", type: "Public Holiday" },
+    { id: 3, name: "Independence Day", date: "2026-08-15", type: "Public Holiday" },
+    { id: 4, name: "Christmas Day", date: "2026-12-25", type: "Public Holiday" },
   ];
-
-  // Render Calendar Grid for July 2026 (Starts on Wednesday, 31 days)
-  const daysInJuly = 31;
-  const julyStartOffset = 3; // Wednesday (Index 3: Mon=1, Tue=2, Wed=3)
-
-  const julyHolidays = companyHolidays.filter((h) => h.date.startsWith("2026-07"));
 
   // Timeline Step Generator
   const renderTimeline = (req: LeaveRequest) => {
@@ -885,7 +881,7 @@ export const LeaveManagement: React.FC = () => {
                 <div className="flex justify-between items-center pb-2 border-b border-border">
                   <div>
                     <h3 className="text-sm font-bold text-foreground">Holiday Schedule</h3>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Corporate holidays for calendar year 2026</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Corporate holidays for calendar year {new Date().getFullYear()}</p>
                   </div>
                   
                   {/* View toggle */}
@@ -919,42 +915,40 @@ export const LeaveManagement: React.FC = () => {
                         {d}
                       </span>
                     ))}
-                    {/* Generate simple calendar cells for 2026 */}
-                    {Array.from({ length: 35 }).map((_, idx) => {
-                      const dayNum = (idx - 3) + 1; // Offset for Wed start
-                      const isValid = dayNum > 0 && dayNum <= 31;
-                      const hasHoliday = isValid && [1, 26].includes(dayNum); // New Year, Republic Day
-                      return (
-                        <div
-                          key={idx}
-                          className={cn(
-                            "aspect-square flex flex-col justify-between p-1.5 rounded-lg border border-border/40 font-mono text-[9px] relative",
-                            !isValid && "opacity-0 pointer-events-none",
-                            hasHoliday && "bg-primary/5 border-primary/20 text-primary font-bold"
-                          )}
-                        >
-                          <span>{isValid ? dayNum : ""}</span>
-                          {hasHoliday && (
-                            <span className="w-1.5 h-1.5 bg-primary rounded-full absolute bottom-1.5 right-1/2 translate-x-1/2" />
-                          )}
-                        </div>
-                      );
-                    })}
+                    {(() => {
+                      const curMonth = new Date().getMonth();
+                      const curYear = new Date().getFullYear();
+                      const daysCount = new Date(curYear, curMonth + 1, 0).getDate();
+                      const offset = new Date(curYear, curMonth, 1).getDay();
+                      
+                      return Array.from({ length: 42 }).map((_, idx) => {
+                        const dayNum = (idx - offset) + 1;
+                        const isValid = dayNum > 0 && dayNum <= daysCount;
+                        const cellDateStr = isValid ? `${curYear}-${(curMonth + 1).toString().padStart(2, '0')}-${dayNum.toString().padStart(2, '0')}` : '';
+                        const dayHoliday = isValid ? companyHolidays.find(h => h.date === cellDateStr) : null;
+                        
+                        return (
+                          <div
+                            key={idx}
+                            title={dayHoliday ? `${dayHoliday.name} (${dayHoliday.type})` : ''}
+                            className={cn(
+                              "aspect-square flex flex-col justify-between p-1.5 rounded-lg border border-border/40 font-mono text-[9px] relative",
+                              !isValid && "opacity-0 pointer-events-none",
+                              dayHoliday && "bg-destructive/5 border-destructive/20 text-destructive font-bold"
+                            )}
+                          >
+                            <span>{isValid ? dayNum : ""}</span>
+                            {dayHoliday && (
+                              <span className="w-1.5 h-1.5 bg-destructive rounded-full absolute bottom-1.5 right-1/2 translate-x-1/2" />
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 ) : (
-                  <div className="divide-y divide-border text-xs">
-                    {[
-                      { name: "New Year's Day", date: "2026-01-01", type: "Gazetted" },
-                      { name: "Republic Day", date: "2026-01-26", type: "Gazetted" },
-                      { name: "Maha Shivratri", date: "2026-02-15", type: "Gazetted" },
-                      { name: "Holi Festival", date: "2026-03-04", type: "Gazetted" },
-                      { name: "Good Friday", date: "2026-04-03", type: "Gazetted" },
-                      { name: "Eid-ul-Fitr", date: "2026-04-18", type: "Gazetted" },
-                      { name: "Independence Day", date: "2026-08-15", type: "Gazetted" },
-                      { name: "Gandhi Jayanti", date: "2026-10-02", type: "Gazetted" },
-                      { name: "Diwali Festival", date: "2026-11-08", type: "Gazetted" },
-                      { name: "Christmas Day", date: "2026-12-25", type: "Gazetted" },
-                    ].map((h, i) => (
+                  <div className="divide-y divide-border text-xs max-h-[300px] overflow-y-auto pr-1">
+                    {companyHolidays.map((h, i) => (
                       <div key={i} className="py-2.5 flex justify-between items-center">
                         <div>
                           <span className="font-semibold text-foreground">{h.name}</span>
@@ -963,6 +957,9 @@ export const LeaveManagement: React.FC = () => {
                         <span className="font-mono text-muted-foreground">{h.date}</span>
                       </div>
                     ))}
+                    {companyHolidays.length === 0 && (
+                      <div className="py-8 text-center text-muted-foreground">No holidays found.</div>
+                    )}
                   </div>
                 )}
               </Card>
@@ -975,26 +972,29 @@ export const LeaveManagement: React.FC = () => {
                   </h4>
                 </div>
                 <div className="space-y-3">
-                  {[
-                    { name: "New Year's Day", date: "2026-01-01", desc: "Start of calendar year" },
-                    { name: "Republic Day", date: "2026-01-26", desc: "Indian national festival" },
-                    { name: "Holi Festival", date: "2026-03-04", desc: "Traditional spring festival" },
-                  ].map((h, idx) => (
-                    <div key={idx} className="flex justify-between items-center p-3 bg-secondary/35 rounded-xl border border-border">
-                      <div className="space-y-0.5">
-                        <span className="font-bold text-foreground text-xs block">{h.name}</span>
-                        <span className="text-[10px] text-muted-foreground block">{h.desc}</span>
+                  {companyHolidays
+                    .filter(h => new Date(h.date) >= new Date(new Date().setHours(0,0,0,0)))
+                    .sort((a,b) => a.date.localeCompare(b.date))
+                    .slice(0, 5)
+                    .map((h, idx) => (
+                      <div key={idx} className="flex justify-between items-center p-3 bg-secondary/35 rounded-xl border border-border">
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-foreground text-xs block">{h.name}</span>
+                          <span className="text-[10px] text-muted-foreground block">{h.type}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-semibold text-foreground font-mono block text-xs">
+                            {new Date(h.date).toLocaleDateString("en-US", { month: "short", day: "2-digit" })}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground block">
+                            {new Date(h.date).toLocaleDateString("en-US", { weekday: "short" })}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="font-semibold text-foreground font-mono block">
-                          {new Date(h.date).toLocaleDateString("en-US", { month: "short", day: "2-digit" })}
-                        </span>
-                        <span className="text-[9px] text-muted-foreground block">
-                          {new Date(h.date).toLocaleDateString("en-US", { weekday: "short" })}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  {companyHolidays.filter(h => new Date(h.date) >= new Date(new Date().setHours(0,0,0,0))).length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground text-xs">No upcoming holidays.</div>
+                  )}
                 </div>
               </Card>
 

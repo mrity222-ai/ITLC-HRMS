@@ -236,6 +236,9 @@ interface HRMSContextType {
   settings: UserSettings;
   updateSettings: (settings: Partial<UserSettings>) => void;
 
+  // Holidays
+  holidays: any[];
+
   // Authentication
   isAuthenticated: boolean;
   login: (email: string, pass: string) => Promise<boolean>;
@@ -322,6 +325,7 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>(defaultNotifications);
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
+  const [holidays, setHolidays] = useState<any[]>([]);
 
   // Load profile and business logs live from REST APIs
   useEffect(() => {
@@ -476,6 +480,16 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
           }
         } catch (e) {
           console.error("Failed to load announcements from DB:", e);
+        }
+
+        // Load Holidays
+        try {
+          const holsList = await api.getAdminHolidays();
+          if (Array.isArray(holsList)) {
+            setHolidays(holsList);
+          }
+        } catch (e) {
+          console.error("Failed to load holidays from DB:", e);
         }
 
         // Dynamically build notifications from leaves, expenses, and tickets
@@ -1238,6 +1252,7 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
         addNotification,
         settings,
         updateSettings,
+        holidays,
         isAuthenticated,
         login,
         logout,

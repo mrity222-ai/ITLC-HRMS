@@ -56,22 +56,30 @@ export default function Attendance({ subTab = 'dashboard' }) {
   const [editShiftStart, setEditShiftStart] = useState('');
   const [editShiftEnd, setEditShiftEnd] = useState('');
 
+  // Holiday management states
+  const [holidays, setHolidays] = useState([]);
+  const [selectedGridDay, setSelectedGridDay] = useState(null);
+  const [holidayNameInput, setHolidayNameInput] = useState('');
+  const [holidayTypeInput, setHolidayTypeInput] = useState('Public Holiday');
+
   const todayDate = new Date().toISOString().split('T')[0];
   const todayOwnRecord = ownLogs.find(r => r.date === todayDate);
 
   const fetchLogs = async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     try {
-      const [data, personalData, company, corrData] = await Promise.all([
+      const [data, personalData, company, corrData, holidayList] = await Promise.all([
         api.getAdminAttendance(),
         api.getEmployeeAttendance(),
         api.getAdminCompany(),
-        api.getManagerCorrections().catch(() => [])
+        api.getManagerCorrections().catch(() => []),
+        api.getAdminHolidays().catch(() => [])
       ]);
       setLogs(data || []);
       setOwnLogs(personalData || []);
       setCompanyDetails(company || null);
       setCorrections(corrData || []);
+      setHolidays(holidayList || []);
     } catch (err) {
       console.error("Failed to fetch admin attendance logs:", err);
     } finally {
@@ -118,6 +126,41 @@ export default function Attendance({ subTab = 'dashboard' }) {
     }
     return () => clearInterval(interval);
   }, [punchedIn, punchTime]);
+
+  const handleSaveHoliday = async (e) => {
+    e.preventDefault();
+    if (!selectedGridDay) return;
+    try {
+      if (selectedGridDay.holiday) {
+        // Delete existing holiday
+        await api.deleteAdminHoliday(selectedGridDay.holiday.id);
+        alert("Holiday removed successfully!");
+      } else {
+        // Create new holiday
+        await api.createAdminHoliday({
+          name: holidayNameInput,
+          date: selectedGridDay.date,
+          type: holidayTypeInput
+        });
+        alert("Holiday added successfully!");
+      }
+      setSelectedGridDay(null);
+      fetchLogs(true); // reload to get updated holidays list
+    } catch (err) {
+      alert("Failed to save holiday: " + err.message);
+    }
+  };
+
+  const handleRemoveHolidayDirectly = async (holidayId) => {
+    try {
+      await api.deleteAdminHoliday(holidayId);
+      alert("Holiday removed successfully!");
+      setSelectedGridDay(null);
+      fetchLogs(true);
+    } catch (err) {
+      alert("Failed to remove holiday: " + err.message);
+    }
+  };
 
   const todayLogs = logs.filter(l => l.date === todayDate);
   const totalPresentToday = todayLogs.filter(l => l.status === 'Present' || l.status === 'Late').length;
@@ -679,11 +722,17 @@ export default function Attendance({ subTab = 'dashboard' }) {
                   const dayOfWeek = dateObj.getDay();
                   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                   
+                  const holiday = holidays.find(h => h.date === dateStr);
+                  
                   let displayColor = 'var(--color-text-tertiary)';
                   let bg = 'rgba(0,0,0,0.02)';
                   let label = 'N/A';
 
-                  if (log) {
+                  if (holiday) {
+                    displayColor = '#EF4444';
+                    bg = 'rgba(239, 68, 68, 0.08)';
+                    label = `Holiday: ${holiday.name}`;
+                  } else if (log) {
                     if (log.status === 'Present' || log.status === 'On Time') {
                       displayColor = 'var(--color-success)';
                       bg = 'var(--color-success-light)';
@@ -711,27 +760,55 @@ export default function Attendance({ subTab = 'dashboard' }) {
                     label = 'Absent';
                   }
 
-                  days.push({ day: d, date: dateStr, displayColor, bg, label });
+                  days.push({ day: d, date: dateStr, displayColor, bg, label, holiday });
                 }
 
                 return days.map((dayItem) => (
                   <div 
                     key={dayItem.day} 
                     title={`${dayItem.date} - ${dayItem.label}`}
+                    onClick={() => {
+                      setSelectedGridDay(dayItem);
+                      if (dayItem.holiday) {
+                        setHolidayNameInput(dayItem.holiday.name);
+                        setHolidayTypeInput(dayItem.holiday.type);
+                      } else {
+                        setHolidayNameInput('');
+                        setHolidayTypeInput('Public Holiday');
+                      }
+                    }}
                     style={{
-                      height: 50,
-                      borderRadius: 10,
+                      height: 60,
+                      borderRadius: 12,
                       background: dayItem.bg,
-                      border: '1px solid var(--color-border)',
+                      border: dayItem.holiday ? '2px solid #EF4444' : '1px solid var(--color-border)',
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '0.85rem',
                       fontWeight: 700,
-                      color: dayItem.displayColor
+                      color: dayItem.displayColor,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      position: 'relative'
                     }}
                   >
-                    {dayItem.day}
+                    <span>{dayItem.day}</span>
+                    {dayItem.holiday && (
+                      <span style={{ 
+                        fontSize: '0.65rem', 
+                        fontWeight: 600, 
+                        color: '#EF4444', 
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap',
+                        maxWidth: '90%',
+                        marginTop: 2
+                      }}>
+                        🎉 {dayItem.holiday.name}
+                      </span>
+                    )}
                   </div>
                 ));
               })()}
@@ -1004,6 +1081,112 @@ export default function Attendance({ subTab = 'dashboard' }) {
                 Save Changes
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {selectedGridDay && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div className="premium-card" style={{ width: '100%', maxWidth: 420, padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 4 }}>
+                {selectedGridDay.holiday ? 'Remove Holiday' : 'Declare Holiday'}
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)' }}>
+                Managing calendar schedule for <strong>{selectedGridDay.date}</strong>
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveHoliday} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {!selectedGridDay.holiday ? (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="premium-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Holiday Name</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={holidayNameInput} 
+                      onChange={(e) => setHolidayNameInput(e.target.value)} 
+                      className="premium-input" 
+                      placeholder="e.g. Independence Day, Eid-ul-Fitr"
+                      style={{ width: '100%', height: 42, padding: '0 12px' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="premium-label" style={{ fontSize: '0.75rem', fontWeight: 600 }}>Holiday Type</label>
+                    <select 
+                      value={holidayTypeInput} 
+                      onChange={(e) => setHolidayTypeInput(e.target.value)} 
+                      className="premium-input"
+                      style={{ width: '100%', height: 42, padding: '0 12px' }}
+                    >
+                      <option value="Public Holiday">Public Holiday</option>
+                      <option value="Company Holiday">Company Holiday</option>
+                      <option value="Restricted Holiday">Restricted Holiday</option>
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.2)', fontSize: '0.85rem' }}>
+                  <p style={{ margin: '0 0 6px 0', fontWeight: 'bold', color: '#EF4444' }}>Current Holiday: {selectedGridDay.holiday.name}</p>
+                  <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.75rem' }}>
+                    Type: {selectedGridDay.holiday.type}
+                  </p>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
+                <button 
+                  type="button"
+                  onClick={() => setSelectedGridDay(null)} 
+                  className="premium-btn premium-btn-secondary"
+                  style={{ padding: '10px 20px', flex: 1, justifyContent: 'center' }}
+                >
+                  Cancel
+                </button>
+                {selectedGridDay.holiday ? (
+                  <button 
+                    type="button"
+                    onClick={() => handleRemoveHolidayDirectly(selectedGridDay.holiday.id)} 
+                    className="premium-btn"
+                    style={{ 
+                      padding: '10px 24px', 
+                      flex: 1, 
+                      justifyContent: 'center',
+                      background: '#EF4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      fontWeight: 600
+                    }}
+                  >
+                    Delete Holiday
+                  </button>
+                ) : (
+                  <button 
+                    type="submit" 
+                    className="premium-btn premium-btn-primary"
+                    style={{ padding: '10px 24px', flex: 1, justifyContent: 'center' }}
+                  >
+                    Save Holiday
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
         </div>
       )}
