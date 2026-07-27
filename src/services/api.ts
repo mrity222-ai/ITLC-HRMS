@@ -1064,6 +1064,23 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getBroadcastHistory() {
+    const res = await fetch(`${API_URL}/admin/broadcast-history`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
+  async sendBroadcast(broadcastData: any) {
+    const res = await fetch(`${API_URL}/admin/broadcast`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(broadcastData)
+    });
+    return handleResponse(res);
+  },
+
   async getAdminExpenses() {
     const res = await fetch(`${API_URL}/admin/expenses`, {
       method: 'GET',

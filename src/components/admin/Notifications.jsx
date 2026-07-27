@@ -1,25 +1,75 @@
-import React, { useState } from 'react';
-import { Bell, Mail, MessageSquare, Send, Radio } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, MessageSquare, Send, Radio } from 'lucide-react';
+import { api } from '../../services/api';
 
 export default function Notifications() {
   const [channel, setChannel] = useState('email');
   const [template, setTemplate] = useState('welcome');
-  const [customMsg, setCustomMsg] = useState('Welcome to the Antigravity HR portal! Please set up your login profile and secure credentials.');
+  const [customMsg, setCustomMsg] = useState('Welcome to the ITLC HRMS portal! Please set up your login profile and secure credentials.');
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const templates = {
-    welcome: 'Welcome to the Antigravity HR portal! Please set up your login profile and secure credentials.',
-    holiday: 'Office Announcement: Independence Day holiday scheduled for July 04. All systems offline except DevOps support.',
+    welcome: 'Welcome to the ITLC HRMS portal! Please set up your login profile and secure credentials.',
+    holiday: 'Office Announcement: Holiday scheduled. All systems offline except support.',
     payroll: 'Payslip Disbursal notification: Payroll cycle has been processed and disbursal receipts are ready in your dashboard.',
   };
+
+  const fetchHistory = async () => {
+    setLoading(true);
+    try {
+      const data = await api.getBroadcastHistory();
+      if (Array.isArray(data)) {
+        setHistory(data);
+      }
+    } catch (err) {
+      console.error("Failed to load broadcast history:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   const handleTemplateChange = (e) => {
     setTemplate(e.target.value);
     setCustomMsg(templates[e.target.value]);
   };
 
-  const handleBroadcast = (e) => {
+  const handleBroadcast = async (e) => {
     e.preventDefault();
-    alert(`Announcements broadcasted via [${channel.toUpperCase()}] channel using [${template}] draft template.`);
+    if (!customMsg.trim()) return;
+    setIsSending(true);
+    try {
+      await api.sendBroadcast({
+        channel,
+        template,
+        customMsg
+      });
+      alert("Broadcast announcement successfully dispatched!");
+      setCustomMsg('');
+      fetchHistory();
+    } catch (err) {
+      alert("Failed to send broadcast: " + err.message);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const getBadgeClass = (channels) => {
+    const primary = channels[0];
+    if (primary === 'email') return 'badge badge-success';
+    if (primary === 'whatsapp') return 'badge badge-info';
+    return 'badge badge-warning';
+  };
+
+  const getChannelLabel = (channels) => {
+    const primary = channels[0];
+    if (!primary) return 'Announcement';
+    return primary.toUpperCase() + ' Sent';
   };
 
   return (
@@ -82,33 +132,46 @@ export default function Notifications() {
               className="premium-input"
               rows={4}
               style={{ resize: 'none' }}
+              placeholder="Enter message body here..."
+              required
             />
           </div>
 
-          <button type="submit" className="premium-btn premium-btn-primary" style={{ alignSelf: 'flex-start' }}>
+          <button type="submit" disabled={isSending} className="premium-btn premium-btn-primary" style={{ alignSelf: 'flex-start' }}>
             <Send size={14} />
-            <span>Send Announcement</span>
+            <span>{isSending ? 'Sending Announcement...' : 'Send Announcement'}</span>
           </button>
         </form>
 
         {/* Audit Announcement list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <h3 style={{ fontSize: '0.95rem', fontWeight: 800 }}>Broadcast History</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ padding: 14, borderRadius: 12, border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="badge badge-success">Email Sent</span>
-                <span className="number-font" style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>June 30, 2026</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '420px', overflowY: 'auto' }} className="premium-scrollbar">
+            {loading && <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>Loading history...</div>}
+            
+            {!loading && history.length === 0 && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', padding: '20px 0', textAlign: 'center' }}>
+                No broadcast history found.
               </div>
-              <p style={{ fontSize: '0.75rem', marginTop: 6, fontWeight: 500 }}>"Monthly salary statements are available in the portal..."</p>
-            </div>
-            <div style={{ padding: 14, borderRadius: 12, border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="badge badge-info">WhatsApp Sent</span>
-                <span className="number-font" style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>June 15, 2026</span>
+            )}
+
+            {!loading && history.map(item => (
+              <div key={item.id} style={{ padding: 14, borderRadius: 12, border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className={getBadgeClass(item.channels)}>{getChannelLabel(item.channels)}</span>
+                  <span className="number-font" style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>
+                    {new Date(item.timestamp).toLocaleString()}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.75rem', marginTop: 6, fontWeight: 500, color: 'var(--color-text-primary)', wordBreak: 'break-word', lineHeight: 1.4 }}>
+                  "{item.title}"
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>
+                  <span>Sent to: {item.target}</span>
+                  <span>By: {item.senderName}</span>
+                </div>
               </div>
-              <p style={{ fontSize: '0.75rem', marginTop: 6, fontWeight: 500 }}>"Security audit warning: Please renew password configurations..."</p>
-            </div>
+            ))}
           </div>
         </div>
 
