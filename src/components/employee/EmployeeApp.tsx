@@ -40,6 +40,43 @@ function DashboardContent({ onLogout }: { onLogout?: () => void }) {
     return () => window.removeEventListener("resize", handleResize);
   }, [activeTab, setActiveTab]);
 
+  // Guard active tab if disabled by admin configuration
+  useEffect(() => {
+    if (profile?.companyDetails?.modulesEnabled) {
+      try {
+        const parsed = typeof profile.companyDetails.modulesEnabled === 'string'
+          ? JSON.parse(profile.companyDetails.modulesEnabled)
+          : profile.companyDetails.modulesEnabled;
+
+        const mapping: Record<string, string> = {
+          dashboard: 'dashboard',
+          attendance: 'attendance',
+          leaves: 'leave',
+          payroll: 'payroll',
+          expenses: 'payroll',
+          documents: 'documents',
+          assets: 'assets',
+          helpdesk: 'helpdesk',
+          training: 'training'
+        };
+
+        const configKey = mapping[activeTab];
+        if (configKey !== undefined && parsed[configKey] === false) {
+          const order = ["dashboard", "attendance", "leaves", "payroll", "documents", "assets", "helpdesk", "training", "profile", "settings"];
+          const fallback = order.find(tab => {
+            const key = mapping[tab];
+            return key === undefined || parsed[key] !== false;
+          });
+          if (fallback) {
+            setActiveTab(fallback);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse modulesEnabled in App Shell:", e);
+      }
+    }
+  }, [profile?.companyDetails, activeTab, setActiveTab]);
+
   // Render the appropriate panel based on active state tab
   const renderActiveModule = () => {
     switch (activeTab) {

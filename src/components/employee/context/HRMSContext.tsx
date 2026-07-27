@@ -26,6 +26,8 @@ export interface EmployeeProfile {
     lat?: number | null;
     lng?: number | null;
     radius?: number;
+    modulesEnabled?: any;
+    themeColor?: string;
   } | null;
 }
 

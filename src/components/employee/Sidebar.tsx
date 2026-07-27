@@ -144,9 +144,47 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed, mobil
     { id: "settings", label: "Settings", icon: SettingsIcon },
   ];
 
-  const filteredMenuItems = isMobile
-    ? menuItems.filter((item) => ["attendance", "profile", "documents", "payroll", "notifications", "leaves", "tasks", "expenses", "helpdesk", "training", "settings", "assets", "dashboard"].includes(item.id))
-    : menuItems;
+  const modulesEnabled = React.useMemo(() => {
+    if (profile?.companyDetails?.modulesEnabled) {
+      try {
+        const parsed = typeof profile.companyDetails.modulesEnabled === 'string'
+          ? JSON.parse(profile.companyDetails.modulesEnabled)
+          : profile.companyDetails.modulesEnabled;
+        return parsed;
+      } catch (e) {
+        console.error("Failed to parse company modulesEnabled:", e);
+      }
+    }
+    return null;
+  }, [profile?.companyDetails]);
+
+  const filteredMenuItems = React.useMemo(() => {
+    const baseItems = isMobile
+      ? menuItems.filter((item) => ["attendance", "profile", "documents", "payroll", "notifications", "leaves", "tasks", "expenses", "helpdesk", "training", "settings", "assets", "dashboard"].includes(item.id))
+      : menuItems;
+
+    if (!modulesEnabled) return baseItems;
+
+    const mapping: Record<string, string> = {
+      dashboard: 'dashboard',
+      attendance: 'attendance',
+      leaves: 'leave',
+      payroll: 'payroll',
+      documents: 'documents',
+      expenses: 'payroll',
+      assets: 'assets',
+      helpdesk: 'helpdesk',
+      training: 'training'
+    };
+
+    return baseItems.filter(item => {
+      const configKey = mapping[item.id];
+      if (configKey !== undefined && modulesEnabled[configKey] === false) {
+        return false;
+      }
+      return true;
+    });
+  }, [isMobile, menuItems, modulesEnabled]);
 
   return (
     <aside

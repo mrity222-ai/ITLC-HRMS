@@ -67,6 +67,17 @@ export default function CompanySettings() {
   const [razorpaySecret, setRazorpaySecret] = useState('');
   const [stripeSecretKey, setStripeSecretKey] = useState('');
 
+  const [appModules, setAppModules] = useState({
+    dashboard: true,
+    attendance: true,
+    leave: true,
+    payroll: true,
+    helpdesk: true,
+    documents: true,
+    assets: true,
+    training: true
+  });
+
   // Admin Profile states
   const [adminName, setAdminName] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
@@ -94,6 +105,24 @@ export default function CompanySettings() {
           setRazorpayKeyId(details.razorpayKeyId || '');
           setRazorpaySecret(details.razorpaySecret || '');
           setStripeSecretKey(details.stripeSecretKey || '');
+
+          if (details.modulesEnabled) {
+            try {
+              const parsed = typeof details.modulesEnabled === 'string' ? JSON.parse(details.modulesEnabled) : details.modulesEnabled;
+              setAppModules({
+                dashboard: parsed.dashboard !== undefined ? parsed.dashboard : true,
+                attendance: parsed.attendance !== undefined ? parsed.attendance : true,
+                leave: parsed.leave !== undefined ? parsed.leave : true,
+                payroll: parsed.payroll !== undefined ? parsed.payroll : true,
+                helpdesk: parsed.helpdesk !== undefined ? parsed.helpdesk : true,
+                documents: parsed.documents !== undefined ? parsed.documents : true,
+                assets: parsed.assets !== undefined ? parsed.assets : true,
+                training: parsed.training !== undefined ? parsed.training : true
+              });
+            } catch (e) {
+              console.error("Failed to parse modulesEnabled:", e);
+            }
+          }
         }
       } catch (err) {
         console.error('Failed to load company details:', err);
@@ -134,7 +163,8 @@ export default function CompanySettings() {
         branchHQCoordinates,
         razorpayKeyId,
         razorpaySecret,
-        stripeSecretKey
+        stripeSecretKey,
+        modulesEnabled: JSON.stringify(appModules)
       });
       setSuccess(true);
       
@@ -598,6 +628,53 @@ export default function CompanySettings() {
                 placeholder="sk_live_..."
               />
             </div>
+          </div>
+        </div>
+
+        {/* Mobile App & Employee Portal Sections Configuration */}
+        <div className="premium-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Settings size={18} style={{ color: 'var(--color-primary)' }} />
+            <span>Mobile App & Employee Portal Sections</span>
+          </h3>
+          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Toggle which tabs are visible inside the Employee Mobile App & Portal.</p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 8 }}>
+            {[
+              { key: 'dashboard', label: '📊 Dashboard Overview' },
+              { key: 'attendance', label: '⏰ Attendance & Clock In/Out' },
+              { key: 'leave', label: '📅 Leave & Holidays' },
+              { key: 'payroll', label: '💵 Payroll & Payslips' },
+              { key: 'helpdesk', label: '🎫 Helpdesk & Tickets' },
+              { key: 'documents', label: '📁 Documents Vault' },
+              { key: 'assets', label: '💻 Hardware Assets' },
+              { key: 'training', label: '🎓 Training & Courses' }
+            ].map(mod => (
+              <label 
+                key={mod.key} 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 10, 
+                  fontSize: '0.8rem', 
+                  fontWeight: 600, 
+                  cursor: 'pointer',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(255,255,255,0.02)',
+                  border: '1px solid var(--color-border)',
+                  userSelect: 'none'
+                }}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={appModules[mod.key]} 
+                  onChange={(e) => setAppModules({ ...appModules, [mod.key]: e.target.checked })} 
+                  style={{ width: 15, height: 15, accentColor: 'var(--color-primary)' }}
+                />
+                <span>{mod.label}</span>
+              </label>
+            ))}
           </div>
         </div>
 
