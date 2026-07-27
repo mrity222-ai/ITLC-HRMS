@@ -97,10 +97,18 @@ export default function Notifications() {
                     key={gate.id}
                     type="button"
                     onClick={() => setChannel(gate.id)}
-                    className={`premium-btn ${channel === gate.id ? `${gate.id}-active` : 'chrome-box-inactive'}`}
+                    className="premium-btn"
                     style={{
                       flex: 1,
                       padding: '12px 18px',
+                      background: channel === gate.id ? 'var(--color-primary)' : 'rgba(0, 0, 0, 0.02)',
+                      color: channel === gate.id ? '#ffffff' : 'var(--color-text-secondary)',
+                      borderColor: channel === gate.id ? 'var(--color-primary)' : 'var(--color-border)',
+                      transition: 'all 0.2s ease',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
                     }}
                   >
                     <Icon size={14} />
