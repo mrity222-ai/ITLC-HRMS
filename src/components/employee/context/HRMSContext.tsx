@@ -1194,15 +1194,49 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode; loggedInEmail?:
   };
 
   const login = async (email: string, pass: string): Promise<boolean> => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    if (email.toLowerCase() === profile.email.toLowerCase() && pass === "password123") {
-      setIsAuthenticated(true);
-      return true;
+    try {
+      const response = await api.login({ email, password: pass });
+      if (response && response.token) {
+        localStorage.setItem('hrms_jwt_token', response.token);
+        
+        // Load profile and authenticate
+        const prof = await api.getProfile();
+        setProfile({
+          photo: prof.avatar || "",
+          id: prof.id,
+          fullName: prof.name,
+          email: prof.email,
+          mobile: prof.phone || "",
+          dob: prof.dob || "1992-08-24",
+          gender: prof.gender || "Male",
+          address: prof.address || "",
+          joiningDate: prof.joiningDate || "",
+          department: prof.department,
+          designation: prof.role,
+          reportingManager: prof.reportingManager || "None",
+          employmentType: "Full-Time Permanent",
+          companyName: prof.companyName || "ITLC HRMS",
+          companyLogo: prof.companyLogo || "",
+          documents: prof.documents || [],
+          companyDetails: prof.companyDetails || null
+        });
+
+        if (prof.companyDetails && prof.companyDetails.themeColor) {
+          applyThemeColor(prof.companyDetails.themeColor);
+        }
+
+        setIsAuthenticated(true);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Login failed:", err);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
+    localStorage.removeItem('hrms_jwt_token');
     setIsAuthenticated(false);
     setActiveTab("dashboard");
   };
