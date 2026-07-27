@@ -92,6 +92,33 @@ export default function App({ onLogout, loggedInEmail }) {
     companyLogo: ''
   });
 
+  // Guard active tab if disabled by admin configuration
+  useEffect(() => {
+    if (featureFlags) {
+      const mapping = {
+        dashboard: 'dashboard',
+        attendance: 'attendance',
+        leave: 'leave',
+        payroll: 'payroll',
+        expenses: 'payroll',
+        assets: 'assets',
+        training: 'training'
+      };
+
+      const configKey = mapping[activeTab];
+      if (configKey !== undefined && featureFlags[configKey] === false) {
+        const order = ['dashboard', 'people', 'attendance', 'leave', 'payroll', 'recruitment', 'expenses', 'performance', 'assets', 'training', 'reports', 'settings', 'security', 'subscription', 'support'];
+        const fallback = order.find(tab => {
+          const key = mapping[tab];
+          return key === undefined || featureFlags[key] !== false;
+        });
+        if (fallback) {
+          setActiveTab(fallback);
+        }
+      }
+    }
+  }, [featureFlags, activeTab]);
+
   useEffect(() => {
     const loadAdminData = async () => {
       try {

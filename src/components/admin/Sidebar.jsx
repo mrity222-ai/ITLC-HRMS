@@ -166,6 +166,21 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
   }, []);
 
   const rawVisibleMenuItems = menuItems.filter(item => {
+    const mapping = {
+      dashboard: 'dashboard',
+      attendance: 'attendance',
+      leave: 'leave',
+      payroll: 'payroll',
+      expenses: 'payroll',
+      assets: 'assets',
+      training: 'training'
+    };
+
+    const configKey = mapping[item.id];
+    if (configKey !== undefined && featureFlags[configKey] === false) {
+      return false;
+    }
+
     // Core menus that are always visible
     if (['dashboard', 'people', 'reports', 'notifications', 'settings', 'security', 'support', 'subscription'].includes(item.id)) return true;
     

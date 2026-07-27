@@ -171,6 +171,46 @@ export default function ManagerApp({ onLogout }) {
   }, [activeTab]);
 
   const [managerProfile, setManagerProfile] = useState(null);
+
+  const modulesEnabled = React.useMemo(() => {
+    if (managerProfile?.companyDetails?.modulesEnabled) {
+      try {
+        const parsed = typeof managerProfile.companyDetails.modulesEnabled === 'string'
+          ? JSON.parse(managerProfile.companyDetails.modulesEnabled)
+          : managerProfile.companyDetails.modulesEnabled;
+        return parsed;
+      } catch (e) {
+        console.error("Failed to parse company modulesEnabled:", e);
+      }
+    }
+    return null;
+  }, [managerProfile?.companyDetails]);
+
+  // Guard active tab if disabled by admin configuration
+  useEffect(() => {
+    if (modulesEnabled) {
+      const mapping = {
+        dashboard: 'dashboard',
+        attendance: 'attendance',
+        leaves: 'leave',
+        payroll: 'payroll',
+        expenses: 'payroll',
+        assets: 'assets'
+      };
+
+      const configKey = mapping[activeTab];
+      if (configKey !== undefined && modulesEnabled[configKey] === false) {
+        const order = ['dashboard', 'team', 'attendance', 'leaves', 'tasks', 'performance', 'expenses', 'assets', 'meetings', 'reports', 'announcements', 'profile', 'payroll', 'settings'];
+        const fallback = order.find(tab => {
+          const key = mapping[tab];
+          return key === undefined || modulesEnabled[key] !== false;
+        });
+        if (fallback) {
+          setActiveTab(fallback);
+        }
+      }
+    }
+  }, [modulesEnabled, activeTab]);
   const [documentsVault, setDocumentsVault] = useState([]);
   const [uploadingDocId, setUploadingDocId] = useState(null);
   const [expandedDocId, setExpandedDocId] = useState(null);
@@ -799,7 +839,24 @@ export default function ManagerApp({ onLogout }) {
             { id: 'profile', label: 'Manager Profile', icon: User },
             { id: 'payroll', label: 'My Payslips', icon: CreditCard },
             { id: 'settings', label: 'Settings', icon: SettingsIcon },
-          ].filter(item => !isMobile || ['attendance', 'profile', 'payroll', 'dashboard', 'team', 'leaves', 'tasks', 'performance', 'expenses', 'assets', 'meetings', 'announcements', 'reports', 'settings'].includes(item.id)).map(item => {
+          ].filter(item => {
+            const isTabMobileOk = !isMobile || ['attendance', 'profile', 'payroll', 'dashboard', 'team', 'leaves', 'tasks', 'performance', 'expenses', 'assets', 'meetings', 'announcements', 'reports', 'settings'].includes(item.id);
+            if (!isTabMobileOk) return false;
+            if (!modulesEnabled) return true;
+            const mapping = {
+              dashboard: 'dashboard',
+              attendance: 'attendance',
+              leaves: 'leave',
+              payroll: 'payroll',
+              expenses: 'payroll',
+              assets: 'assets'
+            };
+            const configKey = mapping[item.id];
+            if (configKey !== undefined && modulesEnabled[configKey] === false) {
+              return false;
+            }
+            return true;
+          }).map(item => {
             const isActive = activeTab === item.id;
             return (
               <button
