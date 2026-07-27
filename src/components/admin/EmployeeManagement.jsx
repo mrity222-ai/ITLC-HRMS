@@ -375,6 +375,26 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
   const [customId, setCustomId] = useState('');
   const [portalPassword, setPortalPassword] = useState('');
 
+  const [selectedEmpAttendance, setSelectedEmpAttendance] = useState([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+
+  useEffect(() => {
+    if (activeProfileTab === 'Attendance Logs' && selectedProfile) {
+      const loadAttendance = async () => {
+        setLoadingAttendance(true);
+        try {
+          const data = await api.getAdminAttendance(selectedProfile.id);
+          setSelectedEmpAttendance(data || []);
+        } catch (err) {
+          console.error("Failed to load employee attendance logs:", err);
+        } finally {
+          setLoadingAttendance(false);
+        }
+      };
+      loadAttendance();
+    }
+  }, [activeProfileTab, selectedProfile]);
+
   useEffect(() => {
     const loadDepartments = async () => {
       try {
@@ -1999,7 +2019,7 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
                 {/* Sidebar Navigation Options */}
                 <div className="premium-card" style={{ padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {[
-                    'Personal Info', 'Employment Details', 'Portal Credentials', 'Documents Vault', 'Bank Details'
+                    'Personal Info', 'Employment Details', 'Portal Credentials', 'Documents Vault', 'Bank Details', 'Attendance Logs'
                   ].map(tab => (
                     <button
                       key={tab}
@@ -2381,6 +2401,103 @@ export default function EmployeeManagement({ employees, setEmployees, searchQuer
 
                         </div>
                       </div>
+                    </motion.div>
+                  )}
+
+                  {activeProfileTab === 'Attendance Logs' && (
+                    <motion.div
+                      key="attendance-logs"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+                    >
+                      {/* Attendance summary metrics */}
+                      {(() => {
+                        const totalDays = selectedEmpAttendance.length;
+                        const presentDays = selectedEmpAttendance.filter(a => a.status === 'Present' || a.status === 'On Time' || a.status === 'Late' || a.status === 'Half-day').length;
+                        const lateDays = selectedEmpAttendance.filter(a => a.status === 'Late').length;
+                        const absentDays = selectedEmpAttendance.filter(a => a.status === 'Absent').length;
+                        const attendancePercent = totalDays > 0 ? ((presentDays / totalDays) * 100).toFixed(1) : '0';
+
+                        return (
+                          <>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 16 }}>
+                              <div className="premium-card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <span className="premium-label" style={{ fontSize: '0.65rem' }}>Total Logs</span>
+                                <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>{totalDays} days</h4>
+                              </div>
+                              <div className="premium-card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <span className="premium-label" style={{ fontSize: '0.65rem', color: 'var(--color-success)' }}>Present</span>
+                                <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-success)' }}>{presentDays} days</h4>
+                              </div>
+                              <div className="premium-card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <span className="premium-label" style={{ fontSize: '0.65rem', color: 'var(--color-warning)' }}>Late Markers</span>
+                                <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-warning)' }}>{lateDays} days</h4>
+                              </div>
+                              <div className="premium-card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <span className="premium-label" style={{ fontSize: '0.65rem', color: 'var(--color-danger)' }}>Absent</span>
+                                <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-danger)' }}>{absentDays} days</h4>
+                              </div>
+                              <div className="premium-card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <span className="premium-label" style={{ fontSize: '0.65rem', color: 'var(--color-primary)' }}>Rate (%)</span>
+                                <h4 className="number-font" style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-primary)' }}>{attendancePercent}%</h4>
+                              </div>
+                            </div>
+
+                            {/* Logs list card */}
+                            <div className="premium-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, borderBottom: '1px solid var(--color-border)', paddingBottom: 10 }}>Attendance History</h3>
+                              
+                              {loadingAttendance ? (
+                                <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: '0.85rem' }}>
+                                  Loading attendance records...
+                                </div>
+                              ) : selectedEmpAttendance.length === 0 ? (
+                                <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: '0.85rem' }}>
+                                  No attendance logs found for this employee.
+                                </div>
+                              ) : (
+                                <div className="premium-table-container" style={{ maxHeight: 350, overflowY: 'auto' }}>
+                                  <table className="premium-table">
+                                    <thead>
+                                      <tr>
+                                        <th>Date</th>
+                                        <th>Clock In</th>
+                                        <th>Clock Out</th>
+                                        <th>Work Duration</th>
+                                        <th>Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {selectedEmpAttendance.map((log) => {
+                                        let statusBadgeClass = 'badge badge-success';
+                                        if (log.status === 'Late') statusBadgeClass = 'badge badge-warning';
+                                        else if (log.status === 'Absent') statusBadgeClass = 'badge badge-danger';
+                                        else if (log.status === 'Half-day') statusBadgeClass = 'badge badge-info';
+
+                                        return (
+                                          <tr key={log.id}>
+                                            <td style={{ fontWeight: 600 }}>{log.date}</td>
+                                            <td style={{ fontFamily: 'monospace' }}>{log.checkIn || '--:--'}</td>
+                                            <td style={{ fontFamily: 'monospace' }}>{log.checkOut || '--:--'}</td>
+                                            <td style={{ fontFamily: 'monospace' }}>{log.workHours || '--:--'}</td>
+                                            <td>
+                                              <span className={statusBadgeClass} style={{ fontSize: '0.7rem' }}>
+                                                {log.status}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </motion.div>
                   )}
 
