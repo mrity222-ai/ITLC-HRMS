@@ -5,6 +5,7 @@ import {
   Database, CheckCircle, RefreshCw, Play, Download
 } from 'lucide-react';
 import { useDashboard } from '../context/DashboardContext';
+import { api } from '../../../services/api';
 
 export const SettingsTab: React.FC = () => {
   const { settings, updateSettings, addToast, addLog, setIsFormDirty } = useDashboard();
@@ -48,15 +49,30 @@ export const SettingsTab: React.FC = () => {
     }, 1500);
   };
 
-  const handleTriggerBackup = () => {
+  const handleTriggerBackup = async () => {
     setIsBackupRunning(true);
     addToast('Initiating full system snapshot...', 'info');
     
-    setTimeout(() => {
+    try {
+      const backupData = await api.getSuperOwnerBackup();
+      
+      // Download the JSON file locally
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `hrms_full_backup_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+
+      addToast('Platform backup file downloaded successfully!', 'success');
+      addLog('Database Backup Archive', 'Manual full system database snapshot generated and downloaded.', 'settings');
+    } catch (err: any) {
+      console.error(err);
+      addToast('Backup failed: ' + err.message, 'error');
+    } finally {
       setIsBackupRunning(false);
-      addToast('Platform backup snapshot archived successfully (2.4 GB)', 'success');
-      addLog('Database Backup Archive', 'Manual full system database snapshot generated and archived to secure S3 storage.', 'settings');
-    }, 2500);
+    }
   };
 
   return (

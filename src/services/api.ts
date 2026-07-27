@@ -728,6 +728,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getSuperOwnerBackup() {
+    const res = await fetch(`${API_URL}/superowner/backup`, {
+      method: 'GET',
+      headers: getHeaders()
+    });
+    return handleResponse(res);
+  },
+
   // ========================================================
   // COMPANY ADMIN / HR MANAGERS APIs
   // ========================================================
