@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.itlc.hrms',
-  appName: 'ITLC HRMS',
+  appName: 'OmniStaff',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

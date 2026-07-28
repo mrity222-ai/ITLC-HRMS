@@ -87,9 +87,54 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#fafbfc] gap-4 font-sans">
-        <div className="h-10 w-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-xs text-slate-500 font-bold tracking-wider uppercase">Loading HRMS Workspace...</span>
+      <div className="h-screen w-full flex flex-col items-center justify-between bg-slate-950 text-white font-sans py-12 relative overflow-hidden select-none">
+        {/* Decorative ambient background glows */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-500/10 blur-[120px] pointer-events-none" />
+        
+        {/* Empty top spacing for centering */}
+        <div className="h-8" />
+
+        {/* Center: Video/Logo and Loading Text */}
+        <div className="flex flex-col items-center gap-6 z-10">
+          <div className="relative w-40 h-40 rounded-3xl overflow-hidden border border-indigo-500/20 bg-slate-900/50 shadow-2xl flex items-center justify-center">
+            {/* If video exists, play it, otherwise fallback to standard spinner */}
+            <video 
+              src="/splash.mp4" 
+              autoPlay 
+              loop 
+              muted 
+              playsInline 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-1 w-24 bg-slate-800 rounded-full overflow-hidden relative">
+              <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 rounded-full animate-[loading_1.5s_infinite]" style={{ width: '100%', position: 'absolute' }} />
+            </div>
+            <span className="text-[10px] text-slate-400 font-extrabold tracking-widest uppercase mt-1">
+              Loading OmniStaff...
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom branding: Powered by ITLC Lucknow */}
+        <div className="flex flex-col items-center gap-1.5 z-10">
+          <span className="text-xs font-semibold text-slate-400 tracking-wider">
+            Powered by <strong className="text-white font-bold">ITLC Lucknow</strong>
+          </span>
+          <span className="text-[8px] text-slate-500 tracking-widest uppercase font-extrabold">
+            Secure Workspace Environment
+          </span>
+        </div>
+
+        {/* Custom CSS for loading slide animation */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes loading {
+            0% { left: -100%; }
+            100% { left: 100%; }
+          }
+        `}} />
       </div>
     );
   }
