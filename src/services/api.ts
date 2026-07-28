@@ -72,6 +72,19 @@ export const api = {
     return result;
   },
 
+  async verifyOtp(data: { email: string, otp: string }) {
+    const res = await fetch(`${API_URL}/auth/verify-otp`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    const result = await handleResponse(res);
+    if (result.token) {
+      localStorage.setItem('hrms_jwt_token', result.token);
+    }
+    return result;
+  },
+
   async logout() {
     try {
       await fetch(`${API_URL}/auth/logout`, {
