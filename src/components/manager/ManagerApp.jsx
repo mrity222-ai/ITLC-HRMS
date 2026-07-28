@@ -154,7 +154,7 @@ const compressImage = (base64Str, maxWidth = 800, maxHeight = 800) => {
 };
 
 export default function ManagerApp({ onLogout }) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('attendance');
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {

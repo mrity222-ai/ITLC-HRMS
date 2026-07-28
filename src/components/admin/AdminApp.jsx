@@ -34,7 +34,7 @@ import { api } from '../../services/api';
 import { applyThemeColor } from '../../utils/theme';
 
 export default function App({ onLogout, loggedInEmail }) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('attendance');
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsed, setCollapsed] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
