@@ -269,6 +269,60 @@ export const SettingsTab: React.FC = () => {
           </div>
         </div>
 
+        {/* Payment Gateways & Receivers Settings */}
+        <div className="glass-card p-6 rounded-2xl space-y-4 relative">
+          <div className="flex justify-between items-center mb-2 border-b border-white/5 pb-3">
+            <h3 className="text-base font-semibold text-white flex items-center gap-2"><DollarSign className="h-4.5 w-4.5 text-indigo-400" /> Payment Gateways & Receiver Accounts</h3>
+            <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">Active Configurations</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs text-slate-400 font-medium">Stripe Secret Key (sk_live_... / sk_test_...)</label>
+              <input
+                type="password"
+                value={formData.stripeSecretKey || ''}
+                onChange={(e) => updateForm({ stripeSecretKey: e.target.value })}
+                placeholder="sk_test_..."
+                className="glass-input w-full px-3.5 py-2 rounded-xl text-sm text-slate-200 font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs text-slate-400 font-medium">Receiver UPI VPA ID (for Direct Transfers)</label>
+              <input
+                type="text"
+                value={formData.realUpiId || ''}
+                onChange={(e) => updateForm({ realUpiId: e.target.value })}
+                placeholder="itlc@upi"
+                className="glass-input w-full px-3.5 py-2 rounded-xl text-sm text-slate-200 font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs text-slate-400 font-medium">Razorpay Key ID (rzp_live_... / rzp_test_...)</label>
+              <input
+                type="text"
+                value={formData.razorpayKeyId || ''}
+                onChange={(e) => updateForm({ razorpayKeyId: e.target.value })}
+                placeholder="rzp_test_..."
+                className="glass-input w-full px-3.5 py-2 rounded-xl text-sm text-slate-200 font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs text-slate-400 font-medium">Razorpay Secret Key</label>
+              <input
+                type="password"
+                value={formData.razorpaySecret || ''}
+                onChange={(e) => updateForm({ razorpaySecret: e.target.value })}
+                placeholder="Razorpay API Secret"
+                className="glass-input w-full px-3.5 py-2 rounded-xl text-sm text-slate-200 font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Database Snapshots & Backup Recovery */}
         <div className="glass-card p-6 rounded-2xl space-y-4">
           <h3 className="text-base font-semibold text-white flex items-center gap-2"><Database className="h-4.5 w-4.5 text-indigo-400" /> Database Snapshots & Backups</h3>

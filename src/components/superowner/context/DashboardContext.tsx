@@ -21,6 +21,10 @@ interface Settings {
   stripeEnabled: boolean;
   razorpayEnabled: boolean;
   paypalEnabled: boolean;
+  stripeSecretKey?: string;
+  razorpayKeyId?: string;
+  razorpaySecret?: string;
+  realUpiId?: string;
 }
 
 interface Toast {
@@ -202,6 +206,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     stripeEnabled: true,
     razorpayEnabled: true,
     paypalEnabled: true,
+    stripeSecretKey: '',
+    razorpayKeyId: '',
+    razorpaySecret: '',
+    realUpiId: 'itlc@upi'
   };
 
   const [settings, setSettings] = useState<Settings>(defaultSettings);
