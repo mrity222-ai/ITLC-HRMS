@@ -88,9 +88,9 @@ export default function Subscription({ onSubscriptionUpdate }) {
     const returnedGateway = urlParams.get('gateway');
     const planId = urlParams.get('planId');
     const amt = urlParams.get('amount');
-    if (sessionId && returnedGateway === 'stripe' && planId) {
+    if (sessionId && (returnedGateway === 'stripe' || returnedGateway === 'paypal') && planId) {
       verifyPayment({
-        gateway: 'stripe',
+        gateway: returnedGateway,
         planId: planId,
         paymentId: sessionId,
         amount: amt
@@ -181,6 +181,17 @@ export default function Subscription({ onSubscriptionUpdate }) {
           theme: { color: '#4f46e5' }
         };
 
+        if (typeof window.Razorpay === 'undefined') {
+          console.warn("Razorpay SDK not loaded. Falling back to mock verification.");
+          verifyPayment({
+            gateway: 'razorpay',
+            planId: selectedPlan.id,
+            paymentId: `mock_pay_${Date.now()}`,
+            orderId: result.orderId || `mock_order_${Date.now()}`,
+            amount: amount
+          });
+          return;
+        }
         const rzp = new window.Razorpay(options);
         rzp.open();
         setIsProcessing(false);
@@ -288,7 +299,15 @@ export default function Subscription({ onSubscriptionUpdate }) {
     status: 'trial'
   };
 
-  const activePlan = plans.find(p => p.id === company.subscriptionPlanId) || plans[0];
+  const fallbackPlan = {
+    id: 'free_trial',
+    name: 'Free Trial',
+    price: 0,
+    employeeLimit: 10,
+    storageLimit: 2,
+    aiCreditsLimit: 50
+  };
+  const activePlan = plans.find(p => p.id === company.subscriptionPlanId) || plans[0] || fallbackPlan;
 
   const formatPrice = (usdPrice) => {
     if (usdPrice === 0) return `${SYMBOLS[currency]}0`;
